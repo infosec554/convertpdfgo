@@ -1,0 +1,92 @@
+# =====================================================================
+# Secrets / per-environment config — NEVER push these.
+# .env.example is the only env file that ships with the repo.
+# =====================================================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# =====================================================================
+# Build outputs
+# =====================================================================
+bin/
+/api
+/worker
+/admin-bootstrap
+
+# =====================================================================
+# Vendored deps (we use module cache, not vendor/) and Go work files
+# =====================================================================
+vendor/
+go.work
+go.work.sum
+
+# =====================================================================
+# Runtime artefacts: user uploads, generated outputs, cron temp dirs.
+# These belong in volumes/object storage, not in git.
+# Note: storage/ directory in source tree contains *code* (storage.go,
+# postgres/, redis/) — do NOT exclude that. Only the runtime sub-dirs:
+# =====================================================================
+uploads/
+tmp/
+storage/merge/
+storage/split/
+storage/compress/
+storage/extract/
+storage/remove/
+storage/rotate_files/
+storage/crop_pdfs/
+storage/unlock_pdf/
+storage/protect_pdf/
+storage/add_page_numbers/
+storage/header_footer/
+storage/qr_code/
+storage/qr_code_pdf/
+storage/jpg_to_pdf/
+storage/pdf_to_jpg/
+storage/pdf_to_word/
+storage/word_to_pdf/
+storage/excel_to_pdf/
+storage/powerpoint_to_pdf/
+storage/html_to_pdf/
+
+# =====================================================================
+# Generated Swagger docs — regen via `make generate`
+# =====================================================================
+api/docs/
+
+# =====================================================================
+# Editor / OS
+# =====================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# =====================================================================
+# Test / coverage
+# =====================================================================
+*.test
+*.out
+coverage.txt
+coverage.html
+profile.cov
+
+# =====================================================================
+# Logs
+# =====================================================================
+*.log
+logs/
+
+# =====================================================================
+# Docker volumes (if mounted locally)
+# =====================================================================
+postgres_data/
+redis_data/
+minio_data/
+prometheus_data/
+grafana_data/

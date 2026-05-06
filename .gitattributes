@@ -1,0 +1,24 @@
+# Normalise line endings on commit so Windows checkouts don't break tests.
+* text=auto eol=lf
+
+# Go files are always LF.
+*.go    text eol=lf
+*.mod   text eol=lf
+*.sum   text eol=lf
+
+# Treat docs / config as text.
+*.md    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.sql   text eol=lf
+
+# Shell scripts must be LF or they break in /bin/sh.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+Makefile    text eol=lf
+
+# Binaries — never diff, never normalise.
+*.png   binary
+*.jpg   binary
+*.pdf   binary
+*.zip   binary

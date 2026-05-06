@@ -1,0 +1,173 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: my_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: authservice
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: my_redis
+    restart: always
+    command: redis-server --requirepass 1234
+    environment:
+      REDIS_PASSWORD: 1234
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "1234", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  gotenberg:
+    image: gotenberg/gotenberg:7
+    container_name: gotenberg
+    restart: always
+    ports:
+      - "3000:3000"
+    command:
+      - gotenberg
+      - --libreoffice-disable-routes=false
+
+  asynqmon:
+    image: hibiken/asynqmon:latest
+    container_name: asynqmon
+    restart: always
+    ports:
+      - "8081:8080"
+    command:
+      - "--redis-addr=redis:6379"
+      - "--redis-password=1234"
+    depends_on:
+      - redis
+
+  minio:
+    image: minio/minio:latest
+    container_name: convertpdfgo_minio
+    restart: always
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # Web console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: convertpdfgo_prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    profiles: ["full", "monitoring"]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: convertpdfgo_grafana
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    profiles: ["full", "monitoring"]
+
+  api:
+    build:
+      context: .
+      args:
+        TARGET: api
+    container_name: convertpdfgo_api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: authservice
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: 1234
+      GOTENBERG_URL: http://gotenberg:3000
+    volumes:
+      - app_storage:/app/storage
+      - app_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+    profiles: ["full"]
+
+  worker:
+    build:
+      context: .
+      args:
+        TARGET: worker
+    container_name: convertpdfgo_worker
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: authservice
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: 1234
+      GOTENBERG_URL: http://gotenberg:3000
+    volumes:
+      - app_storage:/app/storage
+      - app_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      gotenberg:
+        condition: service_started
+    profiles: ["full"]
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_storage:
+  app_uploads:
+  minio_data:
+  prometheus_data:
+  grafana_data:

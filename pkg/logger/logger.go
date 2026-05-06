@@ -1,0 +1,46 @@
+package logger
+
+import (
+	"go.uber.org/zap"
+)
+
+type ILogger interface {
+	Debug(msg string, fields ...Field)
+	Info(msg string, fields ...Field)
+	Error(msg string, fields ...Field)
+	Warning(msg string, fields ...Field)
+}
+
+type logger struct {
+	zap *zap.Logger
+}
+
+func (l logger) Debug(msg string, fields ...Field) {
+	l.zap.Debug(msg, fields...)
+}
+
+func (l logger) Info(msg string, fields ...Field) {
+	l.zap.Info(msg, fields...)
+}
+
+func (l logger) Error(msg string, fields ...Field) {
+	l.zap.Error(msg, fields...)
+}
+
+func (l logger) Warning(msg string, fields ...Field) {
+	l.zap.Warn(msg, fields...)
+}
+
+func New(namespace string) ILogger {
+	return logger{
+		zap: newZapLogger(namespace),
+	}
+}
+
+// NewWithLevel creates a logger whose threshold is read from cfg level string
+// (debug, info, warn/warning, error). Defaults to info on unknown values.
+func NewWithLevel(namespace, level string) ILogger {
+	return logger{
+		zap: newZapLoggerWithLevel(namespace, level),
+	}
+}

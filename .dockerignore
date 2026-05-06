@@ -1,0 +1,16 @@
+.git
+.github
+.idea
+.vscode
+*.md
+storage/
+uploads/
+tmp/
+bin/
+api/docs/
+*.log
+.env
+.env.local
+docker-compose.yml
+Dockerfile
+.dockerignore

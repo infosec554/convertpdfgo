@@ -1,0 +1,163 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+  workflow_dispatch: {}
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Match go.mod's `go 1.25.0` line. setup-go's "1.25.x" picks the latest
+  # patch automatically.
+  GO_VERSION: "1.25.x"
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────
+  # Lint + vet are cheap; running them in their own job lets contributors
+  # see "import unused" / "unreachable code" feedback without waiting for
+  # the (slower) test job.
+  # ──────────────────────────────────────────────────────────────────────
+  lint:
+    name: vet + gofmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: gofmt check
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::Unformatted files:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Tests run with -race so concurrency bugs (e.g. permission cache mutex)
+  # surface in CI rather than in production. Coverage report is uploaded
+  # so PRs can see which paths are untested.
+  # ──────────────────────────────────────────────────────────────────────
+  test:
+    name: unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: go test
+        run: go test -race -count=1 -coverprofile=coverage.out ./...
+
+      - name: coverage summary
+        run: go tool cover -func=coverage.out | tail -20
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage.out
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Build all three binaries. Catches missing imports the lint job alone
+  # wouldn't notice (e.g. cmd/ references that aren't reached by go vet
+  # without an explicit target).
+  # ──────────────────────────────────────────────────────────────────────
+  build:
+    name: build binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: build api
+        run: CGO_ENABLED=0 go build -ldflags="-s -w" -o /tmp/api ./cmd
+
+      - name: build worker
+        run: CGO_ENABLED=0 go build -ldflags="-s -w" -o /tmp/worker ./cmd/worker
+
+      - name: build admin-bootstrap
+        run: CGO_ENABLED=0 go build -ldflags="-s -w" -o /tmp/admin-bootstrap ./cmd/admin-bootstrap
+
+      - name: report sizes
+        run: ls -lh /tmp/api /tmp/worker /tmp/admin-bootstrap
+
+  # ──────────────────────────────────────────────────────────────────────
+  # Docker image check. We don't push — just verify the multi-stage build
+  # still succeeds with the latest code. Both api and worker share one
+  # Dockerfile and pick the entrypoint via TARGET build-arg.
+  # GHA cache shaves ~3 min off subsequent builds.
+  # ──────────────────────────────────────────────────────────────────────
+  docker:
+    name: docker build
+    runs-on: ubuntu-latest
+    needs: [lint, test, build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: build api image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          build-args: TARGET=api
+          push: false
+          load: true
+          tags: convertpdfgo/api:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: build worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          build-args: TARGET=worker
+          push: false
+          load: true
+          tags: convertpdfgo/worker:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────────────────────
+  # govulncheck flags known CVEs in our dependencies. continue-on-error so
+  # a transient feed issue doesn't block merges, but the warning is still
+  # visible in the run summary.
+  # ──────────────────────────────────────────────────────────────────────
+  security:
+    name: vuln scan
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
