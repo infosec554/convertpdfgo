@@ -9,12 +9,14 @@
 *.key
 
 # =====================================================================
-# Build outputs
+# Build outputs.
+#
+# Earlier this section also listed `/api`, `/worker`, `/admin-bootstrap`
+# to catch root-level binaries. Those rules silently swallowed the
+# **source** dirs (api/, cmd/worker, cmd/admin-bootstrap) — git treats
+# `/api` as both a file *and* a path prefix. Build to `bin/` instead.
 # =====================================================================
 bin/
-/api
-/worker
-/admin-bootstrap
 
 # =====================================================================
 # Vendored deps (we use module cache, not vendor/) and Go work files

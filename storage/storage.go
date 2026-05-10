@@ -15,6 +15,7 @@ type IStorage interface {
 	Redis() IRedisStorage
 	AuthAudit() IAuthAuditStorage
 	Permission() IPermissionStorage
+	AdminStats() IAdminStatsStorage
 	Close()
 	Merge() IMergeStorage
 	File() IFileStorage
@@ -74,6 +75,22 @@ type IPermissionStorage interface {
 type IAuthAuditStorage interface {
 	Record(ctx context.Context, event models.AuthAudit) error
 	ListByUser(ctx context.Context, userID string, limit int) ([]models.AuthAudit, error)
+
+	// ListSuspicious returns emails that have at least minFails login_fail
+	// events in the last `withinMinutes`. Used by /admin/audit/suspicious.
+	ListSuspicious(ctx context.Context, withinMinutes, minFails int) ([]models.SuspiciousLogin, error)
+}
+
+// IAdminStatsStorage hosts dashboard aggregates that don't belong to any
+// single domain repo (cross-cutting counts).
+type IAdminStatsStorage interface {
+	// UsersByDay returns one row per day for the last `days` days, with
+	// the count of users registered on that day.
+	UsersByDay(ctx context.Context, days int) ([]models.DailyCount, error)
+
+	// TopUsersByDisk lists the heaviest disk consumers — joined with users
+	// to surface the email when available.
+	TopUsersByDisk(ctx context.Context, limit int) ([]models.TopUserDisk, error)
 }
 
 type IOTPStorage interface {

@@ -67,3 +67,52 @@ func (r *authAuditRepo) ListByUser(ctx context.Context, userID string, limit int
 	}
 	return out, nil
 }
+
+// ListSuspicious finds emails with `minFails`+ login_fail events in the
+// last `withinMinutes`. We aggregate IPs and the most-recent timestamp so
+// the admin can spot password-spray (one email, many IPs) vs. a single
+// confused user (one IP, many fails).
+func (r *authAuditRepo) ListSuspicious(ctx context.Context, withinMinutes, minFails int) ([]models.SuspiciousLogin, error) {
+	if withinMinutes <= 0 {
+		withinMinutes = 60
+	}
+	if minFails <= 0 {
+		minFails = 5
+	}
+	const q = `
+		SELECT
+			COALESCE(email, '')                       AS email,
+			MAX(user_id::text)                        AS user_id,
+			COUNT(*)                                  AS fails,
+			ARRAY_AGG(DISTINCT COALESCE(ip,''))       AS ips,
+			MAX(created_at)                           AS last_seen
+		FROM auth_audit
+		WHERE event = 'login_fail'
+		  AND created_at >= NOW() - ($1::int || ' minutes')::interval
+		  AND COALESCE(email, '') <> ''
+		GROUP BY email
+		HAVING COUNT(*) >= $2::int
+		ORDER BY fails DESC, last_seen DESC
+		LIMIT 100
+	`
+	rows, err := r.db.Query(ctx, q, withinMinutes, minFails)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []models.SuspiciousLogin
+	for rows.Next() {
+		var s models.SuspiciousLogin
+		var uid *string
+		if err := rows.Scan(&s.Email, &uid, &s.FailCount, &s.IPs, &s.LastSeen); err != nil {
+			r.log.Error("auth_audit: scan suspicious", logger.Error(err))
+			continue
+		}
+		if uid != nil && *uid != "" {
+			s.UserID = uid
+		}
+		out = append(out, s)
+	}
+	return out, nil
+}

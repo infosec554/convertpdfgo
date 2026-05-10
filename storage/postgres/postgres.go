@@ -122,6 +122,10 @@ func (s *Store) Permission() storage.IPermissionStorage {
 	return NewPermissionRepo(s.pool, s.log)
 }
 
+func (s *Store) AdminStats() storage.IAdminStatsStorage {
+	return NewAdminStatsRepo(s.pool, s.log)
+}
+
 func (s *Store) Redis() storage.IRedisStorage {
 	return s.redis
 }

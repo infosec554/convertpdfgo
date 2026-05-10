@@ -15,6 +15,7 @@ type IServiceManager interface {
 	SysUser() SysUserService
 	Mailer() MailerService
 	Audit() AuditService
+	AdminStats() AdminStatsService
 	Permission() PermissionService
 
 	File() FileService
@@ -53,6 +54,7 @@ type service struct {
 	sysUserService       SysUserService
 	mailer               MailerService
 	auditService         AuditService
+	adminStatsService    AdminStatsService
 	permissionService    PermissionService
 	mergeService         MergeService
 	fileService          FileService
@@ -91,6 +93,7 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		sysUserService:       NewSysUserService(storage, log),
 		mailer:               NewMailerService(mailerCore),
 		auditService:         NewAuditService(storage, log),
+		adminStatsService:    NewAdminStatsService(storage, log),
 		permissionService:    NewPermissionService(storage, redis, log),
 		mergeService:         NewMergeService(storage, log),
 		fileService:          NewFileService(storage, log),
@@ -143,6 +146,10 @@ func (s *service) Mailer() MailerService {
 
 func (s *service) Audit() AuditService {
 	return s.auditService
+}
+
+func (s *service) AdminStats() AdminStatsService {
+	return s.adminStatsService
 }
 
 func (s *service) Permission() PermissionService {

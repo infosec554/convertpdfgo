@@ -12,6 +12,7 @@ import (
 type AuditService interface {
 	Record(ctx context.Context, e models.AuthAudit)
 	ListByUser(ctx context.Context, userID string, limit int) ([]models.AuthAudit, error)
+	ListSuspicious(ctx context.Context, withinMinutes, minFails int) ([]models.SuspiciousLogin, error)
 }
 
 type auditService struct {
@@ -39,4 +40,8 @@ func (s *auditService) Record(ctx context.Context, e models.AuthAudit) {
 
 func (s *auditService) ListByUser(ctx context.Context, userID string, limit int) ([]models.AuthAudit, error) {
 	return s.stg.ListByUser(ctx, userID, limit)
+}
+
+func (s *auditService) ListSuspicious(ctx context.Context, withinMinutes, minFails int) ([]models.SuspiciousLogin, error) {
+	return s.stg.ListSuspicious(ctx, withinMinutes, minFails)
 }

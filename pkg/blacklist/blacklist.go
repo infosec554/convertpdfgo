@@ -38,3 +38,57 @@ func (b *Blacklist) IsRevoked(ctx context.Context, jti string) bool {
 	v, err := b.rs.Get(ctx, "revoked:"+jti)
 	return err == nil && v == "1"
 }
+
+// RevokeUser invalidates every token issued to the given user before `now`.
+// Used by admin "force logout" and password change. We store a Unix
+// timestamp; the auth middleware compares it against the token's iat
+// claim. TTL matches the longest possible refresh-token lifetime so the
+// gate stays in Redis as long as any old token could still be in flight.
+func (b *Blacklist) RevokeUser(ctx context.Context, userID string, ttl time.Duration) error {
+	if b == nil || b.rs == nil || userID == "" {
+		return nil
+	}
+	now := time.Now().Unix()
+	return b.rs.SetX(ctx, "user_revoked:"+userID, intToStr(now), ttl)
+}
+
+// UserRevokedAfter returns the Unix-second cut-off such that any token
+// issued before it must be rejected. Returns 0 when no entry exists.
+func (b *Blacklist) UserRevokedAfter(ctx context.Context, userID string) int64 {
+	if b == nil || b.rs == nil || userID == "" {
+		return 0
+	}
+	v, err := b.rs.Get(ctx, "user_revoked:"+userID)
+	if err != nil || v == "" {
+		return 0
+	}
+	return strToInt(v)
+}
+
+func intToStr(n int64) string {
+	// Avoid pulling strconv into the hot path's import set; this is
+	// monotonic so no negative case to worry about.
+	const digits = "0123456789"
+	if n == 0 {
+		return "0"
+	}
+	var b [20]byte
+	i := len(b)
+	for n > 0 {
+		i--
+		b[i] = digits[n%10]
+		n /= 10
+	}
+	return string(b[i:])
+}
+
+func strToInt(s string) int64 {
+	var n int64
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return 0
+		}
+		n = n*10 + int64(c-'0')
+	}
+	return n
+}
