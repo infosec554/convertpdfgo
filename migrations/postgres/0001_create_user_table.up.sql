@@ -305,14 +305,9 @@ CREATE TABLE pdf_to_word_jobs (
     ),
     created_at TIMESTAMP DEFAULT NOW()
 );
-CREATE TABLE word_to_pdf_jobs (
-    id UUID PRIMARY KEY,
-    user_id UUID REFERENCES users(id),
-    input_file_id UUID NOT NULL REFERENCES files(id),
-    output_file_id UUID REFERENCES files(id),
-    status VARCHAR(50) NOT NULL CHECK (status IN ('pending', 'processing', 'done', 'failed')),
-    created_at TIMESTAMP DEFAULT NOW()
-);
+-- word_to_pdf_jobs is created above (~line 149); the duplicate that used
+-- to live here caused 0001 to fail on second-run and leave the migration
+-- in a "dirty" state. Removed.
 CREATE TABLE excel_to_pdf_jobs (
     id UUID PRIMARY KEY,
     user_id UUID REFERENCES users(id),

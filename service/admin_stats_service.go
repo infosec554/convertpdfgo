@@ -12,6 +12,7 @@ import (
 type AdminStatsService interface {
 	UsersByDay(ctx context.Context, days int) ([]models.DailyCount, error)
 	TopUsersByDisk(ctx context.Context, limit int) ([]models.TopUserDisk, error)
+	UserBuckets(ctx context.Context) (map[string]int, error)
 }
 
 type adminStatsService struct {
@@ -29,4 +30,8 @@ func (s *adminStatsService) UsersByDay(ctx context.Context, days int) ([]models.
 
 func (s *adminStatsService) TopUsersByDisk(ctx context.Context, limit int) ([]models.TopUserDisk, error) {
 	return s.stg.TopUsersByDisk(ctx, limit)
+}
+
+func (s *adminStatsService) UserBuckets(ctx context.Context) (map[string]int, error) {
+	return s.stg.UserBuckets(ctx)
 }

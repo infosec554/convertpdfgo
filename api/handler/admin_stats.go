@@ -35,24 +35,22 @@ func (h Handler) StatsOverviewAdmin(c *gin.Context) {
 	handleResponse(c, h.log, "overview", http.StatusOK, out)
 }
 
-// statUserCounts returns rough buckets via three lightweight queries. We
-// reuse the existing List() with limit=1 just to get its `total` field —
-// no heavy per-bucket COUNT(*) on every dashboard load.
+// statUserCounts returns the dashboard's user-count summary in a single
+// SQL round-trip via FILTER aggregates. Replaces the previous
+// implementation that issued five User().List() calls — each of which
+// did its own SELECT + COUNT(*), so the admin overview was 10 queries
+// per refresh.
 func (h Handler) statUserCounts(ctx context.Context) gin.H {
-	count := func(role, status string) int {
-		_, total, err := h.services.User().List(ctx, modelsUserListFilter(role, status, 1, 0))
-		if err != nil {
-			return -1
-		}
-		return total
+	buckets, err := h.services.AdminStats().UserBuckets(ctx)
+	if err != nil {
+		h.log.Error("admin_stats: user buckets", logger.Error(err))
+		return gin.H{"error": err.Error()}
 	}
-	return gin.H{
-		"total":      count("", ""),
-		"active":     count("", "active"),
-		"blocked":    count("", "blocked"),
-		"admins":     count("admin", ""),
-		"moderators": count("moderator", ""),
+	out := gin.H{}
+	for k, v := range buckets {
+		out[k] = v
 	}
+	return out
 }
 
 // statQueueDepth asks Asynq for pending/active/retry counts so the admin

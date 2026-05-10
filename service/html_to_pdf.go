@@ -55,9 +55,6 @@ func (s *htmlToPDFService) Process(ctx context.Context, jobID string) error {
 	if err != nil {
 		return fmt.Errorf("get job: %w", err)
 	}
-	job.Status = "processing"
-	_ = s.stg.HTMLToPDF().Update(ctx, job)
-
 	// Hash the HTML content directly (no input file row).
 	h := sha256.Sum256([]byte(job.HTMLContent))
 	contentHash := hex.EncodeToString(h[:])

@@ -70,8 +70,6 @@ func (s *mergeService) Process(ctx context.Context, jobID string) error {
 	if err != nil {
 		return fmt.Errorf("get job: %w", err)
 	}
-	job.Status = "processing"
-	_ = s.stg.Update(ctx, job)
 
 	if len(job.InputFileIDs) < 2 {
 		s.markFailed(ctx, job)

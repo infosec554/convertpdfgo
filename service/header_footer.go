@@ -54,9 +54,6 @@ func (s *addHeaderFooterService) Process(ctx context.Context, jobID string) erro
 	if err != nil {
 		return fmt.Errorf("get job: %w", err)
 	}
-	job.Status = "processing"
-	_ = s.stg.AddHeaderFooter().Update(ctx, job)
-
 	file, err := s.stg.File().GetByID(ctx, job.InputFileID)
 	if err != nil {
 		s.markFailed(ctx, job)

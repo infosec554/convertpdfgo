@@ -113,6 +113,10 @@ services:
     ports:
       - "8080:8080"
     environment:
+      # Only the API runs migrations. Worker shares the DB but must NOT
+      # call migrate.Up() — otherwise both racing on schema_migrations
+      # leaves it dirty (we hit this on the very first deploy).
+      RUN_MIGRATIONS: "true"
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_USER: postgres

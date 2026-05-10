@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -70,22 +71,31 @@ func New(ctx context.Context, cfg config.Config, log logger.ILogger, redis stora
 		return nil, err
 	}
 
-	absPath, err := filepath.Abs("migrations/postgres")
-	if err != nil {
-		log.Error("failed to get absolute path for migrations", logger.Error(err))
-		return nil, err
+	// Migrations should run on the API service only. Worker (and any other
+	// process that shares the DB) skips this entirely so two boots can't
+	// race on the schema_migrations row and leave it in a "dirty" state —
+	// a real bug we hit during the first deploy.
+	//
+	// Set RUN_MIGRATIONS=true in the API container's env. Default off.
+	if os.Getenv("RUN_MIGRATIONS") == "true" {
+		absPath, err := filepath.Abs("migrations/postgres")
+		if err != nil {
+			log.Error("failed to get absolute path for migrations", logger.Error(err))
+			return nil, err
+		}
+		m, err := migrate.New("file://"+absPath, url)
+		if err != nil {
+			log.Error("migration error", logger.Error(err))
+			return nil, err
+		}
+		if err = m.Up(); err != nil && !strings.Contains(err.Error(), "no change") {
+			log.Error("migration up error", logger.Error(err))
+			return nil, err
+		}
+		log.Info("postgres connected and migrated")
+	} else {
+		log.Info("postgres connected (migrations skipped — set RUN_MIGRATIONS=true on api service)")
 	}
-	m, err := migrate.New("file://"+absPath, url)
-	if err != nil {
-		log.Error("migration error", logger.Error(err))
-		return nil, err
-	}
-	if err = m.Up(); err != nil && !strings.Contains(err.Error(), "no change") {
-		log.Error("migration up error", logger.Error(err))
-		return nil, err
-	}
-
-	log.Info("postgres connected and migrated")
 
 	return &Store{
 		pool:  pool,

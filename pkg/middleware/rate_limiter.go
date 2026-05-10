@@ -9,7 +9,10 @@ import (
 	"golang.org/x/time/rate"
 )
 
-const (
+// rate.Every is a function call so it can't sit in a const block under
+// Go's "constant expressions only" rule. Keep these as package-level vars
+// (they're effectively immutable at runtime).
+var (
 	rateLimit       = rate.Every(1 * time.Second)
 	burst           = 3
 	visitorTTL      = 10 * time.Minute

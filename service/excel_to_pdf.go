@@ -52,9 +52,6 @@ func (s *excelToPDFService) Process(ctx context.Context, jobID string) error {
 	if err != nil {
 		return fmt.Errorf("get job: %w", err)
 	}
-	job.Status = "processing"
-	_ = s.stg.ExcelToPDF().Update(ctx, job)
-
 	file, err := s.stg.File().GetByID(ctx, job.InputFileID)
 	if err != nil {
 		s.markFailed(ctx, job)

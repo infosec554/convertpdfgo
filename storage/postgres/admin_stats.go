@@ -62,6 +62,33 @@ func (r *adminStatsRepo) UsersByDay(ctx context.Context, days int) ([]models.Dai
 	return out, nil
 }
 
+// UserBuckets aggregates the five summary counters in a single round-trip.
+// Replaces the previous handler that issued FIVE User.List() calls (10 SQL
+// queries — each List does a SELECT + COUNT(*)). One scan, FILTER does the
+// rest.
+func (r *adminStatsRepo) UserBuckets(ctx context.Context) (map[string]int, error) {
+	const q = `
+		SELECT
+			COUNT(*)                                                AS total,
+			COUNT(*) FILTER (WHERE status = 'active')               AS active,
+			COUNT(*) FILTER (WHERE status = 'blocked')              AS blocked,
+			COUNT(*) FILTER (WHERE role   = 'admin')                AS admins,
+			COUNT(*) FILTER (WHERE role   = 'moderator')            AS moderators
+		FROM users
+	`
+	var total, active, blocked, admins, moderators int
+	if err := r.db.QueryRow(ctx, q).Scan(&total, &active, &blocked, &admins, &moderators); err != nil {
+		return nil, err
+	}
+	return map[string]int{
+		"total":      total,
+		"active":     active,
+		"blocked":    blocked,
+		"admins":     admins,
+		"moderators": moderators,
+	}, nil
+}
+
 // TopUsersByDisk — left join so anonymous (guest) uploads still show up
 // with email = ''. Limit hard-capped at 200 to keep the response small.
 func (r *adminStatsRepo) TopUsersByDisk(ctx context.Context, limit int) ([]models.TopUserDisk, error) {

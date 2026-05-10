@@ -91,6 +91,11 @@ type IAdminStatsStorage interface {
 	// TopUsersByDisk lists the heaviest disk consumers — joined with users
 	// to surface the email when available.
 	TopUsersByDisk(ctx context.Context, limit int) ([]models.TopUserDisk, error)
+
+	// UserBuckets returns the dashboard's user-count summary in a single
+	// query (FILTER aggregates), replacing five separate User().List()
+	// calls. Keys: total, active, blocked, admins, moderators.
+	UserBuckets(ctx context.Context) (map[string]int, error)
 }
 
 type IOTPStorage interface {
