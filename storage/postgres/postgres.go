@@ -233,3 +233,23 @@ func (s *Store) PowerPointToPDF() storage.IPowerPointToPDFStorage {
 func (s *Store) HTMLToPDF() storage.IHTMLToPDFStorage {
 	return NewHTMLToPDFRepo(s.pool, s.log)
 }
+
+func (s *Store) Watermark() storage.IWatermarkStorage {
+	return NewWatermarkRepo(s.pool, s.log)
+}
+
+func (s *Store) ExtractText() storage.IExtractTextStorage {
+	return NewExtractTextRepo(s.pool, s.log)
+}
+
+func (s *Store) NUp() storage.INUpStorage {
+	return NewNUpRepo(s.pool, s.log)
+}
+
+func (s *Store) URLToPDF() storage.IURLToPDFStorage {
+	return NewURLToPDFRepo(s.pool, s.log)
+}
+
+func (s *Store) Metadata() storage.IMetadataStorage {
+	return NewMetadataRepo(s.pool, s.log)
+}

@@ -173,6 +173,19 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 		pdf.POST("/html-to-pdf", h.CreateHTMLToPDF)
 		pdf.GET("/html-to-pdf/:id", h.GetHTMLToPDFJob)
 
+		// 5h. Phase 1 features (PDF_FEATURES.md): watermark, extract-text,
+		// n-up, url-to-pdf, metadata.
+		pdf.POST("/watermark", h.CreateWatermarkJob)
+		pdf.GET("/watermark/:id", h.GetWatermarkJob)
+		pdf.POST("/extract-text", h.CreateExtractTextJob)
+		pdf.GET("/extract-text/:id", h.GetExtractTextJob)
+		pdf.POST("/nup", h.CreateNUpJob)
+		pdf.GET("/nup/:id", h.GetNUpJob)
+		pdf.POST("/url-to-pdf", h.CreateURLToPDFJob)
+		pdf.GET("/url-to-pdf/:id", h.GetURLToPDFJob)
+		pdf.POST("/metadata", h.CreateMetadataJob)
+		pdf.GET("/metadata/:id", h.GetMetadataJob)
+
 		// 5g. Sharing (public link with a token, no auth on GET).
 		pdf.POST("/share", h.CreateSharedLink)
 		pdf.GET("/share/:token", h.GetSharedLink)

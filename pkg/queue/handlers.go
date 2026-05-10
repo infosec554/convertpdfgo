@@ -45,6 +45,13 @@ func (h *Handlers) Register(mux *asynq.ServeMux) {
 	mux.HandleFunc(TaskQRCode, h.runByID("qr_code", func(ctx context.Context, id string) error { return h.services.QRCode().Process(ctx, id) }))
 	mux.HandleFunc(TaskDetectBlank, h.runByID("detect_blank", func(ctx context.Context, id string) error { return h.services.DetectBlank().Process(ctx, id) }))
 
+	// Phase 1 features.
+	mux.HandleFunc(TaskWatermark, h.runByID("watermark", func(ctx context.Context, id string) error { return h.services.Watermark().Process(ctx, id) }))
+	mux.HandleFunc(TaskExtractText, h.runByID("extract_text", func(ctx context.Context, id string) error { return h.services.ExtractText().Process(ctx, id) }))
+	mux.HandleFunc(TaskNUp, h.runByID("nup", func(ctx context.Context, id string) error { return h.services.NUp().Process(ctx, id) }))
+	mux.HandleFunc(TaskURLToPDF, h.runByID("url_to_pdf", func(ctx context.Context, id string) error { return h.services.URLToPDF().Process(ctx, id) }))
+	mux.HandleFunc(TaskMetadata, h.runByID("metadata", func(ctx context.Context, id string) error { return h.services.Metadata().Process(ctx, id) }))
+
 	// Unlock needs the password from the task payload — handled separately.
 	mux.HandleFunc(TaskUnlock, h.handleUnlock)
 }

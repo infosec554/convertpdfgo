@@ -45,6 +45,13 @@ type IServiceManager interface {
 	ExcelToPDF() ExcelToPDFService
 	PowerPointToPDF() PowerPointToPDFService
 	HTMLToPDF() HTMLToPDFService
+
+	// Phase 1 features.
+	Watermark() WatermarkService
+	ExtractText() ExtractTextService
+	NUp() NUpService
+	URLToPDF() URLToPDFService
+	Metadata() MetadataService
 }
 
 type service struct {
@@ -82,6 +89,12 @@ type service struct {
 	excelToPDF             ExcelToPDFService
 	powerPointToPDF        PowerPointToPDFService
 	hTMLToPDF              HTMLToPDFService
+
+	watermarkService   WatermarkService
+	extractTextService ExtractTextService
+	nupService         NUpService
+	urlToPDFService    URLToPDFService
+	metadataService    MetadataService
 }
 
 func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client) IServiceManager {
@@ -121,6 +134,12 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		excelToPDF:             NewExcelToPDFService(storage, log, gotClient, resultCache),
 		powerPointToPDF:        NewPowerPointToPDFService(storage, log, gotClient, resultCache),
 		hTMLToPDF:              NewHTMLToPDFService(storage, log, gotClient, resultCache),
+
+		watermarkService:   NewWatermarkService(storage, log),
+		extractTextService: NewExtractTextService(storage, log),
+		nupService:         NewNUpService(storage, log),
+		urlToPDFService:    NewURLToPDFService(storage, log, gotClient),
+		metadataService:    NewMetadataService(storage, log),
 	}
 }
 
@@ -254,3 +273,9 @@ func (s *service) PowerPointToPDF() PowerPointToPDFService {
 func (s *service) HTMLToPDF() HTMLToPDFService {
 	return s.hTMLToPDF
 }
+
+func (s *service) Watermark() WatermarkService     { return s.watermarkService }
+func (s *service) ExtractText() ExtractTextService { return s.extractTextService }
+func (s *service) NUp() NUpService                 { return s.nupService }
+func (s *service) URLToPDF() URLToPDFService       { return s.urlToPDFService }
+func (s *service) Metadata() MetadataService       { return s.metadataService }

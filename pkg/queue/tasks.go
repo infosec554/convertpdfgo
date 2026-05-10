@@ -30,6 +30,13 @@ const (
 	TaskQRCode          = "pdf:qr_code"
 	TaskInspect         = "pdf:inspect"
 	TaskDetectBlank     = "pdf:detect_blank"
+
+	// Phase 1 features.
+	TaskWatermark   = "pdf:watermark"
+	TaskExtractText = "pdf:extract_text"
+	TaskNUp         = "pdf:nup"
+	TaskURLToPDF    = "pdf:url_to_pdf"
+	TaskMetadata    = "pdf:metadata"
 )
 
 // MergePayload carries data needed to process a merge job in the worker.

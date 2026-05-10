@@ -45,6 +45,14 @@ type IStorage interface {
 	ExcelToPDF() IExcelToPDFStorage
 	PowerPointToPDF() IPowerPointToPDFStorage
 	HTMLToPDF() IHTMLToPDFStorage
+
+	// Phase 1 features (PDF_FEATURES.md): watermark, extract-text, n-up,
+	// url-to-pdf, metadata.
+	Watermark() IWatermarkStorage
+	ExtractText() IExtractTextStorage
+	NUp() INUpStorage
+	URLToPDF() IURLToPDFStorage
+	Metadata() IMetadataStorage
 }
 
 type IUserStorage interface {
@@ -300,4 +308,34 @@ type IHTMLToPDFStorage interface {
 	Create(ctx context.Context, job *models.HTMLToPDFJob) error
 	GetByID(ctx context.Context, id string) (*models.HTMLToPDFJob, error)
 	Update(ctx context.Context, job *models.HTMLToPDFJob) error
+}
+
+type IWatermarkStorage interface {
+	Create(ctx context.Context, job *models.WatermarkJob) error
+	GetByID(ctx context.Context, id string) (*models.WatermarkJob, error)
+	Update(ctx context.Context, job *models.WatermarkJob) error
+}
+
+type IExtractTextStorage interface {
+	Create(ctx context.Context, job *models.ExtractTextJob) error
+	GetByID(ctx context.Context, id string) (*models.ExtractTextJob, error)
+	Update(ctx context.Context, job *models.ExtractTextJob) error
+}
+
+type INUpStorage interface {
+	Create(ctx context.Context, job *models.NUpJob) error
+	GetByID(ctx context.Context, id string) (*models.NUpJob, error)
+	Update(ctx context.Context, job *models.NUpJob) error
+}
+
+type IURLToPDFStorage interface {
+	Create(ctx context.Context, job *models.URLToPDFJob) error
+	GetByID(ctx context.Context, id string) (*models.URLToPDFJob, error)
+	Update(ctx context.Context, job *models.URLToPDFJob) error
+}
+
+type IMetadataStorage interface {
+	Create(ctx context.Context, job *models.MetadataJob) error
+	GetByID(ctx context.Context, id string) (*models.MetadataJob, error)
+	Update(ctx context.Context, job *models.MetadataJob) error
 }
