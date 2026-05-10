@@ -21,9 +21,9 @@ func NewInspectRepo(db *pgxpool.Pool, log logger.ILogger) storage.IInspectStorag
 
 func (r *inspectRepo) Create(ctx context.Context, job *models.InspectJob) error {
 	_, err := r.db.Exec(ctx, `
-		INSERT INTO pdf_inspect_jobs 
+		INSERT INTO pdf_inspect_jobs
 		(id, user_id, file_id, page_count, title, author, subject, keywords, status, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+		VALUES ($1, NULLIF($2,'')::uuid, $3, $4, $5, $6, $7, $8, $9, $10)
 	`,
 		job.ID, job.UserID, job.FileID,
 		job.PageCount, job.Title, job.Author, job.Subject, job.Keywords,
@@ -34,7 +34,7 @@ func (r *inspectRepo) Create(ctx context.Context, job *models.InspectJob) error 
 
 func (r *inspectRepo) GetByID(ctx context.Context, id string) (*models.InspectJob, error) {
 	row := r.db.QueryRow(ctx, `
-		SELECT id, user_id, file_id, page_count, title, author, subject, keywords, status, created_at
+		SELECT id, COALESCE(user_id::text,''), file_id, page_count, title, author, subject, keywords, status, created_at
 		FROM pdf_inspect_jobs WHERE id = $1
 	`, id)
 

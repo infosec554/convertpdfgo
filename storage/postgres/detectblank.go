@@ -23,7 +23,7 @@ func NewDetectBlankPagesRepo(db *pgxpool.Pool, log logger.ILogger) storage.IDete
 func (r *detectBlankPagesRepo) Create(ctx context.Context, job *models.DetectBlankPagesJob) error {
 	query := `
 		INSERT INTO detect_blank_pages_jobs (id, user_id, input_file_id, blank_pages, status, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		VALUES ($1, NULLIF($2,'')::uuid, $3, $4, $5, $6)
 	`
 
 	_, err := r.db.Exec(ctx, query,
@@ -64,7 +64,7 @@ func (r *detectBlankPagesRepo) Update(ctx context.Context, job *models.DetectBla
 
 func (r *detectBlankPagesRepo) GetByID(ctx context.Context, id string) (*models.DetectBlankPagesJob, error) {
 	query := `
-		SELECT id, user_id, input_file_id, blank_pages, status, created_at
+		SELECT id, COALESCE(user_id::text,''), input_file_id, blank_pages, status, created_at
 		FROM detect_blank_pages_jobs
 		WHERE id = $1
 	`

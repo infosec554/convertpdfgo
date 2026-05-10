@@ -27,11 +27,7 @@ func (h Handler) CreateQRCodeJob(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id")
-	if userID == "" {
-		handleResponse(c, h.log, "unauthorized", http.StatusUnauthorized, "user_id required")
-		return
-	}
+	userID := c.GetString("user_id") // empty for guests; storage swaps "" → NULL.
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()

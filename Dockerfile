@@ -24,12 +24,16 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # === Runtime stage ===
 FROM alpine:3.19
 
-# pdfcpu is bundled at build time (Go binary), but rotate/crop/unlock/protect
-# services shell out to the `pdfcpu` CLI; ship it here, plus poppler for
-# pdftoppm (PDF→JPG service).
-RUN apk add --no-cache ca-certificates tzdata poppler-utils && \
-    wget -q -O /usr/local/bin/pdfcpu https://github.com/pdfcpu/pdfcpu/releases/download/v0.11.0/pdfcpu_0.11.0_Linux_x86_64.tar.xz || \
-    echo "(install pdfcpu manually if needed)"
+# pdfcpu is bundled at build time (Go binary) for the services that use
+# its library API, but rotate/crop/unlock/protect/header-footer shell out
+# to the `pdfcpu` CLI — install it from the release tarball. poppler-utils
+# brings pdftoppm (PDF→JPG) and pdftotext (extract-text).
+RUN apk add --no-cache ca-certificates tzdata poppler-utils xz && \
+    wget -qO- https://github.com/pdfcpu/pdfcpu/releases/download/v0.11.0/pdfcpu_0.11.0_Linux_x86_64.tar.xz \
+        | tar -xJf- -C /tmp && \
+    install -m 0755 /tmp/pdfcpu_0.11.0_Linux_x86_64/pdfcpu /usr/local/bin/pdfcpu && \
+    rm -rf /tmp/pdfcpu_0.11.0_Linux_x86_64 && \
+    pdfcpu version
 
 WORKDIR /app
 COPY --from=builder /out/app /app/app

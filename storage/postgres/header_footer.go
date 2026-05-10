@@ -24,7 +24,7 @@ func (r *addHeaderFooterRepo) Create(ctx context.Context, job *models.AddHeaderF
 	query := `
 		INSERT INTO add_header_footer_jobs (
 			id, user_id, input_file_id, header_text, footer_text, font_size, font_color, position, status, created_at
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+		) VALUES ($1,NULLIF($2,'')::uuid,$3,$4,$5,$6,$7,$8,$9,$10)
 	`
 
 	_, err := r.db.Exec(ctx, query,
@@ -63,7 +63,7 @@ func (r *addHeaderFooterRepo) GetByID(ctx context.Context, id string) (*models.A
 	var job models.AddHeaderFooterJob
 
 	query := `
-		SELECT id, user_id, input_file_id, header_text, footer_text, font_size, font_color, position,
+		SELECT id, COALESCE(user_id::text,''), input_file_id, header_text, footer_text, font_size, font_color, position,
 		       output_file_id, status, created_at
 		FROM add_header_footer_jobs
 		WHERE id = $1

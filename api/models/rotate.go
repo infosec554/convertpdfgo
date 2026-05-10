@@ -6,7 +6,7 @@ import "time"
 type RotatePDFRequest struct {
 	InputFileID string `json:"input_file_id" binding:"required"`
 	Angle       int    `json:"angle" binding:"required"` // Burchak: 90, 180, 270
-	Pages       string `json:"pages" binding:"required"` // Sahifa raqamlari masalan: "1-3", "2", "odd"
+	Pages       string `json:"pages"`                    // Sahifa raqamlari masalan: "1-3","2","odd"; bo'sh = "all"
 }
 
 // RotateJob - Burilish jarayoni haqida ma'lumot
