@@ -107,7 +107,7 @@ func (f *fileRepo) GetOldFiles(ctx context.Context, olderThanDays int) ([]models
 	query := `
 		SELECT id, file_path
 		FROM files
-		WHERE uploaded_at < NOW() - ($1 || ' days')::INTERVAL
+		WHERE uploaded_at < NOW() - ($1::int || ' days')::INTERVAL
 	`
 	rows, err := f.db.Query(ctx, query, olderThanDays)
 	if err != nil {
