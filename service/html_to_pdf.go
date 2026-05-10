@@ -61,9 +61,12 @@ func (s *htmlToPDFService) Process(ctx context.Context, jobID string) error {
 
 	cacheKey := cache.ConvertKey("html_to_pdf", contentHash)
 	if existingID, cerr := s.cache.Get(ctx, "html_to_pdf", cacheKey); cerr == nil {
-		job.OutputFileID = &existingID
-		job.Status = "done"
-		return s.stg.HTMLToPDF().Update(ctx, job)
+		if _, gerr := s.stg.File().GetByID(ctx, existingID); gerr == nil {
+			job.OutputFileID = &existingID
+			job.Status = "done"
+			return s.stg.HTMLToPDF().Update(ctx, job)
+		}
+		// stale cache → regenerate below
 	} else if !errors.Is(cerr, cache.ErrMiss) {
 		s.log.Error("html_to_pdf: cache lookup", logger.Error(cerr))
 	}

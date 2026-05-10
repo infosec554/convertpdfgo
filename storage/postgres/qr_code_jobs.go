@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -48,13 +49,19 @@ func (r *qrCodeRepo) GetByID(ctx context.Context, id string) (*models.QRCodeJob,
 		FROM qr_code_jobs
 		WHERE id = $1
 	`
-	var job models.QRCodeJob
+	var (
+		job          models.QRCodeJob
+		outputFileID sql.NullString
+	)
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&job.ID, &job.UserID, &job.InputFileID, &job.QRContent, &job.Position, &job.Size,
-		&job.OutputFileID, &job.Status, &job.CreatedAt,
+		&outputFileID, &job.Status, &job.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
+	}
+	if outputFileID.Valid {
+		job.OutputFileID = outputFileID.String
 	}
 	return &job, nil
 }

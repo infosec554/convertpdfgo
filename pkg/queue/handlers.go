@@ -44,6 +44,8 @@ func (h *Handlers) Register(mux *asynq.ServeMux) {
 	mux.HandleFunc(TaskHTMLToPDF, h.runByID("html_to_pdf", func(ctx context.Context, id string) error { return h.services.HTMLToPDF().Process(ctx, id) }))
 	mux.HandleFunc(TaskQRCode, h.runByID("qr_code", func(ctx context.Context, id string) error { return h.services.QRCode().Process(ctx, id) }))
 	mux.HandleFunc(TaskDetectBlank, h.runByID("detect_blank", func(ctx context.Context, id string) error { return h.services.DetectBlank().Process(ctx, id) }))
+	// NOTE: inspect runs synchronously inside handler.CreateInspectJob —
+	// no enqueue happens, so no worker handler is needed for TaskInspect.
 
 	// Phase 1 features.
 	mux.HandleFunc(TaskWatermark, h.runByID("watermark", func(ctx context.Context, id string) error { return h.services.Watermark().Process(ctx, id) }))

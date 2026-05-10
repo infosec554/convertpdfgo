@@ -67,17 +67,20 @@ func (s *addPageNumberService) Process(ctx context.Context, jobID string) error 
 		return fmt.Errorf("mkdir: %w", err)
 	}
 
-	args := []string{
-		"stamp", "add",
-		"-mode", "text",
-		"-pages", job.PageRange,
+	// pdfcpu CLI's -pages flag wants page numbers / ranges only — "all"
+	// makes it Atoi-fail. Drop the flag when the user means "every page".
+	args := []string{"stamp", "add", "-mode", "text"}
+	if pr := job.PageRange; pr != "" && pr != "all" {
+		args = append(args, "-pages", pr)
+	}
+	args = append(args,
 		"--",
 		"Page %p of %P",
 		fmt.Sprintf("scale:1.0 abs, pos:%s, rot:0, fillcolor:%s, fontname:Helvetica, points:%d",
 			job.Position, job.Color, job.FontSize),
 		file.FilePath,
 		outputPath,
-	}
+	)
 
 	cmd := exec.CommandContext(ctx, "pdfcpu", args...)
 	if out, err := cmd.CombinedOutput(); err != nil {

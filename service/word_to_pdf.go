@@ -63,9 +63,12 @@ func (s *wordToPDFService) Process(ctx context.Context, jobID string) error {
 	if file.SHA256 != nil {
 		key := cache.ConvertKey("word_to_pdf", *file.SHA256)
 		if existingID, cerr := s.cache.Get(ctx, "word_to_pdf", key); cerr == nil {
-			job.OutputFileID = &existingID
-			job.Status = "done"
-			return s.stg.WordToPDF().Update(ctx, job)
+			if _, gerr := s.stg.File().GetByID(ctx, existingID); gerr == nil {
+				job.OutputFileID = &existingID
+				job.Status = "done"
+				return s.stg.WordToPDF().Update(ctx, job)
+			}
+			// stale cache → regenerate below
 		} else if !errors.Is(cerr, cache.ErrMiss) {
 			s.log.Error("word_to_pdf: cache lookup", logger.Error(cerr))
 		}

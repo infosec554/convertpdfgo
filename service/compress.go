@@ -68,12 +68,17 @@ func (s *compressService) Process(ctx context.Context, jobID string) error {
 	}
 
 	// Result cache lookup: identical (sha, level) ⇒ reuse the previous output.
+	// Verify the cached file still exists — the privacy cleaner deletes
+	// outputs after 5 min, so a hit can point at a row that's already gone.
 	if file.SHA256 != nil {
 		key := cache.CompressKey(*file.SHA256, string(job.CompressionLevel))
 		if existingID, cerr := s.cache.Get(ctx, "compress", key); cerr == nil {
-			job.OutputFileID = &existingID
-			job.Status = models.Done
-			return s.stg.Compress().Update(ctx, job)
+			if _, gerr := s.stg.File().GetByID(ctx, existingID); gerr == nil {
+				job.OutputFileID = &existingID
+				job.Status = models.Done
+				return s.stg.Compress().Update(ctx, job)
+			}
+			// stale cache → fall through and regenerate
 		} else if !errors.Is(cerr, cache.ErrMiss) {
 			s.log.Error("compress: cache lookup", logger.Error(cerr))
 		}

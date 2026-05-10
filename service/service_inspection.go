@@ -60,7 +60,7 @@ func (s *inspectService) Create(ctx context.Context, fileID, userID string) (str
 		Subject:   ctxPDF.Subject,
 		Keywords:  ctxPDF.Keywords,
 		Status:    "done",
-		CreatedAt: time.Now().Format(time.RFC3339),
+		CreatedAt: time.Now(),
 	}
 
 	// 5. Bazaga yozish

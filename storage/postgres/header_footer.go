@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -69,6 +70,7 @@ func (r *addHeaderFooterRepo) GetByID(ctx context.Context, id string) (*models.A
 		WHERE id = $1
 	`
 
+	var outputFileID sql.NullString
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&job.ID,
 		&job.UserID,
@@ -78,13 +80,16 @@ func (r *addHeaderFooterRepo) GetByID(ctx context.Context, id string) (*models.A
 		&job.FontSize,
 		&job.FontColor,
 		&job.Position,
-		&job.OutputFileID,
+		&outputFileID,
 		&job.Status,
 		&job.CreatedAt,
 	)
 
 	if err != nil {
 		return nil, fmt.Errorf("get header/footer job by id: %w", err)
+	}
+	if outputFileID.Valid {
+		job.OutputFileID = outputFileID.String
 	}
 
 	return &job, nil
