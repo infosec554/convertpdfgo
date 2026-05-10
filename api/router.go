@@ -34,7 +34,11 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.CORS(middleware.DefaultCORS()))
 	// 3. Hard ceiling on body size — guards memory before multipart parser.
-	r.Use(middleware.BodyLimit(50 << 20)) // 50 MiB
+	// Hard ceiling slightly above the per-handler upload cap (registered =
+	// 100 MB) so the multipart parser doesn't keep reading past the point
+	// where the upload handler will reject anyway. Headroom is for
+	// multipart boundaries / form fields.
+	r.Use(middleware.BodyLimit(110 << 20)) // 110 MiB
 	// 4. gzip after body cap; skip when serving file downloads.
 	r.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".pdf", ".docx", ".xlsx", ".pptx", ".jpg", ".jpeg", ".png", ".zip"})))
 	// 5. Metrics observes the route template, so it must run after Gin

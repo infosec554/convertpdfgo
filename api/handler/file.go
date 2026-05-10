@@ -46,14 +46,31 @@ func (h Handler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	const guestMaxSize = 20 * 1024 * 1024
-	const registeredMaxSize = 30 * 1024 * 1024
+	// Tiered upload caps:
+	//   * Guests get 30 MB so most one-shot conversions just work.
+	//   * Registered users get 100 MB. Anything over is a sign-in nudge,
+	//     not a hard refusal — clients can show a "Register to upload
+	//     larger files" CTA rather than a generic 400.
+	//
+	// The router-level BodyLimit middleware caps the request size
+	// somewhat above this so the multipart parser doesn't waste memory.
+	const (
+		guestMaxSize      = 30 * 1024 * 1024  // 30 MB
+		registeredMaxSize = 100 * 1024 * 1024 // 100 MB
+	)
 	if ptrUserID == nil && fileHeader.Size > guestMaxSize {
-		handleResponse(c, h.log, "Guests can upload files up to 20MB only", http.StatusBadRequest, nil)
+		handleResponse(c, h.log, "Register to upload files larger than 30 MB", http.StatusUnauthorized, gin.H{
+			"limit_bytes":  guestMaxSize,
+			"file_size":    fileHeader.Size,
+			"sign_up_path": "/auth/register",
+		})
 		return
 	}
 	if ptrUserID != nil && fileHeader.Size > registeredMaxSize {
-		handleResponse(c, h.log, "Registered users can upload files up to 30MB only", http.StatusBadRequest, nil)
+		handleResponse(c, h.log, "File exceeds your 100 MB account limit", http.StatusBadRequest, gin.H{
+			"limit_bytes": registeredMaxSize,
+			"file_size":   fileHeader.Size,
+		})
 		return
 	}
 
