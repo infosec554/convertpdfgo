@@ -1,22 +1,20 @@
 # syntax=docker/dockerfile:1.6
 
 # === Build stage ===
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /src
 
 # Cache modules separately so re-builds don't redownload everything when
-# only application code changes.
+# only application code changes. We tidy + build in one step so go.sum
+# updates from new deps land in the cache.
 COPY go.mod go.sum ./
-RUN --mount=type=cache,target=/root/.cache/go-build \
-    --mount=type=cache,target=/go/pkg/mod \
-    go mod download
-
 COPY . .
 
 ARG TARGET=api
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
+    go mod tidy && \
     case "$TARGET" in \
       api)    CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/app ./cmd ;; \
       worker) CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/app ./cmd/worker ;; \

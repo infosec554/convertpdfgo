@@ -3,11 +3,38 @@
 .idea
 .vscode
 *.md
-storage/
+
+# Runtime data only — keep storage/postgres + storage/redis (source code) in.
+storage/uploads/
+storage/files/
+storage/compress/
+storage/extract_text/
+storage/header_footer/
+storage/html_to_pdf/
+storage/jpgtopdf/
+storage/merge/
+storage/metadata/
+storage/nup/
+storage/pdf_to_jpg/
+storage/pdf_to_word/
+storage/protect/
+storage/qr_code/
+storage/rotate/
+storage/split/
+storage/url_to_pdf/
+storage/watermark/
+storage/word_to_pdf/
+storage/excel_to_pdf/
+storage/powerpoint_to_pdf/
+
 uploads/
 tmp/
 bin/
-api/docs/
+
+# Generated swagger — re-generated at build via `swag init` on demand;
+# keep the package in source so imports resolve.
+api/docs/docs.go.bak
+
 *.log
 .env
 .env.local
