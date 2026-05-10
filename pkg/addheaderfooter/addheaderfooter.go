@@ -20,8 +20,11 @@ type AddHeaderFooterParams struct {
 func AddHeaderFooterPDF(params AddHeaderFooterParams) error {
 	conf := model.NewDefaultConfiguration()
 
+	// pdfcpu's anchor codes: tl|tc|tr|c|bl|bc|br. The "top center" / "bottom
+	// center" English form was rejected by ParseTextWatermarkDetails — switch
+	// to the abbreviation pdfcpu actually accepts.
 	if params.HeaderText != "" {
-		wm, err := pdfcpu.ParseTextWatermarkDetails(params.HeaderText, "pos:top center, font:Helvetica, points:12", true, model.NewDefaultConfiguration().Unit)
+		wm, err := pdfcpu.ParseTextWatermarkDetails(params.HeaderText, "pos:tc, font:Helvetica, points:12", true, model.NewDefaultConfiguration().Unit)
 		if err != nil {
 			return fmt.Errorf("failed to parse header watermark: %w", err)
 		}
@@ -33,7 +36,7 @@ func AddHeaderFooterPDF(params AddHeaderFooterParams) error {
 	}
 
 	if params.FooterText != "" {
-		wm, err := pdfcpu.ParseTextWatermarkDetails(params.FooterText, "pos:bottom center, font:Helvetica, points:12", true, model.NewDefaultConfiguration().Unit)
+		wm, err := pdfcpu.ParseTextWatermarkDetails(params.FooterText, "pos:bc, font:Helvetica, points:12", true, model.NewDefaultConfiguration().Unit)
 		if err != nil {
 			return fmt.Errorf("failed to parse footer watermark: %w", err)
 		}

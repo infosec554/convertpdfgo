@@ -26,8 +26,15 @@ func (f *fileRepo) Save(ctx context.Context, file models.File) (string, error) {
 		INSERT INTO files (id, user_id, file_name, file_path, file_type, file_size, sha256, uploaded_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 	`
+	// Defensively coerce empty *string into nil so callers that hand us a
+	// pointer to "" (the qr-code / header-footer pattern of `uid := job.UserID; UserID: &uid`)
+	// don't blow up against the UUID column.
+	var userID interface{}
+	if file.UserID != nil && *file.UserID != "" {
+		userID = *file.UserID
+	}
 	_, err := f.db.Exec(ctx, query,
-		file.ID, file.UserID, file.FileName, file.FilePath,
+		file.ID, userID, file.FileName, file.FilePath,
 		file.FileType, file.FileSize, file.SHA256, file.UploadedAt)
 	if err != nil {
 		f.log.Error("DB insert error", logger.Error(err))

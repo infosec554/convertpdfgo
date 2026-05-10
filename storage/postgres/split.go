@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -60,35 +59,32 @@ func (r *splitRepo) Create(ctx context.Context, job *models.SplitJob) error {
 	return err
 }
 
-// TO‘G‘RI variant:
+// output_file_ids is a UUID[] in postgres, not jsonb — scan it as a text[]
+// (cast on read) so pgx-v5 can decode it into a []string.
 func (r *splitRepo) GetByID(ctx context.Context, id string) (*models.SplitJob, error) {
 	var job models.SplitJob
-	var outputIDs []byte
 
-	query := `
-	SELECT id, user_id, input_file_id, split_ranges, output_file_ids, status, created_at
-	FROM split_jobs
-	WHERE id = $1
-`
+	const query = `
+		SELECT id, user_id, input_file_id, split_ranges,
+		       COALESCE(output_file_ids, ARRAY[]::uuid[])::text[],
+		       status, created_at
+		FROM split_jobs
+		WHERE id = $1
+	`
 
 	err := r.db.QueryRow(ctx, query, id).Scan(
 		&job.ID,
 		&job.UserID,
 		&job.InputFileID,
 		&job.SplitRanges,
-		&outputIDs, // 👈 jsonb sifatida o‘qiyapmiz
+		&job.OutputFileIDs,
 		&job.Status,
 		&job.CreatedAt,
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	// ✅ JSON ni []string ga unmarshal qilamiz
-	_ = json.Unmarshal(outputIDs, &job.OutputFileIDs)
-
 	return &job, nil
-
 }
 
 func (r *splitRepo) UpdateOutputFiles(ctx context.Context, jobID string, outputIDs []string) error {
