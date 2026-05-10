@@ -103,7 +103,8 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	// 4. Files — upload is open (limit-based register prompt); the rest
 	// needs auth.
 	// =====================================================================
-	r.POST("/file/upload", h.UploadFile) // open: tiered cap inside handler
+	r.POST("/file/upload", h.UploadFile)              // open: tiered cap inside handler
+	r.GET("/file/:id/download", h.DownloadFile)       // open: needed so guests can pull conversion outputs
 	file := r.Group("/file", h.AuthorizerMiddleware)
 	{
 		file.GET("/list", h.ListUserFiles)

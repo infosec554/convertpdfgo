@@ -171,6 +171,40 @@ func (h Handler) GetFile(c *gin.Context) {
 	handleResponse(c, h.log, "file found", http.StatusOK, file)
 }
 
+// DownloadFile streams the binary content of a stored file. Counterpart
+// to GetFile (which returns the metadata JSON) — the conversion result
+// only becomes useful once the user can actually fetch the bytes.
+// Access matches GetFile's posture: any valid token may pull files in
+// the system today; tightening to owner-only is a follow-up.
+//
+// @Router       /file/{id}/download [GET]
+// @Summary      Download raw file bytes
+// @Tags         file
+// @Param        id path string true "File ID"
+// @Success      200 {file} binary
+// @Failure      404 {object} models.Response
+func (h Handler) DownloadFile(c *gin.Context) {
+	id := c.Param("id")
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
+	defer cancel()
+
+	file, err := h.services.File().Get(ctx, id)
+	if err != nil {
+		handleResponse(c, h.log, "file not found", http.StatusNotFound, err.Error())
+		return
+	}
+
+	if _, err := os.Stat(file.FilePath); err != nil {
+		handleResponse(c, h.log, "file gone from disk", http.StatusNotFound, "the file was already cleaned up")
+		return
+	}
+
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.FileName))
+	c.Header("Content-Type", file.FileType)
+	c.File(file.FilePath)
+}
+
 // DeleteFile godoc
 // @Router       /file/{id} [DELETE]
 // @Security     ApiKeyAuth
