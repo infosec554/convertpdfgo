@@ -161,6 +161,13 @@ type IFileStorage interface {
 	// doesn't accumulate one-shot anonymous uploads.
 	GetGuestFilesOlderThanMinutes(ctx context.Context, minutes int) ([]models.OldFile, error)
 
+	// GetFilesOlderThanMinutes is the *unfiltered* sibling — covers both
+	// guest and registered uploads. Powers the universal 5-minute privacy
+	// cleaner: every file (input + output) disappears once the user has had
+	// time to download it. Migration 0008 made the *_jobs FKs CASCADE so
+	// deleting from `files` automatically purges referencing job rows.
+	GetFilesOlderThanMinutes(ctx context.Context, minutes int) ([]models.OldFile, error)
+
 	// ListAll is the admin-side paginated listing. Filter values are
 	// optional; empty = "any". Returns the page slice and the total
 	// matching rows so the UI can render a page count.

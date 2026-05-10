@@ -45,6 +45,26 @@ func StartGuestCleanup(services service.IServiceManager, log logger.ILogger, int
 	})
 }
 
+// StartUniversalCleanup wipes BOTH guest and registered files older than
+// `minutes`. Migration 0008 made *_jobs FKs CASCADE, so deleting from
+// `files` also removes referencing job rows. Used as the privacy-first
+// 5-minute cleaner — every conversion's input + output disappears soon
+// after the user has had time to download.
+func StartUniversalCleanup(services service.IServiceManager, log logger.ILogger, interval time.Duration, minutes int) (stop func()) {
+	return startTicker(interval, func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		count, err := services.File().CleanupAllFiles(ctx, minutes)
+		if err != nil {
+			log.Error("cleaner: universal cleanup failed", logger.Error(err))
+			return
+		}
+		if count > 0 {
+			log.Info("cleaner: removed files (universal)", logger.Int("count", count), logger.Int("minutes", minutes))
+		}
+	})
+}
+
 // startTicker runs fn now and on every tick. Returns a function that stops
 // the ticker — call it on shutdown via defer.
 func startTicker(interval time.Duration, fn func()) (stop func()) {

@@ -50,14 +50,18 @@ func main() {
 	services := service.New(pgStore, log, mailService, redis, gotClient)
 	router := api.New(services, log, cfg, queueClient, redis)
 
-	// Background cleanup:
-	//   - safety net: every 6h, drop files older than 7 days
-	//   - fast lane: every 5min, drop guest (anonymous) files older than 15min
-	//                so the DB doesn't accumulate one-shot conversions
-	stopCleaner := cleaner.StartFileCleanup(services, log, 6*time.Hour, 7)
+	// Background cleanup — privacy-first model:
+	//   - primary: every 1min, drop ANY file (guest + registered) older
+	//              than 5min. Once the user has had time to download,
+	//              their data leaves the server. Migration 0008 made
+	//              *_jobs FKs CASCADE so referencing job rows go too.
+	//   - safety net: every 6h, drop anything still around past 1 day
+	//                 (catches files that survived the primary loop due
+	//                 to a transient DB error).
+	stopCleaner := cleaner.StartFileCleanup(services, log, 6*time.Hour, 1)
 	defer stopCleaner()
-	stopGuestCleaner := cleaner.StartGuestCleanup(services, log, 5*time.Minute, 15)
-	defer stopGuestCleaner()
+	stopUniversal := cleaner.StartUniversalCleanup(services, log, time.Minute, 5)
+	defer stopUniversal()
 
 	srv := &http.Server{
 		Addr:              ":8080",

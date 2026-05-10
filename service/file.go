@@ -19,6 +19,12 @@ type FileService interface {
 	List(ctx context.Context, userID string) ([]models.File, error)
 	CleanupOldFiles(ctx context.Context, olderThanDays int) (int, error)
 	CleanupGuestFiles(ctx context.Context, minutes int) (int, error)
+
+	// CleanupAllFiles is the privacy-first cleaner: deletes both guest and
+	// registered files once they're older than `minutes`. The default cron
+	// runs it at 5-minute retention.
+	CleanupAllFiles(ctx context.Context, minutes int) (int, error)
+
 	FindBySHA256(ctx context.Context, sha string) (models.File, error)
 
 	// ListAll is the admin-side cross-user listing.
@@ -97,6 +103,29 @@ func (s *fileService) CleanupGuestFiles(ctx context.Context, minutes int) (int, 
 	}
 	return count, nil
 }
+// CleanupAllFiles deletes every file (guest + registered) older than
+// `minutes`. Migration 0008 made the *_jobs FKs CASCADE so the DB row
+// removal here also wipes any referencing job rows in one shot.
+func (s *fileService) CleanupAllFiles(ctx context.Context, minutes int) (int, error) {
+	files, err := s.stg.GetFilesOlderThanMinutes(ctx, minutes)
+	if err != nil {
+		s.log.Error("cleanup all: list", logger.Error(err))
+		return 0, err
+	}
+	count := 0
+	for _, f := range files {
+		if err := os.Remove(f.FilePath); err != nil && !os.IsNotExist(err) {
+			s.log.Warning("cleanup all: remove disk", logger.Error(err), logger.String("path", f.FilePath))
+		}
+		if err := s.stg.DeleteByID(ctx, f.ID); err != nil {
+			s.log.Warning("cleanup all: remove db", logger.Error(err), logger.String("id", f.ID))
+			continue
+		}
+		count++
+	}
+	return count, nil
+}
+
 func (s *fileService) CleanupOldFiles(ctx context.Context, olderThanDays int) (int, error) {
 	oldFiles, err := s.stg.GetOldFiles(ctx, olderThanDays)
 	if err != nil {

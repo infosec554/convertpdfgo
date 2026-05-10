@@ -131,9 +131,35 @@ func (f *fileRepo) GetGuestFilesOlderThanMinutes(ctx context.Context, minutes in
 		SELECT id, file_path
 		FROM files
 		WHERE user_id IS NULL
-		  AND uploaded_at < NOW() - ($1 || ' minutes')::INTERVAL
+		  AND uploaded_at < NOW() - ($1::int || ' minutes')::INTERVAL
 	`
 	rows, err := f.db.Query(ctx, query, minutes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []models.OldFile
+	for rows.Next() {
+		var of models.OldFile
+		if err := rows.Scan(&of.ID, &of.FilePath); err != nil {
+			continue
+		}
+		out = append(out, of)
+	}
+	return out, nil
+}
+
+// GetFilesOlderThanMinutes returns every file (guest + registered) older
+// than `minutes`. The 5-minute privacy cleaner uses this; the older
+// guest-only variant is kept for callers that still want that filter.
+func (f *fileRepo) GetFilesOlderThanMinutes(ctx context.Context, minutes int) ([]models.OldFile, error) {
+	const q = `
+		SELECT id, file_path
+		FROM files
+		WHERE uploaded_at < NOW() - ($1::int || ' minutes')::INTERVAL
+	`
+	rows, err := f.db.Query(ctx, q, minutes)
 	if err != nil {
 		return nil, err
 	}
