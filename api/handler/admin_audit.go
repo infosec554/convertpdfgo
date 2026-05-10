@@ -82,6 +82,35 @@ func (h Handler) AuditByUserAdmin(c *gin.Context) {
 	})
 }
 
+// RecentActivityAdmin godoc
+// @Router       /admin/audit/recent [get]
+// @Security     ApiKeyAuth
+// @Summary      Latest auth events across every user (admin)
+// @Description  Powers the dashboard's "recent activity" feed. Sorted
+//               newest-first; capped at 500 to keep responses fast.
+// @Tags         admin-audit
+// @Param        limit query int false "default 50, max 500"
+// @Success      200 {object} models.Response
+func (h Handler) RecentActivityAdmin(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	if limit <= 0 || limit > 500 {
+		limit = 50
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
+	defer cancel()
+
+	events, err := h.services.Audit().ListRecent(ctx, limit)
+	if err != nil {
+		handleResponse(c, h.log, "failed to fetch recent activity", http.StatusInternalServerError, err.Error())
+		return
+	}
+	handleResponse(c, h.log, "recent activity", http.StatusOK, gin.H{
+		"items": events,
+		"limit": limit,
+	})
+}
+
 // SuspiciousLoginsAdmin godoc
 // @Router       /admin/audit/suspicious [get]
 // @Security     ApiKeyAuth

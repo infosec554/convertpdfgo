@@ -68,6 +68,37 @@ func (r *authAuditRepo) ListByUser(ctx context.Context, userID string, limit int
 	return out, nil
 }
 
+// ListRecent returns the most recent audit events across every user.
+// Hits idx_auth_audit_created (index-only descent).
+func (r *authAuditRepo) ListRecent(ctx context.Context, limit int) ([]models.AuthAudit, error) {
+	if limit <= 0 || limit > 500 {
+		limit = 50
+	}
+	const q = `
+		SELECT id, user_id, COALESCE(email,''), event, COALESCE(provider,''),
+		       COALESCE(ip,''), COALESCE(user_agent,''), created_at
+		FROM auth_audit
+		ORDER BY created_at DESC
+		LIMIT $1
+	`
+	rows, err := r.db.Query(ctx, q, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []models.AuthAudit
+	for rows.Next() {
+		var a models.AuthAudit
+		if err := rows.Scan(&a.ID, &a.UserID, &a.Email, &a.Event, &a.Provider, &a.IP, &a.UserAgent, &a.CreatedAt); err != nil {
+			r.log.Error("auth_audit: scan recent", logger.Error(err))
+			continue
+		}
+		out = append(out, a)
+	}
+	return out, nil
+}
+
 // ListSuspicious finds emails with `minFails`+ login_fail events in the
 // last `withinMinutes`. We aggregate IPs and the most-recent timestamp so
 // the admin can spot password-spray (one email, many IPs) vs. a single

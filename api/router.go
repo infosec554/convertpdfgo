@@ -193,7 +193,23 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 			users.PUT("/:id/role", h.RequirePermission("users:write"), h.UpdateUserRoleAdmin)
 			users.PUT("/:id/status", h.RequirePermission("users:write"), h.UpdateUserStatusAdmin)
 			users.DELETE("/:id", h.RequirePermission("users:delete"), h.DeleteUserAdmin)
+			users.POST("/:id/restore", h.RequirePermission("users:write"), h.RestoreUserAdmin)
+			users.POST("/:id/reset-password", h.RequirePermission("users:write"), h.ResetUserPasswordAdmin)
 			users.POST("/:id/revoke-tokens", h.RequirePermission("users:write"), h.RevokeUserTokensAdmin)
+		}
+
+		// 6a.1 Files (cross-user listing + force delete).
+		files := admin.Group("/files")
+		{
+			files.GET("", h.RequirePermission("files:read"), h.ListAllFilesAdmin)
+			files.DELETE("/:id", h.RequirePermission("files:delete"), h.DeleteFileAdmin)
+		}
+
+		// 6a.2 Auth lockouts — read keyspace via SCAN, manually unlock.
+		authAdmin := admin.Group("/auth")
+		{
+			authAdmin.GET("/locked", h.RequirePermission("audit:read"), h.ListLockedAccountsAdmin)
+			authAdmin.POST("/unlock", h.RequirePermission("users:write"), h.UnlockAccountAdmin)
 		}
 
 		// 6b. Sysusers (system operators, separate from end users).
@@ -214,6 +230,7 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 		audit := admin.Group("/audit", h.RequirePermission("audit:read"))
 		{
 			audit.GET("", h.ListAuditAdmin)
+			audit.GET("/recent", h.RecentActivityAdmin)
 			audit.GET("/user/:id", h.AuditByUserAdmin)
 			audit.GET("/suspicious", h.SuspiciousLoginsAdmin)
 		}

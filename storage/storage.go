@@ -79,6 +79,10 @@ type IAuthAuditStorage interface {
 	// ListSuspicious returns emails that have at least minFails login_fail
 	// events in the last `withinMinutes`. Used by /admin/audit/suspicious.
 	ListSuspicious(ctx context.Context, withinMinutes, minFails int) ([]models.SuspiciousLogin, error)
+
+	// ListRecent returns the latest events across all users, newest first.
+	// Powers the admin dashboard's "recent activity" feed.
+	ListRecent(ctx context.Context, limit int) ([]models.AuthAudit, error)
 }
 
 // IAdminStatsStorage hosts dashboard aggregates that don't belong to any
@@ -121,6 +125,14 @@ type ISysuserStorage interface {
 type IRedisStorage interface {
 	SetX(ctx context.Context, key string, value interface{}, duration time.Duration) error
 	Get(ctx context.Context, key string) (string, error)
+
+	// Keys runs a SCAN-based key listing for the given pattern (e.g.
+	// "login_fail:*"). Use sparingly — it walks the keyspace; not for
+	// hot paths. Returned at most maxKeys (hard-capped at 10000).
+	Keys(ctx context.Context, pattern string, maxKeys int) ([]string, error)
+
+	// Del removes a key. Returns nil if the key didn't exist.
+	Del(ctx context.Context, key string) error
 }
 
 type IFileStorage interface {
@@ -140,6 +152,11 @@ type IFileStorage interface {
 	// uploaded more than N minutes ago. Used by the fast cleaner so the DB
 	// doesn't accumulate one-shot anonymous uploads.
 	GetGuestFilesOlderThanMinutes(ctx context.Context, minutes int) ([]models.OldFile, error)
+
+	// ListAll is the admin-side paginated listing. Filter values are
+	// optional; empty = "any". Returns the page slice and the total
+	// matching rows so the UI can render a page count.
+	ListAll(ctx context.Context, filter models.AdminFileFilter) ([]models.File, int, error)
 }
 type IMergeStorage interface {
 	Create(ctx context.Context, job *models.MergeJob) error

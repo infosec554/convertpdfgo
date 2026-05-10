@@ -25,3 +25,19 @@ type SuspiciousLogin struct {
 	IPs       []string  `json:"ips"`
 	LastSeen  time.Time `json:"last_seen"`
 }
+
+// AdminFileFilter — admin file listing parametrlari. Bo'sh maydonlar
+// "har qanday" deb hisoblanadi. UserID="guest" — anonymous uploads.
+type AdminFileFilter struct {
+	UserID   string `form:"user_id"`
+	FileType string `form:"file_type"` // .pdf, .docx, ...
+	Q        string `form:"q"`         // file_name LIKE %q%
+	Limit    int    `form:"limit"`
+	Offset   int    `form:"offset"`
+}
+
+// LockedAccount — login_limiter qulflagan email/key.
+type LockedAccount struct {
+	Email     string `json:"email"`
+	FailCount int    `json:"fail_count"`
+}

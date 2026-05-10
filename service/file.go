@@ -20,6 +20,9 @@ type FileService interface {
 	CleanupOldFiles(ctx context.Context, olderThanDays int) (int, error)
 	CleanupGuestFiles(ctx context.Context, minutes int) (int, error)
 	FindBySHA256(ctx context.Context, sha string) (models.File, error)
+
+	// ListAll is the admin-side cross-user listing.
+	ListAll(ctx context.Context, filter models.AdminFileFilter) ([]models.File, int, error)
 }
 
 type fileService struct {
@@ -65,6 +68,11 @@ func (s *fileService) List(ctx context.Context, userID string) ([]models.File, e
 // FindBySHA256 returns the most recent existing file with the given hash.
 func (s *fileService) FindBySHA256(ctx context.Context, sha string) (models.File, error) {
 	return s.stg.FindBySHA256(ctx, sha)
+}
+
+// ListAll — admin-side cross-user file listing with pagination.
+func (s *fileService) ListAll(ctx context.Context, filter models.AdminFileFilter) ([]models.File, int, error) {
+	return s.stg.ListAll(ctx, filter)
 }
 
 // CleanupGuestFiles removes files belonging to anonymous (NULL user_id)

@@ -47,6 +47,14 @@ func (f *fakeRedis) Get(_ context.Context, k string) (string, error) {
 	return v, nil
 }
 
+func (f *fakeRedis) Keys(_ context.Context, _ string, _ int) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeRedis) Del(_ context.Context, _ string) error {
+	return nil
+}
+
 func TestRevokeAndCheck(t *testing.T) {
 	bl := New(newFakeRedis())
 	ctx := context.Background()

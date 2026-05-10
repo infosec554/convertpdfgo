@@ -59,6 +59,14 @@ func (f *fakeRedis) Get(_ context.Context, k string) (string, error) {
 	return f.store[k], nil
 }
 
+func (f *fakeRedis) Keys(_ context.Context, _ string, _ int) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeRedis) Del(_ context.Context, _ string) error {
+	return nil
+}
+
 // noopLogger to avoid pulling the zap dep into tests.
 type noopLogger struct{}
 

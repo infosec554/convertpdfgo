@@ -2,6 +2,8 @@ package postgres
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -151,4 +153,77 @@ func (f *fileRepo) GetGuestFilesOlderThanMinutes(ctx context.Context, minutes in
 func (f *fileRepo) DeleteByID(ctx context.Context, id string) error {
 	_, err := f.db.Exec(ctx, `DELETE FROM files WHERE id = $1`, id)
 	return err
+}
+
+// ListAll is the admin-side listing. Filter values are optional; pass
+// "guest" as UserID to limit to anonymous uploads. Returns rows + total
+// matching count so the UI can render pagination.
+//
+// We build the WHERE incrementally — each clause adds a $N placeholder so
+// pgx still uses the prepared-statement cache.
+func (f *fileRepo) ListAll(ctx context.Context, fl models.AdminFileFilter) ([]models.File, int, error) {
+	limit := fl.Limit
+	if limit <= 0 || limit > 500 {
+		limit = 50
+	}
+	offset := fl.Offset
+	if offset < 0 {
+		offset = 0
+	}
+
+	conds := []string{"1=1"}
+	args := []any{}
+	switch fl.UserID {
+	case "":
+		// any user
+	case "guest":
+		conds = append(conds, "user_id IS NULL")
+	default:
+		args = append(args, fl.UserID)
+		conds = append(conds, fmt.Sprintf("user_id = $%d", len(args)))
+	}
+	if fl.FileType != "" {
+		args = append(args, fl.FileType)
+		conds = append(conds, fmt.Sprintf("file_type = $%d", len(args)))
+	}
+	if fl.Q != "" {
+		args = append(args, "%"+fl.Q+"%")
+		conds = append(conds, fmt.Sprintf("file_name ILIKE $%d", len(args)))
+	}
+	where := strings.Join(conds, " AND ")
+
+	// Total — same WHERE, no LIMIT/OFFSET.
+	var total int
+	if err := f.db.QueryRow(ctx,
+		"SELECT COUNT(*) FROM files WHERE "+where, args...,
+	).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	args = append(args, limit, offset)
+	listQ := fmt.Sprintf(`
+		SELECT id, user_id, file_name, file_path, file_type, file_size, sha256, uploaded_at
+		FROM files
+		WHERE %s
+		ORDER BY uploaded_at DESC
+		LIMIT $%d OFFSET $%d
+	`, where, len(args)-1, len(args))
+
+	rows, err := f.db.Query(ctx, listQ, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+
+	out := make([]models.File, 0, limit)
+	for rows.Next() {
+		var file models.File
+		if err := rows.Scan(&file.ID, &file.UserID, &file.FileName, &file.FilePath,
+			&file.FileType, &file.FileSize, &file.SHA256, &file.UploadedAt); err != nil {
+			f.log.Error("files: scan ListAll", logger.Error(err))
+			continue
+		}
+		out = append(out, file)
+	}
+	return out, total, nil
 }

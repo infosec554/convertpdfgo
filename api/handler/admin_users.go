@@ -183,3 +183,74 @@ func (h Handler) RevokeUserTokensAdmin(c *gin.Context) {
 	h.audit(c, "admin_user_revoke_tokens", c.GetString("user_id"), id, "")
 	handleResponse(c, h.log, "tokens revoked", http.StatusOK, gin.H{"id": id})
 }
+
+// RestoreUserAdmin godoc
+// @Router       /admin/users/{id}/restore [post]
+// @Security     ApiKeyAuth
+// @Summary      Restore a soft-deleted user (admin)
+// @Description  Flips status from 'deleted' back to 'active'. Idempotent —
+//               restoring an already-active user is a no-op success.
+// @Tags         admin-users
+// @Param        id path string true "user id"
+// @Success      200 {object} models.Response
+func (h Handler) RestoreUserAdmin(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		handleResponse(c, h.log, "missing user id", http.StatusBadRequest, nil)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
+	defer cancel()
+
+	if err := h.services.User().UpdateStatus(ctx, id, "active"); err != nil {
+		handleResponse(c, h.log, "failed to restore user", http.StatusInternalServerError, err.Error())
+		return
+	}
+	h.audit(c, "admin_user_restore", c.GetString("user_id"), id, "")
+	handleResponse(c, h.log, "user restored", http.StatusOK, gin.H{"id": id, "status": "active"})
+}
+
+// ResetUserPasswordAdmin godoc
+// @Router       /admin/users/{id}/reset-password [post]
+// @Security     ApiKeyAuth
+// @Summary      Trigger a password-reset OTP for a user (admin)
+// @Description  Generates an OTP and emails it via the same flow the user
+//               would self-service. Admin doesn't see the OTP — they only
+//               kick off delivery.
+// @Tags         admin-users
+// @Param        id path string true "user id"
+// @Success      200 {object} models.Response
+func (h Handler) ResetUserPasswordAdmin(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" {
+		handleResponse(c, h.log, "missing user id", http.StatusBadRequest, nil)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeouts.Process)
+	defer cancel()
+
+	user, err := h.services.User().GetByID(ctx, id)
+	if err != nil || user == nil {
+		handleResponse(c, h.log, "user not found", http.StatusNotFound, nil)
+		return
+	}
+	if user.Email == "" {
+		handleResponse(c, h.log, "user has no email", http.StatusBadRequest, nil)
+		return
+	}
+
+	otpID, err := h.services.Otp().SendOtp(ctx, user.Email)
+	if err != nil {
+		handleResponse(c, h.log, "failed to send reset OTP", http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.audit(c, "admin_user_reset_password", c.GetString("user_id"), id, "")
+	handleResponse(c, h.log, "reset OTP sent", http.StatusOK, gin.H{
+		"user_id": id,
+		"email":   user.Email,
+		"otp_id":  otpID,
+	})
+}

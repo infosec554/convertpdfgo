@@ -49,6 +49,14 @@ func (f *fakeRedis) Get(_ context.Context, key string) (string, error) {
 	return v, nil
 }
 
+func (f *fakeRedis) Keys(_ context.Context, _ string, _ int) ([]string, error) {
+	return nil, nil
+}
+
+func (f *fakeRedis) Del(_ context.Context, _ string) error {
+	return nil
+}
+
 func stringify(v interface{}) string {
 	switch t := v.(type) {
 	case string:

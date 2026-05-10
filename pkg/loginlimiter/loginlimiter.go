@@ -66,6 +66,54 @@ func (l *Limiter) Reset(ctx context.Context, email string) {
 	_ = l.rs.SetX(ctx, key(email), "0", time.Second) // expire fast
 }
 
+// LockedEntry is one row in the admin "currently locked accounts" view.
+type LockedEntry struct {
+	Email     string
+	FailCount int
+}
+
+// ListLocked returns every email with a currently-locked counter. SCAN's
+// the login_fail:* keyspace; safe for an admin endpoint, not a hot path.
+// Honours maxResults so the response stays bounded on a busy site.
+func (l *Limiter) ListLocked(ctx context.Context, maxResults int) ([]LockedEntry, error) {
+	if l == nil || l.rs == nil {
+		return nil, nil
+	}
+	if maxResults <= 0 || maxResults > 1000 {
+		maxResults = 200
+	}
+	keys, err := l.rs.Keys(ctx, "login_fail:*", maxResults)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]LockedEntry, 0, len(keys))
+	for _, k := range keys {
+		v, err := l.rs.Get(ctx, k)
+		if err != nil {
+			continue
+		}
+		n, _ := strconv.Atoi(v)
+		// Drop "0"s left by Reset() that haven't expired yet.
+		if n < l.maxFails {
+			continue
+		}
+		out = append(out, LockedEntry{
+			Email:     k[len("login_fail:"):],
+			FailCount: n,
+		})
+	}
+	return out, nil
+}
+
+// Unlock — admin override. Wipes the lock entirely so the next attempt
+// goes through bcrypt again.
+func (l *Limiter) Unlock(ctx context.Context, email string) error {
+	if l == nil || l.rs == nil {
+		return nil
+	}
+	return l.rs.Del(ctx, key(email))
+}
+
 func key(email string) string {
 	return "login_fail:" + email
 }
