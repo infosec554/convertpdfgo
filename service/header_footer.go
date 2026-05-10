@@ -72,7 +72,7 @@ func (s *addHeaderFooterService) Process(ctx context.Context, jobID string) erro
 		OutputPath: outputPath,
 		HeaderText: job.HeaderText,
 		FooterText: job.FooterText,
-		PageRange:  "all",
+		PageRange:  "", // pdfcpu's selectedPages: empty slice means every page
 	}
 	if err := addheaderfooter.AddHeaderFooterPDF(params); err != nil {
 		s.markFailed(ctx, job)

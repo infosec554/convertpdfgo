@@ -34,9 +34,11 @@ func (r *qrCodeRepo) Create(ctx context.Context, job *models.QRCodeJob) error {
 }
 
 func (r *qrCodeRepo) Update(ctx context.Context, job *models.QRCodeJob) error {
+	// OutputFileID is a plain string in the model — empty on markFailed
+	// requires NULLIF before binding to the UUID column.
 	query := `
 		UPDATE qr_code_jobs
-		SET output_file_id = $1, status = $2
+		SET output_file_id = NULLIF($1,'')::uuid, status = $2
 		WHERE id = $3
 	`
 	_, err := r.db.Exec(ctx, query, job.OutputFileID, job.Status, job.ID)

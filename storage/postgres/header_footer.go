@@ -45,9 +45,12 @@ func (r *addHeaderFooterRepo) Create(ctx context.Context, job *models.AddHeaderF
 }
 
 func (r *addHeaderFooterRepo) Update(ctx context.Context, job *models.AddHeaderFooterJob) error {
+	// OutputFileID lives in a model field of type `string`. On a
+	// markFailed-style update it's empty — bind via NULLIF so postgres
+	// stores NULL instead of trying to cast "" into UUID.
 	query := `
 		UPDATE add_header_footer_jobs
-		SET output_file_id=$1, status=$2
+		SET output_file_id = NULLIF($1,'')::uuid, status=$2
 		WHERE id=$3
 	`
 

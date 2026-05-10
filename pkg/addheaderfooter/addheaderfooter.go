@@ -28,7 +28,7 @@ func AddHeaderFooterPDF(params AddHeaderFooterParams) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse header watermark: %w", err)
 		}
-		err = api.AddWatermarksFile(params.InputPath, params.OutputPath, []string{params.PageRange}, wm, conf)
+		err = api.AddWatermarksFile(params.InputPath, params.OutputPath, pageSelection(params.PageRange), wm, conf)
 		if err != nil {
 			return fmt.Errorf("failed to add header: %w", err)
 		}
@@ -40,7 +40,7 @@ func AddHeaderFooterPDF(params AddHeaderFooterParams) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse footer watermark: %w", err)
 		}
-		err = api.AddWatermarksFile(params.InputPath, params.OutputPath, []string{params.PageRange}, wm, conf)
+		err = api.AddWatermarksFile(params.InputPath, params.OutputPath, pageSelection(params.PageRange), wm, conf)
 		if err != nil {
 			return fmt.Errorf("failed to add footer: %w", err)
 		}
@@ -51,4 +51,14 @@ func AddHeaderFooterPDF(params AddHeaderFooterParams) error {
 	}
 
 	return nil
+}
+
+// pageSelection turns a user-facing page string into pdfcpu's []string
+// form. nil == "every page" — passing []string{"all"} would have pdfcpu
+// Atoi-fail trying to parse the literal word "all".
+func pageSelection(s string) []string {
+	if s == "" || s == "all" {
+		return nil
+	}
+	return []string{s}
 }

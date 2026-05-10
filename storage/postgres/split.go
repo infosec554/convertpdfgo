@@ -87,10 +87,13 @@ func (r *splitRepo) GetByID(ctx context.Context, id string) (*models.SplitJob, e
 	return &job, nil
 }
 
+// UpdateOutputFiles bumps status='done' atomically with the IDs — the
+// service treats successful upload of every output as completion. Without
+// this, status was stuck on "pending" forever even after a successful split.
 func (r *splitRepo) UpdateOutputFiles(ctx context.Context, jobID string, outputIDs []string) error {
 	query := `
 		UPDATE split_jobs
-		SET output_file_ids = $1
+		SET output_file_ids = $1, status = 'done'
 		WHERE id = $2
 	`
 	_, err := r.db.Exec(ctx, query, outputIDs, jobID)
