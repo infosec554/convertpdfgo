@@ -13,7 +13,10 @@ import (
 )
 
 type InspectService interface {
-	Create(ctx context.Context, fileID string, userID *string) (string, error)
+	// Create runs the inspect synchronously inside Create (no enqueue),
+	// since pdfcpu's ReadContextFile is cheap. Matches the rest of the
+	// service Create signatures even though there's no async hand-off.
+	Create(ctx context.Context, req models.InspectRequest, userID *string) (string, error)
 	GetByID(ctx context.Context, id string) (*models.InspectJob, error)
 }
 
@@ -29,31 +32,23 @@ func NewInspectService(stg storage.IStorage, log logger.ILogger) InspectService 
 	}
 }
 
-func (s *inspectService) Create(ctx context.Context, fileID string, userID *string) (string, error) {
-	s.log.Info("InspectService.Create called")
-
-	// 1. Faylni olish
-	file, err := s.stg.File().GetByID(ctx, fileID)
+func (s *inspectService) Create(ctx context.Context, req models.InspectRequest, userID *string) (string, error) {
+	file, err := s.stg.File().GetByID(ctx, req.FileID)
 	if err != nil {
-		s.log.Error("failed to get input file", logger.Error(err))
+		s.log.Error("inspect: get input file", logger.Error(err))
 		return "", err
 	}
 
-	jobID := uuid.NewString()
-	pdfPath := file.FilePath
-
-	// 3. Context ni o‘qish
-	ctxPDF, err := api.ReadContextFile(pdfPath)
+	ctxPDF, err := api.ReadContextFile(file.FilePath)
 	if err != nil {
-		s.log.Error("failed to read PDF context", logger.Error(err))
+		s.log.Error("inspect: read pdf context", logger.Error(err))
 		return "", err
 	}
 
-	// 4. Job ma’lumotlarini yaratish
 	job := &models.InspectJob{
-		ID:        jobID,
+		ID:        uuid.NewString(),
 		UserID:    userID,
-		FileID:    fileID,
+		FileID:    req.FileID,
 		PageCount: ctxPDF.PageCount,
 		Title:     ctxPDF.Title,
 		Author:    ctxPDF.Author,
@@ -62,15 +57,11 @@ func (s *inspectService) Create(ctx context.Context, fileID string, userID *stri
 		Status:    "done",
 		CreatedAt: time.Now(),
 	}
-
-	// 5. Bazaga yozish
 	if err := s.stg.Inspect().Create(ctx, job); err != nil {
-		s.log.Error("failed to save inspect job", logger.Error(err))
+		s.log.Error("inspect: save job", logger.Error(err))
 		return "", err
 	}
-
-	s.log.Info("PDF inspect completed", logger.String("jobID", jobID))
-	return jobID, nil
+	return job.ID, nil
 }
 
 func (s *inspectService) GetByID(ctx context.Context, id string) (*models.InspectJob, error) {

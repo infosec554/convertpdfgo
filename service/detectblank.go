@@ -14,7 +14,7 @@ import (
 )
 
 type DetectBlankService interface {
-	Create(ctx context.Context, inputFileID string, userID *string) (string, error)
+	Create(ctx context.Context, req models.DetectBlankPagesRequest, userID *string) (string, error)
 	Process(ctx context.Context, jobID string) error
 	GetByID(ctx context.Context, id string) (*models.DetectBlankPagesJob, error)
 }
@@ -28,11 +28,11 @@ func NewDetectBlankService(stg storage.IStorage, log logger.ILogger) DetectBlank
 	return &detectBlankService{stg: stg, log: log}
 }
 
-func (s *detectBlankService) Create(ctx context.Context, inputFileID string, userID *string) (string, error) {
+func (s *detectBlankService) Create(ctx context.Context, req models.DetectBlankPagesRequest, userID *string) (string, error) {
 	job := &models.DetectBlankPagesJob{
 		ID:          uuid.NewString(),
 		UserID:      userID,
-		InputFileID: inputFileID,
+		InputFileID: req.InputFileID,
 		Status:      "pending",
 		CreatedAt:   time.Now(),
 	}

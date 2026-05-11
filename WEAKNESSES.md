@@ -23,7 +23,7 @@
 | # | Muammo | Fix | Vaqt |
 |---|--------|-----|------|
 | 5 | ~~UserID inkonsistent~~ ✅ **DONE** — `userPtr(c)` helper + 4 ta service/model `*string`'ga konvert. | done | (1h) |
-| 6 | **Service `Create` signature 3 xil** — `(req, *string)`, `(req, string)`, `(fileID, userID string)` | Yagona: `Create(ctx, req T, userID *string) (jobID string, err error)` | 2s |
+| 6 | ~~Service `Create` 3 xil~~ ✅ **DONE** — inspect + detect-blank ham `req T` pattern'ga keldi. Yagona shakl: `Create(ctx, req T, userID *string) (jobID, error)`. | done | (15m) |
 | 7 | **Response envelope farq** — `{id}` vs `{job_id}` vs `{output_file_id}` | Bitta `JobCreatedResponse{ID, Status}` struct | 30m |
 | 8 | **JSON tag yo'q** ba'zi modellarda (`MergeJob` PascalCase chiqarardi) | Linter rule + audit | 30m |
 | 9 | **Status code farq** — 201/202/200 bir xil "job queued" uchun | Hamma async: **202**. Sync (`inspect`): **200**. | 30m |

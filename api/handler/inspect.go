@@ -38,7 +38,7 @@ func (h Handler) CreateInspectJob(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	jobID, err := h.services.Inspect().Create(ctx, req.FileID, userPtr(c))
+	jobID, err := h.services.Inspect().Create(ctx, req, userPtr(c))
 	if err != nil {
 		handleResponse(c, h.log, "failed to inspect PDF", http.StatusInternalServerError, err.Error())
 		return
