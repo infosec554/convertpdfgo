@@ -114,7 +114,7 @@ func (f *fileRepo) GetOldFiles(ctx context.Context, olderThanDays int) ([]models
 	query := `
 		SELECT id, file_path
 		FROM files
-		WHERE uploaded_at < NOW() - ($1::int || ' days')::INTERVAL
+		WHERE uploaded_at < NOW() - ( $1::int || ' days')::INTERVAL
 	`
 	rows, err := f.db.Query(ctx, query, olderThanDays)
 	if err != nil {
@@ -138,7 +138,7 @@ func (f *fileRepo) GetGuestFilesOlderThanMinutes(ctx context.Context, minutes in
 		SELECT id, file_path
 		FROM files
 		WHERE user_id IS NULL
-		  AND uploaded_at < NOW() - ($1::int || ' minutes')::INTERVAL
+		  AND uploaded_at < NOW() - ( $1::int || ' minutes')::INTERVAL
 	`
 	rows, err := f.db.Query(ctx, query, minutes)
 	if err != nil {
@@ -164,7 +164,7 @@ func (f *fileRepo) GetFilesOlderThanMinutes(ctx context.Context, minutes int) ([
 	const q = `
 		SELECT id, file_path
 		FROM files
-		WHERE uploaded_at < NOW() - ($1::int || ' minutes')::INTERVAL
+		WHERE uploaded_at < NOW() - ( $1::int || ' minutes')::INTERVAL
 	`
 	rows, err := f.db.Query(ctx, q, minutes)
 	if err != nil {

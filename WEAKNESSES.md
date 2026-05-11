@@ -27,7 +27,7 @@
 | 7 | ~~Response envelope farq~~ ✅ **DONE** — `models.JobCreatedResponse{ID, Status}` + 4 ta `JobStatus*` const. 26 handler unified. | done | (1h) |
 | 8 | ~~JSON tag yo'q~~ ✅ **DONE** — `tests/jsontags/` AST audit. `File` snake_case keldi, `Response` PascalCase aniq tag bilan, dead code (FileUploadRequest, MergeJobInputFile) o'chirildi. | done | (45m) |
 | 9 | ~~Status code farq~~ ✅ **DONE** (#7 bilan) — async = 202, sync inspect = 200. PostJob test client buni qattiq tekshiradi. | done | — |
-| 10 | **OID-25 pgx bug** 2 joyda topildi — qolganini auditga | `grep -rn "|| '.*'" storage/postgres/` | 1s |
+| 10 | ~~OID-25 pgx bug~~ ✅ **DONE** — `tests/sqlcasts/` `(…)::TYPE` ichida cast'siz `$N` qidiradi. Sanity bilan 3 ta historik bug detect qilindi. | done | (45m) |
 | 11 | **`/file/:id/download` owner check yo'q** — bir guest ID bilsa, boshqaning faylini yuklaydi | UserID match qilish (auth bor bo'lsa) | 1s |
 | 12 | **Manual tarball deploy** — `latest` tag overwrite, ro'lback yo'q | `gh release` + image tag = commit-sha | 2s |
 | 13 | **Audit silent failures** — guest cleaner FK error'larini warn'ga log + continue (oylar davomida row to'plandi) | Prometheus alert + non-fatal error rate threshold | 1s |
