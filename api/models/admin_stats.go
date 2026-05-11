@@ -28,12 +28,14 @@ type SuspiciousLogin struct {
 
 // AdminFileFilter — admin file listing parametrlari. Bo'sh maydonlar
 // "har qanday" deb hisoblanadi. UserID="guest" — anonymous uploads.
+// Bound via ShouldBindQuery; never serialized — json:"-" makes that
+// intent explicit and keeps the jsontags audit honest.
 type AdminFileFilter struct {
-	UserID   string `form:"user_id"`
-	FileType string `form:"file_type"` // .pdf, .docx, ...
-	Q        string `form:"q"`         // file_name LIKE %q%
-	Limit    int    `form:"limit"`
-	Offset   int    `form:"offset"`
+	UserID   string `form:"user_id"   json:"-"`
+	FileType string `form:"file_type" json:"-"` // .pdf, .docx, ...
+	Q        string `form:"q"         json:"-"` // file_name LIKE %q%
+	Limit    int    `form:"limit"     json:"-"`
+	Offset   int    `form:"offset"    json:"-"`
 }
 
 // LockedAccount — login_limiter qulflagan email/key.

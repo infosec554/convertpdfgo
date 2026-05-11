@@ -14,12 +14,15 @@ type Permission struct {
 // UserListFilter narrows the admin user-list endpoint. Empty fields mean
 // "no filter on this column". Limit / Offset paginate; Limit defaults to 50
 // at the storage layer if 0.
+//
+// Bound via ShouldBindQuery; never serialized — json:"-" keeps the
+// audit honest about intent.
 type UserListFilter struct {
-	Search string `form:"q"`      // matches email or name (ILIKE)
-	Role   string `form:"role"`   // exact match: user | moderator | admin | superadmin
-	Status string `form:"status"` // active | blocked | deleted
-	Limit  int    `form:"limit"`
-	Offset int    `form:"offset"`
+	Search string `form:"q"      json:"-"` // matches email or name (ILIKE)
+	Role   string `form:"role"   json:"-"` // exact match: user | moderator | admin | superadmin
+	Status string `form:"status" json:"-"` // active | blocked | deleted
+	Limit  int    `form:"limit"  json:"-"`
+	Offset int    `form:"offset" json:"-"`
 }
 
 type UpdateUserRoleRequest struct {

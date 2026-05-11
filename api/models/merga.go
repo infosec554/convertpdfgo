@@ -12,13 +12,6 @@ type MergeJob struct {
 	InputFileIDs []string  `json:"input_file_ids" db:"-"` // JOIN orqali olinadi, db da yo'q
 }
 
-// MergeJobInputFile – `merge_job_input_files` jadvalidagi har bir satr
-type MergeJobInputFile struct {
-	ID     string `db:"id"`
-	JobID  string `db:"job_id"`
-	FileID string `db:"file_id"`
-}
-
 // CreateMergeJobRequest – API orqali kiritiladigan inputlar
 type CreateMergeJobRequest struct {
 	UserID       *string  `json:"user_id"`        // optional (guest user uchun nil bo'lishi mumkin)
