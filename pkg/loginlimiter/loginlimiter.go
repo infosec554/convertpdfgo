@@ -17,9 +17,9 @@ var ErrLocked = errors.New("too many login attempts; try again later")
 
 // Limiter tracks failures per key with a sliding TTL.
 type Limiter struct {
-	rs        storage.IRedisStorage
-	maxFails  int
-	window    time.Duration
+	rs       storage.IRedisStorage
+	maxFails int
+	window   time.Duration
 }
 
 // New returns a Limiter that locks an email after `maxFails` failed attempts

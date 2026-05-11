@@ -4,9 +4,9 @@ import "time"
 
 type URLToPDFRequest struct {
 	URL       string `json:"url"        binding:"required"`
-	PageSize  string `json:"page_size"`               // default "A4"
+	PageSize  string `json:"page_size"` // default "A4"
 	Landscape bool   `json:"landscape"`
-	WaitFor   string `json:"wait_for"`                // optional Gotenberg waitDelay or selector
+	WaitFor   string `json:"wait_for"` // optional Gotenberg waitDelay or selector
 }
 
 type URLToPDFJob struct {

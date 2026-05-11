@@ -189,7 +189,9 @@ func (h Handler) RevokeUserTokensAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Restore a soft-deleted user (admin)
 // @Description  Flips status from 'deleted' back to 'active'. Idempotent —
-//               restoring an already-active user is a no-op success.
+//
+//	restoring an already-active user is a no-op success.
+//
 // @Tags         admin-users
 // @Param        id path string true "user id"
 // @Success      200 {object} models.Response
@@ -216,8 +218,10 @@ func (h Handler) RestoreUserAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Trigger a password-reset OTP for a user (admin)
 // @Description  Generates an OTP and emails it via the same flow the user
-//               would self-service. Admin doesn't see the OTP — they only
-//               kick off delivery.
+//
+//	would self-service. Admin doesn't see the OTP — they only
+//	kick off delivery.
+//
 // @Tags         admin-users
 // @Param        id path string true "user id"
 // @Success      200 {object} models.Response

@@ -14,7 +14,7 @@ import (
 // (they're effectively immutable at runtime).
 var (
 	rateLimit       = rate.Every(200 * time.Millisecond) // 5 req/s sustained
-	burst           = 30                                  // soft start; absorbs UI bursts and smoke tests
+	burst           = 30                                 // soft start; absorbs UI bursts and smoke tests
 	visitorTTL      = 10 * time.Minute
 	cleanupInterval = 5 * time.Minute
 )

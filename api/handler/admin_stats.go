@@ -110,8 +110,10 @@ func (h Handler) StatsUsersByDayAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Per-queue job counts (admin)
 // @Description  Aggregates Asynq queue depth across all three priorities so
-//               the dashboard can render a single bar chart of pending /
-//               active / retry / archived / completed / failed totals.
+//
+//	the dashboard can render a single bar chart of pending /
+//	active / retry / archived / completed / failed totals.
+//
 // @Tags         admin-stats
 // @Success      200 {object} models.Response
 func (h Handler) StatsJobsAdmin(c *gin.Context) {
@@ -189,9 +191,11 @@ func (h Handler) StatsStorageAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Cache hit-rate pointer (admin)
 // @Description  Cache counters (hits/misses) live in Prometheus, scraped
-//               from /metrics. This endpoint just points the operator at
-//               the right query so the dashboard URL doesn't have to be
-//               hardcoded across multiple frontends.
+//
+//	from /metrics. This endpoint just points the operator at
+//	the right query so the dashboard URL doesn't have to be
+//	hardcoded across multiple frontends.
+//
 // @Tags         admin-stats
 // @Success      200 {object} models.Response
 func (h Handler) StatsCacheAdmin(c *gin.Context) {

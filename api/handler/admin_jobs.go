@@ -25,15 +25,15 @@ func allowedQueue(name string) bool {
 // a lot of internal fields we don't want to leak (raw payload bytes etc.)
 // so we project to a stable, human-friendly subset.
 type jobInfo struct {
-	ID         string    `json:"id"`
-	Type       string    `json:"type"`
-	Queue      string    `json:"queue"`
-	State      string    `json:"state"`
-	Retried    int       `json:"retried"`
-	MaxRetry   int       `json:"max_retry"`
-	LastErr    string    `json:"last_err,omitempty"`
-	NextRetry  time.Time `json:"next_retry,omitempty"`
-	EnqueuedAt time.Time `json:"enqueued_at,omitempty"`
+	ID          string    `json:"id"`
+	Type        string    `json:"type"`
+	Queue       string    `json:"queue"`
+	State       string    `json:"state"`
+	Retried     int       `json:"retried"`
+	MaxRetry    int       `json:"max_retry"`
+	LastErr     string    `json:"last_err,omitempty"`
+	NextRetry   time.Time `json:"next_retry,omitempty"`
+	EnqueuedAt  time.Time `json:"enqueued_at,omitempty"`
 	CompletedAt time.Time `json:"completed_at,omitempty"`
 }
 

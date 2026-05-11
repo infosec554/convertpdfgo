@@ -4,7 +4,7 @@ import "time"
 
 // DailyCount — bitta sana uchun nechta yozuv yaratilgani.
 type DailyCount struct {
-	Day   string `json:"day"`   // YYYY-MM-DD
+	Day   string `json:"day"` // YYYY-MM-DD
 	Count int    `json:"count"`
 }
 

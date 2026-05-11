@@ -36,7 +36,7 @@ func TestPut_NilSafe(t *testing.T) {
 func TestPut_DropsOversizedBuffers(t *testing.T) {
 	b := Get()
 	b.WriteString(strings.Repeat("x", (1<<20)+1)) // > 1 MiB
-	Put(b) // dropped, not pooled
+	Put(b)                                        // dropped, not pooled
 	// No way to assert from outside that pool is empty, but at minimum
 	// Put must not panic and the next Get must still hand back a fresh buf.
 	b2 := Get()

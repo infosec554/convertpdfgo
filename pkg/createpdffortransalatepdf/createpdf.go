@@ -71,9 +71,9 @@ func ExtractTextFromPDF(filePath string) (string, error) {
 		if p.V.IsNull() {
 			continue
 		}
-	
+
 		content := p.Content()
-	
+
 		for _, txt := range content.Text {
 			buf.WriteString(txt.S)
 			buf.WriteString(" ")

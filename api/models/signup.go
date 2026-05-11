@@ -7,8 +7,8 @@ type SignupRequest struct {
 	Name                 string `json:"name"`
 }
 type SignupResponse struct {
-	ID    string `json:"id"`        
-	Token string `json:"token"`      
+	ID    string `json:"id"`
+	Token string `json:"token"`
 }
 type OTPConfirmationClaims struct {
 	OtpID string `json:"otp_id"`

@@ -103,6 +103,7 @@ func (s *fileService) CleanupGuestFiles(ctx context.Context, minutes int) (int, 
 	}
 	return count, nil
 }
+
 // CleanupAllFiles deletes every file (guest + registered) older than
 // `minutes`. Migration 0008 made the *_jobs FKs CASCADE so the DB row
 // removal here also wipes any referencing job rows in one shot.

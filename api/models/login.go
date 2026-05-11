@@ -3,7 +3,7 @@ package models
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
-	UserType string `json:"user_type"` 
+	UserType string `json:"user_type"`
 }
 
 type LoginResponse struct {

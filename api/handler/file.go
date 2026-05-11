@@ -120,7 +120,7 @@ func (h Handler) UploadFile(c *gin.Context) {
 	if existing, err := h.services.File().FindBySHA256(ctx, sha); err == nil && existing.ID != "" {
 		_ = os.Remove(savePath)
 		handleResponse(c, h.log, "file already exists (dedup)", http.StatusOK, gin.H{
-			"id":   existing.ID,
+			"id":    existing.ID,
 			"dedup": true,
 		})
 		return

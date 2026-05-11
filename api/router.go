@@ -19,13 +19,13 @@ import (
 
 // New wires up the HTTP router. Routes are organised top-down by audience:
 //
-//	1. Infra        — health, metrics, swagger        (no auth, no rate limit)
-//	2. Auth         — register/login/logout/oauth     (public + rate limited)
-//	3. Profile      — /me/*                           (user-auth)
-//	4. Files        — uploads & downloads             (mixed: upload is open,
-//	                                                   ops require auth)
-//	5. PDF jobs     — /api/pdf/* grouped by category  (optional auth)
-//	6. Admin        — /admin/*                        (RBAC + audit)
+//  1. Infra        — health, metrics, swagger        (no auth, no rate limit)
+//  2. Auth         — register/login/logout/oauth     (public + rate limited)
+//  3. Profile      — /me/*                           (user-auth)
+//  4. Files        — uploads & downloads             (mixed: upload is open,
+//     ops require auth)
+//  5. PDF jobs     — /api/pdf/* grouped by category  (optional auth)
+//  6. Admin        — /admin/*                        (RBAC + audit)
 //
 // Within a group, related routes are kept adjacent so adding a new
 // endpoint is a one-line edit and the file reads top-to-bottom.
@@ -41,13 +41,13 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	r := gin.Default()
 
 	// === Global middlewares (registration order = execution order) ===
-	r.Use(middleware.RequestID())                  // 1. tag every request
-	r.Use(middleware.SecurityHeaders())            // 2. defensive headers
+	r.Use(middleware.RequestID())                    // 1. tag every request
+	r.Use(middleware.SecurityHeaders())              // 2. defensive headers
 	r.Use(middleware.CORS(middleware.DefaultCORS())) // 3. CORS preflight
-	r.Use(middleware.BodyLimit(110 << 20))         // 4. 110 MiB hard cap
-	r.Use(gzip.Gzip(gzip.DefaultCompression,       // 5. compress JSON only
+	r.Use(middleware.BodyLimit(110 << 20))           // 4. 110 MiB hard cap
+	r.Use(gzip.Gzip(gzip.DefaultCompression,         // 5. compress JSON only
 		gzip.WithExcludedExtensions([]string{".pdf", ".docx", ".xlsx", ".pptx", ".jpg", ".jpeg", ".png", ".zip"})))
-	r.Use(middleware.PrometheusMetrics())          // 6. record latency
+	r.Use(middleware.PrometheusMetrics()) // 6. record latency
 
 	// =====================================================================
 	// 1. Infra (no auth, no rate limit, no audit)
@@ -103,8 +103,8 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	// 4. Files — upload is open (limit-based register prompt); the rest
 	// needs auth.
 	// =====================================================================
-	r.POST("/file/upload", h.UploadFile)              // open: tiered cap inside handler
-	r.GET("/file/:id/download", h.DownloadFile)       // open: needed so guests can pull conversion outputs
+	r.POST("/file/upload", h.UploadFile)        // open: tiered cap inside handler
+	r.GET("/file/:id/download", h.DownloadFile) // open: needed so guests can pull conversion outputs
 	file := r.Group("/file", h.AuthorizerMiddleware)
 	{
 		file.GET("/list", h.ListUserFiles)

@@ -4,4 +4,3 @@ package mailer
 type IMailer interface {
 	Send(to, subject, body string) error
 }
-

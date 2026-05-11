@@ -53,7 +53,7 @@ func (r *otpRepo) GetUnconfirmedByID(ctx context.Context, id string) (string, st
 		WHERE id = $1 AND status = 'unconfirmed'
 	`
 
-	err := r.db.QueryRow(ctx, query, id).Scan(&email, &code, &expiresAt) 
+	err := r.db.QueryRow(ctx, query, id).Scan(&email, &code, &expiresAt)
 	if err != nil {
 		r.log.Error("error getting otp by id", logger.Error(err))
 		return "", "", time.Time{}, err

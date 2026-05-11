@@ -63,7 +63,9 @@ jobs:
           cache: true
 
       - name: go test
-        run: go test -race -count=1 -coverprofile=coverage.out ./...
+        # -short skips the tests/integration/ package — those need a live
+        # stack and are exercised by the separate `integration` job below.
+        run: go test -short -race -count=1 -coverprofile=coverage.out ./...
 
       - name: coverage summary
         run: go tool cover -func=coverage.out | tail -20
@@ -139,6 +141,67 @@ jobs:
           tags: convertpdfgo/worker:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ──────────────────────────────────────────────────────────────────────
+  # End-to-end: bring up the full stack (postgres + redis + gotenberg +
+  # api + worker) and run the integration suite against it. SKIP_OFFICE
+  # is intentionally NOT set so LibreOffice round-trips are exercised —
+  # they're the ones that historically broke silently.
+  # ──────────────────────────────────────────────────────────────────────
+  integration:
+    name: integration (end-to-end)
+    runs-on: ubuntu-latest
+    needs: [lint, test, build]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: start stack
+        # --profile full brings up api + worker alongside postgres / redis /
+        # gotenberg. The api container has RUN_MIGRATIONS=true so schema
+        # is applied during boot — no manual migrate step needed here.
+        run: docker compose --profile full up -d --build
+
+      - name: wait for /healthz
+        run: |
+          for i in $(seq 1 120); do
+            if curl -fsS http://localhost:8080/healthz > /dev/null; then
+              echo "api ready in ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::api did not become ready in 120s"
+          docker compose ps
+          docker compose logs --tail 300
+          exit 1
+
+      - name: integration suite
+        env:
+          BASE_URL: http://localhost:8080
+        run: go test ./tests/integration/... -count=1 -timeout 12m
+
+      - name: stack logs on failure
+        if: failure()
+        run: |
+          echo "::group::api logs"
+          docker compose logs --tail 200 api || true
+          echo "::endgroup::"
+          echo "::group::worker logs"
+          docker compose logs --tail 200 worker || true
+          echo "::endgroup::"
+          echo "::group::postgres logs"
+          docker compose logs --tail 100 postgres || true
+          echo "::endgroup::"
+
+      - name: tear down
+        if: always()
+        run: docker compose --profile full down -v
 
   # ──────────────────────────────────────────────────────────────────────
   # govulncheck flags known CVEs in our dependencies. continue-on-error so

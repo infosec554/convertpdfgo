@@ -15,8 +15,8 @@ const (
 	xlsxFixture = "testdata/test.xlsx"
 	pptxFixture = "testdata/test.pptx"
 
-	pollFast   = 30 * time.Second // pdfcpu jobs finish in <5s
-	pollNormal = 60 * time.Second // mid jobs (pdf-to-jpg)
+	pollFast   = 30 * time.Second  // pdfcpu jobs finish in <5s
+	pollNormal = 60 * time.Second  // mid jobs (pdf-to-jpg)
 	pollOffice = 120 * time.Second // LibreOffice / url-to-pdf
 )
 

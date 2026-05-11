@@ -87,7 +87,9 @@ func (h Handler) AuditByUserAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Latest auth events across every user (admin)
 // @Description  Powers the dashboard's "recent activity" feed. Sorted
-//               newest-first; capped at 500 to keep responses fast.
+//
+//	newest-first; capped at 500 to keep responses fast.
+//
 // @Tags         admin-audit
 // @Param        limit query int false "default 50, max 500"
 // @Success      200 {object} models.Response
@@ -116,8 +118,10 @@ func (h Handler) RecentActivityAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Emails with abnormal login_fail rate (admin)
 // @Description  Aggregates over the last `within` minutes (default 60).
-//               Reports any email with >= `min_fails` failures (default 5),
-//               grouping by email and listing distinct IPs.
+//
+//	Reports any email with >= `min_fails` failures (default 5),
+//	grouping by email and listing distinct IPs.
+//
 // @Tags         admin-audit
 // @Param        within    query int false "lookback window in minutes (default 60)"
 // @Param        min_fails query int false "threshold (default 5)"
@@ -135,8 +139,8 @@ func (h Handler) SuspiciousLoginsAdmin(c *gin.Context) {
 		return
 	}
 	handleResponse(c, h.log, "suspicious logins", http.StatusOK, gin.H{
-		"items":            items,
-		"within_minutes":   within,
-		"min_fails":        minFails,
+		"items":          items,
+		"within_minutes": within,
+		"min_fails":      minFails,
 	})
 }

@@ -15,8 +15,10 @@ import (
 // @Security     ApiKeyAuth
 // @Summary      List every file across users (admin)
 // @Description  Pagination via limit/offset. Filter by user_id (or pass
-//               "guest" for anonymous uploads), file_type extension, or
-//               a free-text search on file_name.
+//
+//	"guest" for anonymous uploads), file_type extension, or
+//	a free-text search on file_name.
+//
 // @Tags         admin-files
 // @Param        user_id   query string false "user id, or 'guest' for anonymous"
 // @Param        file_type query string false "file extension, e.g. .pdf"
@@ -52,7 +54,9 @@ func (h Handler) ListAllFilesAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Force-delete any file (admin)
 // @Description  Removes the DB row + the on-disk blob. Useful when a user
-//               can't reach their own /file/:id (e.g. they are blocked).
+//
+//	can't reach their own /file/:id (e.g. they are blocked).
+//
 // @Tags         admin-files
 // @Param        id path string true "file id"
 // @Success      200 {object} models.Response

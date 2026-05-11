@@ -55,10 +55,10 @@ func (h Handler) RequireAnyPermission(perms ...string) gin.HandlerFunc {
 			}
 		}
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"error":         "permission denied",
-			"required_any":  perms,
-			"role":          roleStr,
-			"request_id":    c.GetString("request_id"),
+			"error":        "permission denied",
+			"required_any": perms,
+			"role":         roleStr,
+			"request_id":   c.GetString("request_id"),
 		})
 	}
 }

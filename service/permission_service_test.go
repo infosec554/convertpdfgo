@@ -13,8 +13,8 @@ import (
 
 // fakePermStore counts DB calls so cache effectiveness is observable.
 type fakePermStore struct {
-	calls   int32
-	byRole  map[string][]string
+	calls  int32
+	byRole map[string][]string
 }
 
 func (f *fakePermStore) ListPermissionsForRole(_ context.Context, role string) ([]string, error) {

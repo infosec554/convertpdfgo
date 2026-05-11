@@ -90,7 +90,7 @@ func (r *adminStatsRepo) UserBuckets(ctx context.Context) (map[string]int, error
 }
 
 // TopUsersByDisk — left join so anonymous (guest) uploads still show up
-// with email = ''. Limit hard-capped at 200 to keep the response small.
+// with email = ”. Limit hard-capped at 200 to keep the response small.
 func (r *adminStatsRepo) TopUsersByDisk(ctx context.Context, limit int) ([]models.TopUserDisk, error) {
 	if limit <= 0 || limit > 200 {
 		limit = 50

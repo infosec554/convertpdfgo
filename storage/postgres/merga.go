@@ -69,7 +69,6 @@ func (m *mergeRepo) GetByID(ctx context.Context, id string) (*models.MergeJob, e
 		return nil, err
 	}
 
-	
 	inputs, err := m.GetInputFiles(ctx, job.ID)
 	if err != nil {
 		m.log.Error("⚠️ failed to fetch input files for merge job", logger.Error(err))
@@ -79,7 +78,6 @@ func (m *mergeRepo) GetByID(ctx context.Context, id string) (*models.MergeJob, e
 
 	return &job, nil
 }
-
 
 func (m *mergeRepo) AddInputFiles(ctx context.Context, jobID string, fileIDs []string) error {
 	query := `
@@ -97,7 +95,6 @@ func (m *mergeRepo) AddInputFiles(ctx context.Context, jobID string, fileIDs []s
 
 	return nil
 }
-
 
 func (m *mergeRepo) GetInputFiles(ctx context.Context, jobID string) ([]string, error) {
 	query := `SELECT file_id FROM merge_job_input_files WHERE job_id = $1`

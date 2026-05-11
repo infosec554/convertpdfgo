@@ -87,8 +87,8 @@ func TestExpiresAt(t *testing.T) {
 
 func TestMustValidateSecret(t *testing.T) {
 	cases := []struct {
-		name     string
-		val      string
+		name        string
+		val         string
 		shouldPanic bool
 	}{
 		{"empty", "", true},

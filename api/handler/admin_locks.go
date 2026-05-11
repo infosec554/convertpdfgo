@@ -15,8 +15,10 @@ import (
 // @Security     ApiKeyAuth
 // @Summary      Currently locked-out accounts (admin)
 // @Description  Reads the loginlimiter's Redis keyspace via SCAN. Returns
-//               every email that has hit the failure threshold and has
-//               not yet expired. Use /admin/auth/unlock to clear one.
+//
+//	every email that has hit the failure threshold and has
+//	not yet expired. Use /admin/auth/unlock to clear one.
+//
 // @Tags         admin-auth
 // @Param        limit query int false "max accounts to return, default 200"
 // @Success      200 {object} models.Response
@@ -44,8 +46,10 @@ func (h Handler) ListLockedAccountsAdmin(c *gin.Context) {
 // @Security     ApiKeyAuth
 // @Summary      Clear an account lockout (admin)
 // @Description  Wipes the loginlimiter counter for the given email so the
-//               next attempt goes through bcrypt again. Idempotent —
-//               unlocking an already-unlocked account is a no-op.
+//
+//	next attempt goes through bcrypt again. Idempotent —
+//	unlocking an already-unlocked account is a no-op.
+//
 // @Tags         admin-auth
 // @Param        request body object{email=string} true "email to unlock"
 // @Success      200 {object} models.Response

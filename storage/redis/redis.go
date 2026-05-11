@@ -18,7 +18,7 @@ func New(cfg config.Config) storage.IRedisStorage {
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisHost + ":" + cfg.RedisPort,
 		Password: cfg.RedisPassword,
-		DB:       0, 
+		DB:       0,
 	})
 
 	return &redisRepo{

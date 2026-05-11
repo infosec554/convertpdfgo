@@ -12,5 +12,5 @@ type HTMLToPDFJob struct {
 }
 
 type CreateHTMLToPDFRequest struct {
-	HTMLContent string  `json:"html_content" binding:"required"`
+	HTMLContent string `json:"html_content" binding:"required"`
 }
