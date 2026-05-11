@@ -10,7 +10,7 @@
 | # | Muammo | Fix | Vaqt |
 |---|--------|-----|------|
 | 1 | ~~Integration test yo'q~~ ✅ **DONE** — `tests/integration/`, 25 test, `make test` + `make test-integration` | done | (3.5s) |
-| 2 | **CI yo'q** — har push manual deploy | GitHub Actions: vet + build + integration test | **3s** |
+| 2 | ~~CI yo'q~~ ✅ **DONE** — vet+gofmt / unit / build / docker / **integration (live stack)** / vuln scan | done | (2.5s) |
 | 3 | **Postgres parol drift** — har redeploy'da `ALTER USER` qilishimga to'g'ri keldi | `initdb.d/` init script + healthcheck env'dan o'qiydi | **30m** |
 | 4 | **Schema↔kod sync yo'q** — 3 ta jadval kod'da bor, migration'da yo'q edi (oylar davomida) | CI'da `migrate up` + `INSERT/SELECT` smoke test | **1s** |
 
