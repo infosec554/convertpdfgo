@@ -17,6 +17,14 @@ env:
   # patch automatically.
   GO_VERSION: "1.25.x"
 
+# api/router.go imports the generated swagger package (`_ "convertpdfgo/api/docs"`)
+# but api/docs/ is .gitignore'd — committing every regen would churn the diff.
+# Every job that needs to compile the api binary or run vet/tests has to
+# generate it first; we do that through this reusable shell snippet.
+#
+# The build images bypass this because the Dockerfile generates docs inside
+# the container too — see Dockerfile.
+
 jobs:
   # ──────────────────────────────────────────────────────────────────────
   # Lint + vet are cheap; running them in their own job lets contributors
@@ -33,6 +41,13 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+
+      - name: generate swagger docs
+        # api/docs/ is .gitignored — recreate it so the `_ "convertpdfgo/api/docs"`
+        # import in api/router.go resolves.
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init --g api/router.go -o api/docs
 
       - name: gofmt check
         run: |
@@ -61,6 +76,11 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+
+      - name: generate swagger docs
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init --g api/router.go -o api/docs
 
       - name: go test
         # -short skips the tests/integration/ package — those need a live
@@ -92,6 +112,11 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+
+      - name: generate swagger docs
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init --g api/router.go -o api/docs
 
       - name: build api
         run: CGO_ENABLED=0 go build -ldflags="-s -w" -o /tmp/api ./cmd
@@ -161,6 +186,11 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: generate swagger docs
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init --g api/router.go -o api/docs
+
       - name: start stack
         # --profile full brings up api + worker alongside postgres / redis /
         # gotenberg. The api container has RUN_MIGRATIONS=true so schema
@@ -219,6 +249,11 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: true
+
+      - name: generate swagger docs
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init --g api/router.go -o api/docs
 
       - name: govulncheck
         run: |

@@ -12,9 +12,15 @@ COPY go.mod go.sum ./
 COPY . .
 
 ARG TARGET=api
+# api/docs/ is .gitignored — regenerate via swag before building so the
+# `_ "convertpdfgo/api/docs"` import in api/router.go resolves. The
+# worker target doesn't need it (no router import), but generating
+# unconditionally is simpler than branching here.
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     go mod tidy && \
+    go install github.com/swaggo/swag/cmd/swag@latest && \
+    swag init --g api/router.go -o api/docs && \
     case "$TARGET" in \
       api)    CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/app ./cmd ;; \
       worker) CGO_ENABLED=0 go build -ldflags="-s -w" -o /out/app ./cmd/worker ;; \
