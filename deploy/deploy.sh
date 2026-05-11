@@ -8,9 +8,17 @@
 #   deploy/deploy.sh sha-abc1234      # pin to a specific build
 #   deploy/deploy.sh v1.2.3           # pin to a release tag
 #
-# Pre-reqs (one-time):
-#   - `docker login ghcr.io` with a token that has `read:packages` scope
-#   - Repo cloned to /root/convertpdfgo (or wherever; script is path-agnostic)
+# Pre-reqs (one-time, on the deploy host):
+#   1. Repo cloned to /root/convertpdfgo (or wherever; the script is
+#      path-agnostic but expects `docker-compose.yml` in the cwd).
+#   2. Either:
+#        a) Make the GHCR packages public — open
+#           https://github.com/users/<owner>/packages/container/convertpdfgo-api/settings
+#           and the same for /convertpdfgo-worker; flip visibility to
+#           "Public". No host-side credentials needed afterward.
+#        b) Or `docker login ghcr.io` with a PAT that has read:packages.
+#           Stash the credential under /root/.docker/config.json so it
+#           survives reboots.
 #
 # Rollback: re-run with the previous sha-XXXXXXX tag. Every main push
 # produces one, retention follows GHCR defaults (forever for public).
