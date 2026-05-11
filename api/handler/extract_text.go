@@ -46,7 +46,7 @@ func (h *Handler) CreateExtractTextJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to enqueue task", http.StatusInternalServerError, err.Error())
 		return
 	}
-	handleResponse(c, h.log, "extract_text job queued", http.StatusAccepted, gin.H{"id": jobID, "status": "pending"})
+	handleResponse(c, h.log, "extract_text job queued", http.StatusAccepted, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusPending})
 }
 
 // GetExtractTextJob godoc

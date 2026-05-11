@@ -54,7 +54,7 @@ func (h Handler) CreateJPGToPDF(c *gin.Context) {
 		return
 	}
 
-	handleResponse(c, h.log, "jpg_to_pdf job queued", http.StatusAccepted, gin.H{"id": jobID, "status": "pending"})
+	handleResponse(c, h.log, "jpg_to_pdf job queued", http.StatusAccepted, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusPending})
 }
 
 // GetJPGToPDFJob godoc

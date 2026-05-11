@@ -121,7 +121,9 @@ func (c *Client) UploadFile(t *testing.T, path string) string {
 }
 
 // PostJob marshals body, hits the endpoint, returns the created job ID.
-// Accepts 200/201/202 — the codebase isn't yet unified on a single choice.
+// Accepts 200 (synchronous endpoints like inspect) and 202 (every async
+// job creation). After WEAKNESSES.md #7/9 these are the only correct
+// codes — drift here would surface as a test failure.
 func (c *Client) PostJob(t *testing.T, path string, body any) string {
 	t.Helper()
 	b, err := json.Marshal(body)
@@ -141,8 +143,8 @@ func (c *Client) PostJob(t *testing.T, path string, body any) string {
 	if err := json.Unmarshal(raw, &env); err != nil {
 		t.Fatalf("post %s decode: %v body=%s", path, err, string(raw))
 	}
-	if env.StatusCode != http.StatusAccepted && env.StatusCode != http.StatusCreated && env.StatusCode != http.StatusOK {
-		t.Fatalf("post %s status=%d data=%s", path, env.StatusCode, string(env.Data))
+	if env.StatusCode != http.StatusAccepted && env.StatusCode != http.StatusOK {
+		t.Fatalf("post %s status=%d (want 200 or 202) data=%s", path, env.StatusCode, string(env.Data))
 	}
 	var d struct {
 		ID string `json:"id"`

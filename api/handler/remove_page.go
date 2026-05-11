@@ -50,7 +50,7 @@ func (h Handler) CreateRemovePagesJob(c *gin.Context) {
 		return
 	}
 
-	handleResponse(c, h.log, "remove pages job queued", http.StatusAccepted, gin.H{"id": jobID, "status": "pending"})
+	handleResponse(c, h.log, "remove pages job queued", http.StatusAccepted, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusPending})
 }
 
 // GetRemovePagesJob godoc

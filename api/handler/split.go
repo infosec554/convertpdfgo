@@ -52,7 +52,7 @@ func (h Handler) CreateSplitJob(c *gin.Context) {
 		return
 	}
 
-	handleResponse(c, h.log, "split job queued", http.StatusAccepted, gin.H{"id": jobID, "status": "pending"})
+	handleResponse(c, h.log, "split job queued", http.StatusAccepted, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusPending})
 }
 
 // GetSplitJob godoc

@@ -55,7 +55,7 @@ func (h Handler) CreateMergeJob(c *gin.Context) {
 		return
 	}
 
-	handleResponse(c, h.log, "merge job queued", http.StatusAccepted, gin.H{"id": id, "status": "pending"})
+	handleResponse(c, h.log, "merge job queued", http.StatusAccepted, models.JobCreatedResponse{ID: id, Status: models.JobStatusPending})
 }
 
 // GetMergeJob godoc

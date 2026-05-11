@@ -46,7 +46,7 @@ func (h *Handler) CreateURLToPDFJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to enqueue task", http.StatusInternalServerError, err.Error())
 		return
 	}
-	handleResponse(c, h.log, "url_to_pdf job queued", http.StatusAccepted, gin.H{"id": jobID, "status": "pending"})
+	handleResponse(c, h.log, "url_to_pdf job queued", http.StatusAccepted, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusPending})
 }
 
 // GetURLToPDFJob godoc

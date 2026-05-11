@@ -46,7 +46,7 @@ func (h *Handler) CreateNUpJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to enqueue task", http.StatusInternalServerError, err.Error())
 		return
 	}
-	handleResponse(c, h.log, "nup job queued", http.StatusAccepted, gin.H{"id": jobID, "status": "pending"})
+	handleResponse(c, h.log, "nup job queued", http.StatusAccepted, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusPending})
 }
 
 // GetNUpJob godoc

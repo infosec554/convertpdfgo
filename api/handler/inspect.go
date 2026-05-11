@@ -44,7 +44,9 @@ func (h Handler) CreateInspectJob(c *gin.Context) {
 		return
 	}
 
-	handleResponse(c, h.log, "inspect job created", http.StatusCreated, gin.H{"id": jobID})
+	// inspect runs synchronously inside the service — return 200 + Done
+	// instead of 202/Created so callers can short-circuit polling.
+	handleResponse(c, h.log, "inspect job created", http.StatusOK, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusDone})
 }
 
 // GetInspectJob godoc

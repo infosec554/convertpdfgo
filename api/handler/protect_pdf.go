@@ -58,7 +58,7 @@ func (h *Handler) CreateProtectJob(c *gin.Context) {
 		return
 	}
 
-	handleResponse(c, h.log, "protect job queued", http.StatusAccepted, gin.H{"id": jobID, "status": "pending"})
+	handleResponse(c, h.log, "protect job queued", http.StatusAccepted, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusPending})
 }
 
 // GetProtectJob godoc
