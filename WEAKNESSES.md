@@ -12,7 +12,7 @@
 | 1 | ~~Integration test yo'q~~ ✅ **DONE** — `tests/integration/`, 25 test, `make test` + `make test-integration` | done | (3.5s) |
 | 2 | ~~CI yo'q~~ ✅ **DONE** — vet+gofmt / unit / build / docker / **integration (live stack)** / vuln scan | done | (2.5s) |
 | 3 | ~~Postgres parol drift~~ ✅ **DONE** — `deploy/postgres/sync-password.sh` har boot'da `ALTER USER` via Unix socket. Drift simulyatsiyasi prod'da pass. | done | (45m) |
-| 4 | **Schema↔kod sync yo'q** — 3 ta jadval kod'da bor, migration'da yo'q edi (oylar davomida) | CI'da `migrate up` + `INSERT/SELECT` smoke test | **1s** |
+| 4 | ~~Schema↔kod sync yo'q~~ ✅ **DONE** — `tests/schema/schema_test.go` static check. 2 ta yangi bug topdi: `userstats.go` jadval bo'lmagan `convert_*_pdf_jobs`'ni so'rardi (`/me/stats` 500). | done | (1h) |
 
 > P0 jami: **8.5 soat**. Bularsiz har keyingi feature yana 20 ta yashirin bug bilan keladi.
 
