@@ -107,7 +107,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          platforms: linux/amd64,linux/arm64
+          # amd64 only for now — the pdfcpu CLI tarball we pull is
+          # Linux_x86_64; arm64 would need a TARGETARCH-aware fetch.
+          # Our server is amd64; drop here, revisit when we cross-arch.
+          platforms: linux/amd64
 
   # ──────────────────────────────────────────────────────────────────────
   # Cut a GitHub Release with auto-generated notes (commits since the
