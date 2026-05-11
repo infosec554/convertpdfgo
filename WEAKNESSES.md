@@ -22,7 +22,7 @@
 
 | # | Muammo | Fix | Vaqt |
 |---|--------|-----|------|
-| 5 | **UserID inkonsistent** — `string` vs `*string` qo'shaloq pattern | Hamma joyda `*string`, helper `userPtr(c)` handler'da | 2s |
+| 5 | ~~UserID inkonsistent~~ ✅ **DONE** — `userPtr(c)` helper + 4 ta service/model `*string`'ga konvert. | done | (1h) |
 | 6 | **Service `Create` signature 3 xil** — `(req, *string)`, `(req, string)`, `(fileID, userID string)` | Yagona: `Create(ctx, req T, userID *string) (jobID string, err error)` | 2s |
 | 7 | **Response envelope farq** — `{id}` vs `{job_id}` vs `{output_file_id}` | Bitta `JobCreatedResponse{ID, Status}` struct | 30m |
 | 8 | **JSON tag yo'q** ba'zi modellarda (`MergeJob` PascalCase chiqarardi) | Linter rule + audit | 30m |
