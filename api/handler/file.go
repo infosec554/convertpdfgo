@@ -171,11 +171,19 @@ func (h Handler) GetFile(c *gin.Context) {
 	handleResponse(c, h.log, "file found", http.StatusOK, file)
 }
 
-// DownloadFile streams the binary content of a stored file. Counterpart
-// to GetFile (which returns the metadata JSON) — the conversion result
-// only becomes useful once the user can actually fetch the bytes.
-// Access matches GetFile's posture: any valid token may pull files in
-// the system today; tightening to owner-only is a follow-up.
+// DownloadFile streams the binary content of a stored file.
+//
+// Authorization model:
+//
+//   - Guest files (user_id IS NULL): anyone with the file ID can download.
+//     The ID is a UUIDv4 — unguessable in practice.
+//   - Owned files (user_id IS NOT NULL): only the owner or an admin /
+//     superadmin can download. Other guests / users hit 404 (the same
+//     code as "file not found" so the endpoint doesn't reveal whether
+//     a given ID exists).
+//
+// OptionalAuthMiddleware populates user_id when a valid Bearer token is
+// attached; absence means the caller is treated as a guest.
 //
 // @Router       /file/{id}/download [GET]
 // @Summary      Download raw file bytes
@@ -193,6 +201,20 @@ func (h Handler) DownloadFile(c *gin.Context) {
 	if err != nil {
 		handleResponse(c, h.log, "file not found", http.StatusNotFound, err.Error())
 		return
+	}
+
+	// Ownership gate: if the file has an owner, the caller must be that
+	// owner OR an admin. Empty file.UserID (guest upload) is open.
+	if file.UserID != nil && *file.UserID != "" {
+		caller := c.GetString("user_id")
+		role := c.GetString("user_role")
+		isAdmin := role == "admin" || role == "superadmin"
+		if !isAdmin && caller != *file.UserID {
+			// Use 404 (not 403) so the response is identical whether the
+			// file exists or not — no probing-via-error-code.
+			handleResponse(c, h.log, "file not found", http.StatusNotFound, "no such file")
+			return
+		}
 	}
 
 	if _, err := os.Stat(file.FilePath); err != nil {

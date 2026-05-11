@@ -98,6 +98,62 @@ func (h Handler) AuthorizerMiddleware(c *gin.Context) {
 	c.Next()
 }
 
+// OptionalAuthMiddleware is the soft sibling of AuthorizerMiddleware:
+// if a valid Bearer is present, it sets user_id / user_role just like
+// the strict version; if it's missing or invalid, the request continues
+// as an anonymous guest. Used on routes that need ownership-aware
+// behaviour but still serve guests (e.g. /file/{id}/download — owner
+// check only kicks in for files that *have* an owner).
+func (h Handler) OptionalAuthMiddleware(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.Next()
+		return
+	}
+	parts := strings.Split(authHeader, " ")
+	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+		c.Next() // malformed — treat as guest
+		return
+	}
+	claims, err := jwt.ExtractClaims(parts[1])
+	if err != nil {
+		c.Next() // expired/invalid — treat as guest
+		return
+	}
+	if typ, _ := claims["typ"].(string); typ != "" && typ != jwt.TokenTypeAccess {
+		c.Next()
+		return
+	}
+	jti, _ := claims["jti"].(string)
+	if jti != "" && h.bl.IsRevoked(c.Request.Context(), jti) {
+		c.Next() // revoked — pretend they didn't auth
+		return
+	}
+	userID, ok := claims["user_id"].(string)
+	if !ok || userID == "" {
+		c.Next()
+		return
+	}
+	if cutoff := h.bl.UserRevokedAfter(c.Request.Context(), userID); cutoff > 0 {
+		var iat int64
+		switch v := claims["iat"].(type) {
+		case float64:
+			iat = int64(v)
+		case int64:
+			iat = v
+		}
+		if iat > 0 && iat < cutoff {
+			c.Next() // session revoked — anonymous from here
+			return
+		}
+	}
+	c.Set("user_id", userID)
+	if role, ok := claims["user_role"].(string); ok {
+		c.Set("user_role", role)
+	}
+	c.Next()
+}
+
 func (h Handler) AdminMiddleware(c *gin.Context) {
 	roleVal, exists := c.Get("user_role")
 	if !exists {

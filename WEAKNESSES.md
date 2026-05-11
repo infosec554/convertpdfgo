@@ -28,7 +28,7 @@
 | 8 | ~~JSON tag yo'q~~ ✅ **DONE** — `tests/jsontags/` AST audit. `File` snake_case keldi, `Response` PascalCase aniq tag bilan, dead code (FileUploadRequest, MergeJobInputFile) o'chirildi. | done | (45m) |
 | 9 | ~~Status code farq~~ ✅ **DONE** (#7 bilan) — async = 202, sync inspect = 200. PostJob test client buni qattiq tekshiradi. | done | — |
 | 10 | ~~OID-25 pgx bug~~ ✅ **DONE** — `tests/sqlcasts/` `(…)::TYPE` ichida cast'siz `$N` qidiradi. Sanity bilan 3 ta historik bug detect qilindi. | done | (45m) |
-| 11 | **`/file/:id/download` owner check yo'q** — bir guest ID bilsa, boshqaning faylini yuklaydi | UserID match qilish (auth bor bo'lsa) | 1s |
+| 11 | ~~`/file/:id/download` owner check yo'q~~ ✅ **DONE** — `OptionalAuthMiddleware` + handler ownership gate. Guest files open; owned files faqat owner/admin'ga. Prod'da curl bilan tasdiqlangan. | done | (45m) |
 | 12 | **Manual tarball deploy** — `latest` tag overwrite, ro'lback yo'q | `gh release` + image tag = commit-sha | 2s |
 | 13 | **Audit silent failures** — guest cleaner FK error'larini warn'ga log + continue (oylar davomida row to'plandi) | Prometheus alert + non-fatal error rate threshold | 1s |
 | 14 | **Rate limiter UA-key** — User-Agent bo'sh bo'lsa, hamma anonim bitta bucket'ga | IP-only key (UA olib tashlash) | 30m |

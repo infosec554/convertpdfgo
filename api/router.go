@@ -103,8 +103,12 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	// 4. Files — upload is open (limit-based register prompt); the rest
 	// needs auth.
 	// =====================================================================
-	r.POST("/file/upload", h.UploadFile)        // open: tiered cap inside handler
-	r.GET("/file/:id/download", h.DownloadFile) // open: needed so guests can pull conversion outputs
+	r.POST("/file/upload", h.UploadFile) // open: tiered cap inside handler
+	// Download is open in the sense that no auth is *required* — but
+	// OptionalAuthMiddleware populates user_id when present so the
+	// handler's ownership check can recognise registered owners. Guests
+	// keep accessing their guest uploads as before.
+	r.GET("/file/:id/download", h.OptionalAuthMiddleware, h.DownloadFile)
 	file := r.Group("/file", h.AuthorizerMiddleware)
 	{
 		file.GET("/list", h.ListUserFiles)
