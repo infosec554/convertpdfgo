@@ -1,0 +1,63 @@
+# Prometheus alert rules.
+#
+# WEAKNESSES.md #13 — silent-failure paths were rolling errors into the
+# log forever with nobody noticing. Every `metrics.SilentError(op)`
+# call site lands in convertpdfgo_errors_silent_total{op="..."}; an op
+# label > 0/min sustained for five minutes pages the operator.
+
+groups:
+  - name: silent-errors
+    rules:
+      - alert: SilentErrorsClimbing
+        # Anything over 1 silent error per minute, sustained for 5 min,
+        # is worth investigating. Lower threshold = more noise; higher =
+        # we miss slow leaks like the months-long guest cleanup drift.
+        expr: |
+          sum by (op) (rate(convertpdfgo_errors_silent_total[5m])) > 1/60
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Silent error path {{ $labels.op }} climbing"
+          description: |
+            convertpdfgo_errors_silent_total{op="{{ $labels.op }}"} is
+            seeing > 1 error per minute for the last 5 minutes. The
+            error is being logged-and-swallowed somewhere — check api/
+            worker logs filtered to that op (e.g. `cleaner.db_remove`,
+            `auth_audit.insert`).
+
+      - alert: AuthAuditDown
+        # Auth audit failures are security-critical — if we can't log
+        # login_fail events, we lose investigation surface.
+        expr: |
+          rate(convertpdfgo_errors_silent_total{op="auth_audit.insert"}[5m]) > 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Auth audit inserts are failing"
+          description: |
+            One or more auth_audit.insert errors in the last 5 minutes.
+            Login/logout events are being lost — investigate DB
+            connectivity, schema version, and the audit_audit table
+            constraints immediately.
+
+  - name: queue-health
+    rules:
+      - alert: WorkerJobsFailing
+        # Per-task failure rate over 10% sustained for 10 min — most
+        # PDF jobs hit retries, this fires only on real regressions.
+        expr: |
+          sum by (task) (rate(convertpdfgo_worker_jobs_processed_total{status="error"}[10m]))
+            /
+          sum by (task) (rate(convertpdfgo_worker_jobs_processed_total[10m]))
+            > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Worker failure rate > 10% for {{ $labels.task }}"
+          description: |
+            Worker has been failing > 10% of {{ $labels.task }} jobs
+            for 10 minutes. Check upstream tool (pdfcpu / gotenberg /
+            tesseract) availability, then job-level error logs.

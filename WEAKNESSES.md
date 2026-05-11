@@ -30,7 +30,7 @@
 | 10 | ~~OID-25 pgx bug~~ ✅ **DONE** — `tests/sqlcasts/` `(…)::TYPE` ichida cast'siz `$N` qidiradi. Sanity bilan 3 ta historik bug detect qilindi. | done | (45m) |
 | 11 | ~~`/file/:id/download` owner check yo'q~~ ✅ **DONE** — `OptionalAuthMiddleware` + handler ownership gate. Guest files open; owned files faqat owner/admin'ga. Prod'da curl bilan tasdiqlangan. | done | (45m) |
 | 12 | ~~Manual tarball deploy~~ ✅ **DONE** — release.yml har main push'da GHCR'ga `sha-<short>` + `:main`. `deploy/deploy.sh <tag>` pull qiladi. Server'da bir martalik GHCR public/login setup kerak. | done | (1h) |
-| 13 | **Audit silent failures** — guest cleaner FK error'larini warn'ga log + continue (oylar davomida row to'plandi) | Prometheus alert + non-fatal error rate threshold | 1s |
+| 13 | ~~Audit silent failures~~ ✅ **DONE** — `metrics.SilentError(op)` counter, swallow-error joylarga wired; `deploy/alerts.yml` Prometheus rule (op > 1/min for 5m → page). | done | (45m) |
 | 14 | **Rate limiter UA-key** — User-Agent bo'sh bo'lsa, hamma anonim bitta bucket'ga | IP-only key (UA olib tashlash) | 30m |
 
 > P1 jami: **~11 soat**.

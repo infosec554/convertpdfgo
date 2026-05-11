@@ -9,6 +9,7 @@ import (
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
+	"convertpdfgo/pkg/metrics"
 	"convertpdfgo/storage"
 )
 
@@ -93,9 +94,11 @@ func (s *fileService) CleanupGuestFiles(ctx context.Context, minutes int) (int, 
 	count := 0
 	for _, f := range files {
 		if err := os.Remove(f.FilePath); err != nil && !os.IsNotExist(err) {
+			metrics.SilentError("cleaner.disk_remove")
 			s.log.Warning("cleanup guest: remove disk", logger.Error(err), logger.String("path", f.FilePath))
 		}
 		if err := s.stg.DeleteByID(ctx, f.ID); err != nil {
+			metrics.SilentError("cleaner.db_remove")
 			s.log.Warning("cleanup guest: remove db", logger.Error(err), logger.String("id", f.ID))
 			continue
 		}
@@ -116,9 +119,11 @@ func (s *fileService) CleanupAllFiles(ctx context.Context, minutes int) (int, er
 	count := 0
 	for _, f := range files {
 		if err := os.Remove(f.FilePath); err != nil && !os.IsNotExist(err) {
+			metrics.SilentError("cleaner.disk_remove")
 			s.log.Warning("cleanup all: remove disk", logger.Error(err), logger.String("path", f.FilePath))
 		}
 		if err := s.stg.DeleteByID(ctx, f.ID); err != nil {
+			metrics.SilentError("cleaner.db_remove")
 			s.log.Warning("cleanup all: remove db", logger.Error(err), logger.String("id", f.ID))
 			continue
 		}

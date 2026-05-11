@@ -8,6 +8,7 @@ import (
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
+	"convertpdfgo/pkg/metrics"
 	"convertpdfgo/storage"
 )
 
@@ -31,7 +32,9 @@ func (r *authAuditRepo) Record(ctx context.Context, e models.AuthAudit) error {
 	`
 	_, err := r.db.Exec(ctx, q, id, e.UserID, e.Email, e.Event, e.Provider, e.IP, e.UserAgent)
 	if err != nil {
-		// Audit failures must not break login. Log + swallow.
+		// Audit failures must not break login. Log + swallow, but the
+		// metric makes it alertable instead of silently lost.
+		metrics.SilentError("auth_audit.insert")
 		r.log.Error("auth_audit: insert", logger.Error(err), logger.String("event", e.Event))
 		return err
 	}

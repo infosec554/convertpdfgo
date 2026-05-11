@@ -85,6 +85,30 @@ var (
 		},
 		[]string{"method", "path"},
 	)
+
+	// SilentErrors counts "we logged + kept going" failure paths so they
+	// can be alerted on instead of disappearing into the log feed.
+	//
+	// `op` is a stable key per call-site:
+	//   auth_audit.insert      — security log row failed to persist
+	//   cleaner.disk_remove    — file delete from disk failed
+	//   cleaner.db_remove      — file row delete failed
+	//   cache.lookup           — result-cache Get returned an unexpected error
+	//   cache.write            — result-cache Set failed (best-effort)
+	//   gotenberg.request      — gotenberg call non-retried failure
+	//
+	// Alert rule lives in deploy/prometheus/alerts.yml — anything > 1/min
+	// sustained for 5 min pages the operator. Background: WEAKNESSES.md #13
+	// — guest cleanup silently swallowed FK violations for months.
+	SilentErrors = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "convertpdfgo",
+			Subsystem: "errors",
+			Name:      "silent_total",
+			Help:      "Errors we logged and continued past. Should stay near zero.",
+		},
+		[]string{"op"},
+	)
 )
 
 func init() {
@@ -92,7 +116,15 @@ func init() {
 		JobsEnqueued, JobsProcessed, JobDuration,
 		CacheHits, CacheMisses,
 		HTTPRequests, HTTPDuration,
+		SilentErrors,
 	)
+}
+
+// SilentError increments the silent_total counter for the given op
+// keyword. Caller still logs the error; this just ensures Prometheus
+// sees it.
+func SilentError(op string) {
+	SilentErrors.WithLabelValues(op).Inc()
 }
 
 // Handler returns the /metrics handler that exposes all registered metrics

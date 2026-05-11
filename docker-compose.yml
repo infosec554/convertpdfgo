@@ -92,6 +92,9 @@ services:
       - "9090:9090"
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Rules are loaded via `rule_files: - alerts.yml` in prometheus.yml.
+      # Mount alongside so the relative path resolves inside /etc/prometheus.
+      - ./deploy/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     profiles: ["full", "monitoring"]
 
