@@ -63,7 +63,10 @@ func (f *fakeRedis) Keys(_ context.Context, _ string, _ int) ([]string, error) {
 	return nil, nil
 }
 
-func (f *fakeRedis) Del(_ context.Context, _ string) error {
+func (f *fakeRedis) Del(_ context.Context, k string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	delete(f.store, k)
 	return nil
 }
 

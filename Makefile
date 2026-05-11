@@ -1,5 +1,6 @@
 .PHONY: up down restart logs psql redis-cli migrate clean generate
 .PHONY: build run worker tidy lint pprof asynqmon
+.PHONY: test test-unit test-integration
 
 # === Docker stack ===
 up:
@@ -56,6 +57,25 @@ admin-list-permissions:
 
 admin-list-roles:
 	go run ./cmd/admin-bootstrap list-roles
+
+# === Tests ===
+# Default: everything except integration. Use `make test-integration` (or
+# `make test BASE_URL=http://host:8080 INTEGRATION=1`) when a running API
+# is available.
+test:
+	go test ./... -short
+
+test-unit:
+	go test ./... -short -count=1
+
+# Integration tests hit a live API. Defaults:
+#   BASE_URL=http://127.0.0.1:8080
+#   SKIP_OFFICE=  (set to skip LibreOffice — slow)
+#   SKIP_URL=     (set to skip url-to-pdf — needs egress)
+# Pass `-run TestX` to focus on a single test:
+#   make test-integration ARGS='-run TestWatermark -v'
+test-integration:
+	go test ./tests/integration/... -count=1 -timeout 10m $(ARGS)
 
 # === Tooling ===
 generate:

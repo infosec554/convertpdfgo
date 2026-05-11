@@ -97,13 +97,20 @@ func (s *permissionService) PermissionsForRole(ctx context.Context, role string)
 	return perms, nil
 }
 
-// Invalidate drops the local cache entry for a role. Call after granting
-// or revoking permissions so the change becomes visible without waiting
-// for TTL expiry. (Redis entry will refresh from DB on next miss.)
+// Invalidate drops BOTH the local and redis cache entries for a role.
+// Call after granting or revoking permissions so the change becomes
+// visible without waiting for TTL expiry. The redis del is best-effort:
+// stale-by-TTL is recoverable, but a permission grant that doesn't
+// surface for hours is not.
 func (s *permissionService) Invalidate(role string) {
 	s.mu.Lock()
 	delete(s.localCache, role)
 	s.mu.Unlock()
+	if s.redis != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+		_ = s.redis.Del(ctx, redisKeyForRole(role))
+	}
 }
 
 func (s *permissionService) lookupLocal(role string) ([]string, bool) {
