@@ -13,6 +13,13 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Wrapper forces the postgres role's password to match POSTGRES_PASSWORD
+      # on every boot. The stock image only honours the env on FIRST init,
+      # so any later drift between env and on-disk password meant the api
+      # silently couldn't authenticate. WEAKNESSES.md #3 has the full story.
+      - ./deploy/postgres/sync-password.sh:/usr/local/bin/sync-password.sh:ro
+    entrypoint: ["bash", "/usr/local/bin/sync-password.sh"]
+    command: ["postgres"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
