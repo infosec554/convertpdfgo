@@ -24,9 +24,9 @@
 |---|--------|-----|------|
 | 5 | ~~UserID inkonsistent~~ ✅ **DONE** — `userPtr(c)` helper + 4 ta service/model `*string`'ga konvert. | done | (1h) |
 | 6 | ~~Service `Create` 3 xil~~ ✅ **DONE** — inspect + detect-blank ham `req T` pattern'ga keldi. Yagona shakl: `Create(ctx, req T, userID *string) (jobID, error)`. | done | (15m) |
-| 7 | **Response envelope farq** — `{id}` vs `{job_id}` vs `{output_file_id}` | Bitta `JobCreatedResponse{ID, Status}` struct | 30m |
+| 7 | ~~Response envelope farq~~ ✅ **DONE** — `models.JobCreatedResponse{ID, Status}` + 4 ta `JobStatus*` const. 26 handler unified. | done | (1h) |
 | 8 | **JSON tag yo'q** ba'zi modellarda (`MergeJob` PascalCase chiqarardi) | Linter rule + audit | 30m |
-| 9 | **Status code farq** — 201/202/200 bir xil "job queued" uchun | Hamma async: **202**. Sync (`inspect`): **200**. | 30m |
+| 9 | ~~Status code farq~~ ✅ **DONE** (#7 bilan) — async = 202, sync inspect = 200. PostJob test client buni qattiq tekshiradi. | done | — |
 | 10 | **OID-25 pgx bug** 2 joyda topildi — qolganini auditga | `grep -rn "|| '.*'" storage/postgres/` | 1s |
 | 11 | **`/file/:id/download` owner check yo'q** — bir guest ID bilsa, boshqaning faylini yuklaydi | UserID match qilish (auth bor bo'lsa) | 1s |
 | 12 | **Manual tarball deploy** — `latest` tag overwrite, ro'lback yo'q | `gh release` + image tag = commit-sha | 2s |
