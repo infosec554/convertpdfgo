@@ -23,6 +23,7 @@ const (
 	JobStatusDone       = "done"
 	JobStatusFailed     = "failed"
 )
+
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }

@@ -33,15 +33,15 @@ import (
 
 // Tables we *read* but never *own*. Postgres internals + golang-migrate.
 var ignoredTables = map[string]bool{
-	"pg_constraint":     true,
-	"pg_class":          true,
-	"pg_attribute":      true,
-	"pg_tables":         true,
-	"pg_namespace":      true,
-	"pg_indexes":        true,
+	"pg_constraint":        true,
+	"pg_class":             true,
+	"pg_attribute":         true,
+	"pg_tables":            true,
+	"pg_namespace":         true,
+	"pg_indexes":           true,
 	"pg_get_constraintdef": true, // function in pg_constraint queries
-	"schema_migrations": true,
-	"information_schema": true,
+	"schema_migrations":    true,
+	"information_schema":   true,
 }
 
 // Capture the table name following the verbs that bind a relation.
