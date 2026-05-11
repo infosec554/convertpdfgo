@@ -1,15 +1,18 @@
 name: Release
 
 # Triggers on:
-#   1. Pushing a tag that looks like v1.2.3 → builds + pushes versioned images
-#   2. Manual dispatch with a tag input → useful for hotfixes
+#   1. Pushing a tag that looks like v1.2.3 → versioned images + GH release
+#   2. Pushing to main             → rolling :main + :sha-<short> tags, no release
+#   3. Manual dispatch with a tag  → hotfixes
 #
 # Images go to GitHub Container Registry (GHCR), free for public/private.
+# Rollback: pin TAG to any sha-<short> the workflow produced.
 # To use Docker Hub instead: change `registry` and add DOCKERHUB_USERNAME /
 # DOCKERHUB_TOKEN secrets.
 
 on:
   push:
+    branches: [main]
     tags:
       - "v*.*.*"
   workflow_dispatch:
@@ -43,8 +46,17 @@ jobs:
           go-version: "1.25.x"
           cache: true
 
+      - name: generate swagger docs
+        # api/docs/ is .gitignored — every job that compiles the api binary
+        # has to regenerate before vet/build/test.
+        run: |
+          go install github.com/swaggo/swag/cmd/swag@latest
+          swag init --g api/router.go -o api/docs
+
       - run: go vet ./...
-      - run: go test -race -count=1 ./...
+      # -short skips tests/integration/* — those need a live stack and run
+      # in the CI workflow's integration job, not here.
+      - run: go test -short -race -count=1 ./...
       - run: CGO_ENABLED=0 go build -o /tmp/api ./cmd
       - run: CGO_ENABLED=0 go build -o /tmp/worker ./cmd/worker
       - run: CGO_ENABLED=0 go build -o /tmp/admin-bootstrap ./cmd/admin-bootstrap
@@ -81,6 +93,8 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=main,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short,enable=${{ github.event_name == 'push' }}
             type=raw,value=${{ github.event.inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: build & push

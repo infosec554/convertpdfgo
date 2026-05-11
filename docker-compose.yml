@@ -111,6 +111,10 @@ services:
     profiles: ["full", "monitoring"]
 
   api:
+    # IMAGE override takes priority: set API_IMAGE=ghcr.io/.../convertpdfgo-api:sha-abc1234
+    # to pin a specific build (rollback or CI deploy). If unset, falls back
+    # to a local rebuild (`docker compose up --build`) — useful for dev.
+    image: ${API_IMAGE:-convertpdfgo-api}
     build:
       context: .
       args:
@@ -146,6 +150,7 @@ services:
     profiles: ["full"]
 
   worker:
+    image: ${WORKER_IMAGE:-convertpdfgo-worker}
     build:
       context: .
       args:
