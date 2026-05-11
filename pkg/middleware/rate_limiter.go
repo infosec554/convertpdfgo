@@ -64,11 +64,17 @@ func getVisitor(key string) *rate.Limiter {
 
 func RateLimiterMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Identify the caller. Earlier the IP path appended User-Agent
+		// to the key, which meant any client that sent an empty UA
+		// (curl in some configs, healthchecks, scrapers) ended up
+		// sharing a single bucket with every other UA-less caller —
+		// pulling each other into the rate limit. WEAKNESSES.md #14.
+		// IP alone is the right key for anonymous traffic.
 		var key string
 		if userID, exists := c.Get("user_id"); exists {
 			key = "user:" + userID.(string)
 		} else {
-			key = "ip:" + c.ClientIP() + "_" + c.GetHeader("User-Agent")
+			key = "ip:" + c.ClientIP()
 		}
 
 		if !getVisitor(key).Allow() {
