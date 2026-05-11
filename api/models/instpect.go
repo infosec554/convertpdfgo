@@ -8,7 +8,7 @@ type InspectRequest struct {
 
 type InspectJob struct {
 	ID        string    `json:"id" example:"d4f56987-e123-4567-abcd-7890abcdef12"`
-	UserID    string    `json:"user_id"`
+	UserID    *string   `json:"user_id"`
 	FileID    string    `json:"file_id"`
 	PageCount int       `json:"page_count" example:"5"`
 	Title     string    `json:"title" example:"My PDF Document"`

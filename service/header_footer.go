@@ -16,7 +16,7 @@ import (
 )
 
 type AddHeaderFooterService interface {
-	Create(ctx context.Context, req models.CreateAddHeaderFooterRequest, userID string) (string, error)
+	Create(ctx context.Context, req models.CreateAddHeaderFooterRequest, userID *string) (string, error)
 	Process(ctx context.Context, jobID string) error
 	GetByID(ctx context.Context, id string) (*models.AddHeaderFooterJob, error)
 }
@@ -30,7 +30,7 @@ func NewAddHeaderFooterService(stg storage.IStorage, log logger.ILogger) AddHead
 	return &addHeaderFooterService{stg: stg, log: log}
 }
 
-func (s *addHeaderFooterService) Create(ctx context.Context, req models.CreateAddHeaderFooterRequest, userID string) (string, error) {
+func (s *addHeaderFooterService) Create(ctx context.Context, req models.CreateAddHeaderFooterRequest, userID *string) (string, error) {
 	job := &models.AddHeaderFooterJob{
 		ID:          uuid.NewString(),
 		UserID:      userID,
@@ -85,10 +85,9 @@ func (s *addHeaderFooterService) Process(ctx context.Context, jobID string) erro
 		return fmt.Errorf("stat output: %w", err)
 	}
 
-	uid := job.UserID
 	if _, err := s.stg.File().Save(ctx, models.File{
 		ID:         outputID,
-		UserID:     &uid,
+		UserID:     job.UserID,
 		FileName:   filepath.Base(outputPath),
 		FilePath:   outputPath,
 		FileType:   "application/pdf",
@@ -99,7 +98,7 @@ func (s *addHeaderFooterService) Process(ctx context.Context, jobID string) erro
 		return fmt.Errorf("save output: %w", err)
 	}
 
-	job.OutputFileID = outputID
+	job.OutputFileID = &outputID
 	job.Status = "done"
 	return s.stg.AddHeaderFooter().Update(ctx, job)
 }

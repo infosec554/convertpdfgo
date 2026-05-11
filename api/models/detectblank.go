@@ -10,7 +10,7 @@ type DetectBlankPagesRequest struct {
 // DetectBlankPagesJob – bo‘sh sahifalarni aniqlash jarayoni modeli
 type DetectBlankPagesJob struct {
 	ID          string    `json:"id"`
-	UserID      string    `json:"user_id"`
+	UserID      *string   `json:"user_id"`
 	InputFileID string    `json:"input_file_id"`
 	BlankPages  []int     `json:"blank_pages"`
 	Status      string    `json:"status"` // pending, processing, done, failed

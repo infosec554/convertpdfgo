@@ -27,12 +27,10 @@ func (h Handler) AddHeaderFooter(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id") // empty for guests; storage swaps "" → NULL.
-
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()
 
-	jobID, err := h.services.AddHeaderFooter().Create(ctx, req, userID)
+	jobID, err := h.services.AddHeaderFooter().Create(ctx, req, userPtr(c))
 	if err != nil {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return

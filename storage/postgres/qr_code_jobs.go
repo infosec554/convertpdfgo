@@ -63,7 +63,7 @@ func (r *qrCodeRepo) GetByID(ctx context.Context, id string) (*models.QRCodeJob,
 		return nil, err
 	}
 	if outputFileID.Valid {
-		job.OutputFileID = outputFileID.String
+		job.OutputFileID = &outputFileID.String
 	}
 	return &job, nil
 }

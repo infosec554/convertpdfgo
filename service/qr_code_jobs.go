@@ -19,7 +19,7 @@ import (
 )
 
 type QRCodeService interface {
-	Create(ctx context.Context, req models.CreateQRCodeRequest, userID string) (string, error)
+	Create(ctx context.Context, req models.CreateQRCodeRequest, userID *string) (string, error)
 	Process(ctx context.Context, jobID string) error
 	GetByID(ctx context.Context, id string) (*models.QRCodeJob, error)
 }
@@ -33,7 +33,7 @@ func NewQRCodeService(stg storage.IStorage, log logger.ILogger) QRCodeService {
 	return &qrCodeService{stg: stg, log: log}
 }
 
-func (s *qrCodeService) Create(ctx context.Context, req models.CreateQRCodeRequest, userID string) (string, error) {
+func (s *qrCodeService) Create(ctx context.Context, req models.CreateQRCodeRequest, userID *string) (string, error) {
 	job := &models.QRCodeJob{
 		ID:          uuid.NewString(),
 		UserID:      userID,
@@ -98,10 +98,9 @@ func (s *qrCodeService) Process(ctx context.Context, jobID string) error {
 		return fmt.Errorf("stat output: %w", err)
 	}
 
-	uid := job.UserID
 	if _, err := s.stg.File().Save(ctx, models.File{
 		ID:         outputID,
-		UserID:     &uid,
+		UserID:     job.UserID,
 		FileName:   filepath.Base(outputPath),
 		FilePath:   outputPath,
 		FileType:   "application/pdf",
@@ -112,7 +111,7 @@ func (s *qrCodeService) Process(ctx context.Context, jobID string) error {
 		return fmt.Errorf("save output: %w", err)
 	}
 
-	job.OutputFileID = outputID
+	job.OutputFileID = &outputID
 	job.Status = "done"
 	return s.stg.QRCode().Update(ctx, job)
 }

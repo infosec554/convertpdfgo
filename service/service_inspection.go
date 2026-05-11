@@ -13,7 +13,7 @@ import (
 )
 
 type InspectService interface {
-	Create(ctx context.Context, fileID, userID string) (string, error)
+	Create(ctx context.Context, fileID string, userID *string) (string, error)
 	GetByID(ctx context.Context, id string) (*models.InspectJob, error)
 }
 
@@ -29,7 +29,7 @@ func NewInspectService(stg storage.IStorage, log logger.ILogger) InspectService 
 	}
 }
 
-func (s *inspectService) Create(ctx context.Context, fileID, userID string) (string, error) {
+func (s *inspectService) Create(ctx context.Context, fileID string, userID *string) (string, error) {
 	s.log.Info("InspectService.Create called")
 
 	// 1. Faylni olish

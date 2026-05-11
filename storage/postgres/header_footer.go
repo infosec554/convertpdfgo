@@ -92,7 +92,7 @@ func (r *addHeaderFooterRepo) GetByID(ctx context.Context, id string) (*models.A
 		return nil, fmt.Errorf("get header/footer job by id: %w", err)
 	}
 	if outputFileID.Valid {
-		job.OutputFileID = outputFileID.String
+		job.OutputFileID = &outputFileID.String
 	}
 
 	return &job, nil

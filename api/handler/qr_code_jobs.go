@@ -27,12 +27,10 @@ func (h Handler) CreateQRCodeJob(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id") // empty for guests; storage swaps "" → NULL.
-
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()
 
-	jobID, err := h.services.QRCode().Create(ctx, req, userID)
+	jobID, err := h.services.QRCode().Create(ctx, req, userPtr(c))
 	if err != nil {
 		handleResponse(c, h.log, "failed to create qr code job", http.StatusInternalServerError, err.Error())
 		return

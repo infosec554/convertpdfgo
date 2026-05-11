@@ -11,12 +11,12 @@ type CreateQRCodeRequest struct {
 
 type QRCodeJob struct {
 	ID           string    `json:"id"`
-	UserID       string    `json:"user_id"`
+	UserID       *string   `json:"user_id"` // nil for guest jobs
 	InputFileID  string    `json:"input_file_id"`
 	QRContent    string    `json:"qr_content"`
 	Position     string    `json:"position"`
 	Size         int       `json:"size"`
-	OutputFileID string    `json:"output_file_id,omitempty"`
-	Status       string    `json:"status"` // pending, processing, done, failed
+	OutputFileID *string   `json:"output_file_id,omitempty"` // nil until worker finishes
+	Status       string    `json:"status"`                   // pending, processing, done, failed
 	CreatedAt    time.Time `json:"created_at"`
 }

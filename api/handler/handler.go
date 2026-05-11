@@ -54,6 +54,22 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	}
 }
 
+// userPtr collapses the JWT middleware's user_id context value into the
+// *string shape every service Create takes: nil for guests, pointer to
+// the UUID string for authenticated users. Replaces the ad-hoc
+//
+//	var uid *string
+//	if v := c.GetString("user_id"); v != "" { uid = &v }
+//
+// dance that was copy-pasted across 25 handlers in slightly different
+// forms (string vs *string, &uid vs &v).
+func userPtr(c *gin.Context) *string {
+	if uid := c.GetString("user_id"); uid != "" {
+		return &uid
+	}
+	return nil
+}
+
 func handleResponse(c *gin.Context, log logger.ILogger, msg string, statusCode int, data interface{}) {
 	resp := models.Response{}
 

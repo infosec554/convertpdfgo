@@ -27,12 +27,10 @@ func (h Handler) CreateDetectBlankPagesJob(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id") // empty for guests; storage swaps "" → NULL.
-
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()
 
-	jobID, err := h.services.DetectBlank().Create(ctx, req.InputFileID, userID)
+	jobID, err := h.services.DetectBlank().Create(ctx, req.InputFileID, userPtr(c))
 	if err != nil {
 		handleResponse(c, h.log, "failed to create detect blank job", http.StatusInternalServerError, err.Error())
 		return

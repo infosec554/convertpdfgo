@@ -35,12 +35,10 @@ func (h Handler) CreateInspectJob(c *gin.Context) {
 		return
 	}
 
-	userID := c.GetString("user_id") // empty for guests; storage swaps "" → NULL.
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	jobID, err := h.services.Inspect().Create(ctx, req.FileID, userID)
+	jobID, err := h.services.Inspect().Create(ctx, req.FileID, userPtr(c))
 	if err != nil {
 		handleResponse(c, h.log, "failed to inspect PDF", http.StatusInternalServerError, err.Error())
 		return

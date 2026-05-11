@@ -14,17 +14,19 @@ type CreateAddHeaderFooterRequest struct {
 	Position  string `json:"position,omitempty"`   // "left", "center", "right" (default "center")
 }
 
-// AddHeaderFooterJob – header/footer qo‘shish ishining modeli
+// AddHeaderFooterJob – header/footer qo‘shish ishining modeli.
+// UserID *string: nil for guest jobs.
+// OutputFileID *string: nil until the worker finishes.
 type AddHeaderFooterJob struct {
 	ID           string    `json:"id"`
-	UserID       string    `json:"user_id"`
+	UserID       *string   `json:"user_id"`
 	InputFileID  string    `json:"input_file_id"`
 	HeaderText   string    `json:"header_text,omitempty"`
 	FooterText   string    `json:"footer_text,omitempty"`
 	FontSize     int       `json:"font_size"`
 	FontColor    string    `json:"font_color"`
 	Position     string    `json:"position"`
-	OutputFileID string    `json:"output_file_id,omitempty"`
+	OutputFileID *string   `json:"output_file_id,omitempty"`
 	Status       string    `json:"status"` // pending, done, failed
 	CreatedAt    time.Time `json:"created_at"`
 }
