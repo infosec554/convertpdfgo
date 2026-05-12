@@ -27,6 +27,13 @@ const (
 	TaskPDFToHTML       = "pdf:pdf_to_html"
 	TaskPDFToPPT        = "pdf:pdf_to_ppt"
 	TaskPDFToExcel      = "pdf:pdf_to_excel"
+
+	TaskOCR            = "pdf:ocr"
+	TaskScanToPDF      = "pdf:scan_to_pdf"
+	TaskOCRExtractText = "pdf:ocr_extract_text"
+	TaskImageToText    = "pdf:image_to_text"
+	TaskOCRDetectLang  = "pdf:ocr_detect_lang"
+	TaskOCRStructured  = "pdf:ocr_structured"
 	TaskExcelToPDF      = "pdf:excel_to_pdf"
 	TaskPowerPointToPDF = "pdf:ppt_to_pdf"
 	TaskHTMLToPDF       = "pdf:html_to_pdf"

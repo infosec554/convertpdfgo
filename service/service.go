@@ -52,6 +52,14 @@ type IServiceManager interface {
 	PDFToPPT() PDFToPPTService
 	PDFToExcel() PDFToExcelService
 
+	// OCR family (ocrmypdf + tesseract).
+	OCR() OCRService
+	ScanToPDF() ScanToPDFService
+	OCRExtractText() OCRExtractTextService
+	ImageToText() ImageToTextService
+	OCRDetectLang() OCRDetectLangService
+	OCRStructured() OCRStructuredService
+
 	// Phase 1 features.
 	Watermark() WatermarkService
 	ExtractText() ExtractTextService
@@ -105,6 +113,13 @@ type service struct {
 	pdfToHTMLService  PDFToHTMLService
 	pdfToPPTService   PDFToPPTService
 	pdfToExcelService PDFToExcelService
+
+	ocrService            OCRService
+	scanToPDFService      ScanToPDFService
+	ocrExtractTextService OCRExtractTextService
+	imageToTextService    ImageToTextService
+	ocrDetectLangService  OCRDetectLangService
+	ocrStructuredService  OCRStructuredService
 }
 
 func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client) IServiceManager {
@@ -154,6 +169,13 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		pdfToHTMLService:  NewPDFToHTMLService(storage, log),
 		pdfToPPTService:   NewPDFToPPTService(storage, log),
 		pdfToExcelService: NewPDFToExcelService(storage, log),
+
+		ocrService:            NewOCRService(storage, log),
+		scanToPDFService:      NewScanToPDFService(storage, log),
+		ocrExtractTextService: NewOCRExtractTextService(storage, log),
+		imageToTextService:    NewImageToTextService(storage, log),
+		ocrDetectLangService:  NewOCRDetectLangService(storage, log),
+		ocrStructuredService:  NewOCRStructuredService(storage, log),
 	}
 }
 
@@ -297,3 +319,10 @@ func (s *service) Metadata() MetadataService       { return s.metadataService }
 func (s *service) PDFToHTML() PDFToHTMLService   { return s.pdfToHTMLService }
 func (s *service) PDFToPPT() PDFToPPTService     { return s.pdfToPPTService }
 func (s *service) PDFToExcel() PDFToExcelService { return s.pdfToExcelService }
+
+func (s *service) OCR() OCRService                       { return s.ocrService }
+func (s *service) ScanToPDF() ScanToPDFService           { return s.scanToPDFService }
+func (s *service) OCRExtractText() OCRExtractTextService { return s.ocrExtractTextService }
+func (s *service) ImageToText() ImageToTextService       { return s.imageToTextService }
+func (s *service) OCRDetectLang() OCRDetectLangService   { return s.ocrDetectLangService }
+func (s *service) OCRStructured() OCRStructuredService   { return s.ocrStructuredService }

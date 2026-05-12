@@ -39,7 +39,20 @@ FROM alpine:3.19
 #   doesn't fall back to glyph squares.
 # - pdfcpu CLI is bundled from the release tarball (rotate/crop/unlock/
 #   protect/header-footer shell out to it; library API is also linked).
-RUN apk add --no-cache ca-certificates tzdata poppler-utils xz libreoffice ttf-liberation && \
+RUN apk add --no-cache \
+        ca-certificates tzdata xz \
+        poppler-utils \
+        libreoffice ttf-liberation \
+        ocrmypdf tesseract-ocr \
+        tesseract-ocr-data-eng tesseract-ocr-data-rus && \
+    # Uzbek (Latin + Cyrillic) and Kyrgyz aren't always packaged on
+    # alpine — pull them straight from tesseract-ocr/tessdata so /usr/
+    # share/tessdata has the full set our /api/pdf/ocr endpoints
+    # advertise. ~10 MB total.
+    for lang in uzb uzb_cyrl kir; do \
+      wget -qO "/usr/share/tessdata/${lang}.traineddata" \
+        "https://github.com/tesseract-ocr/tessdata/raw/main/${lang}.traineddata"; \
+    done && \
     wget -qO- https://github.com/pdfcpu/pdfcpu/releases/download/v0.11.0/pdfcpu_0.11.0_Linux_x86_64.tar.xz \
         | tar -xJf- -C /tmp && \
     install -m 0755 /tmp/pdfcpu_0.11.0_Linux_x86_64/pdfcpu /usr/local/bin/pdfcpu && \

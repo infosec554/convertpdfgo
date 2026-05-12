@@ -42,6 +42,13 @@ func (h *Handlers) Register(mux *asynq.ServeMux) {
 	mux.HandleFunc(TaskPDFToHTML, h.runByID("pdf_to_html", func(ctx context.Context, id string) error { return h.services.PDFToHTML().Process(ctx, id) }))
 	mux.HandleFunc(TaskPDFToPPT, h.runByID("pdf_to_ppt", func(ctx context.Context, id string) error { return h.services.PDFToPPT().Process(ctx, id) }))
 	mux.HandleFunc(TaskPDFToExcel, h.runByID("pdf_to_excel", func(ctx context.Context, id string) error { return h.services.PDFToExcel().Process(ctx, id) }))
+
+	mux.HandleFunc(TaskOCR, h.runByID("ocr", func(ctx context.Context, id string) error { return h.services.OCR().Process(ctx, id) }))
+	mux.HandleFunc(TaskScanToPDF, h.runByID("scan_to_pdf", func(ctx context.Context, id string) error { return h.services.ScanToPDF().Process(ctx, id) }))
+	mux.HandleFunc(TaskOCRExtractText, h.runByID("ocr_extract_text", func(ctx context.Context, id string) error { return h.services.OCRExtractText().Process(ctx, id) }))
+	mux.HandleFunc(TaskImageToText, h.runByID("image_to_text", func(ctx context.Context, id string) error { return h.services.ImageToText().Process(ctx, id) }))
+	mux.HandleFunc(TaskOCRDetectLang, h.runByID("ocr_detect_lang", func(ctx context.Context, id string) error { return h.services.OCRDetectLang().Process(ctx, id) }))
+	mux.HandleFunc(TaskOCRStructured, h.runByID("ocr_structured", func(ctx context.Context, id string) error { return h.services.OCRStructured().Process(ctx, id) }))
 	mux.HandleFunc(TaskExcelToPDF, h.runByID("excel_to_pdf", func(ctx context.Context, id string) error { return h.services.ExcelToPDF().Process(ctx, id) }))
 	mux.HandleFunc(TaskPowerPointToPDF, h.runByID("ppt_to_pdf", func(ctx context.Context, id string) error { return h.services.PowerPointToPDF().Process(ctx, id) }))
 	mux.HandleFunc(TaskHTMLToPDF, h.runByID("html_to_pdf", func(ctx context.Context, id string) error { return h.services.HTMLToPDF().Process(ctx, id) }))

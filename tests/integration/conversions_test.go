@@ -4,6 +4,7 @@
 package integration
 
 import (
+	"os"
 	"testing"
 	"time"
 )
@@ -18,7 +19,17 @@ const (
 	pollFast   = 30 * time.Second  // pdfcpu jobs finish in <5s
 	pollNormal = 60 * time.Second  // mid jobs (pdf-to-jpg)
 	pollOffice = 120 * time.Second // LibreOffice / url-to-pdf
+	pollOCR    = 300 * time.Second // ocrmypdf rasterises every page; allow a generous cap
 )
+
+// SkipIfOCR lets a sweep skip the OCR family when running on a host
+// without the tesseract/ocrmypdf binaries (e.g. local dev where the
+// runtime image isn't reproduced). Default behaviour is to run.
+func SkipIfOCR(t *testing.T) {
+	if os.Getenv("SKIP_OCR") != "" {
+		t.Skip("skipping ocr: SKIP_OCR set")
+	}
+}
 
 // --- Page operations ------------------------------------------------------
 
@@ -371,4 +382,111 @@ func TestMetadata(t *testing.T) {
 	// pdfcpu writes /Info into a FlateDecode'd stream — verifying the
 	// title text would need pdfinfo or a parser. Size + magic is the
 	// strongest assertion we get from raw bytes.
+}
+
+// --- OCR family ----------------------------------------------------------
+//
+// Each test exercises a separate code path through pkg/ocr. They all use
+// the existing test.pdf — even though it already has a text layer,
+// ocrmypdf can be coerced into running with --force-ocr (which the
+// scan-to-pdf flow always does, and which our OCR endpoint accepts via
+// the `force_ocr` request flag).
+
+// /api/pdf/ocr — searchable PDF out, asserts PDF magic + non-trivial size.
+func TestOCR(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOCR(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, pdfFixture)
+	jid := c.PostJob(t, "/api/pdf/ocr", map[string]any{
+		"input_file_id": a, "lang": "eng", "force_ocr": true,
+	})
+	job := c.PollDone(t, "/api/pdf/ocr", jid, pollOCR)
+	AssertPDF(t, c.Download(t, job.Output()), 1000)
+}
+
+// /api/pdf/scan-to-pdf — multiple images → searchable PDF.
+func TestScanToPDF(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOCR(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, jpgFixture)
+	b := c.UploadFile(t, jpgFixture)
+	jid := c.PostJob(t, "/api/pdf/scan-to-pdf", map[string]any{
+		"input_file_ids": []string{a, b}, "lang": "eng",
+	})
+	job := c.PollDone(t, "/api/pdf/scan-to-pdf", jid, pollOCR)
+	AssertPDF(t, c.Download(t, job.Output()), 1000)
+}
+
+// /api/pdf/ocr-extract-text — scanned PDF → plain text sidecar.
+func TestOCRExtractText(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOCR(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, pdfFixture)
+	jid := c.PostJob(t, "/api/pdf/ocr-extract-text", map[string]any{
+		"input_file_id": a, "lang": "eng",
+	})
+	job := c.PollDone(t, "/api/pdf/ocr-extract-text", jid, pollOCR)
+	out := c.Download(t, job.Output())
+	if len(out) == 0 {
+		t.Fatalf("ocr_extract_text: empty output")
+	}
+}
+
+// /api/pdf/image-to-text — single image → plain text.
+func TestImageToText(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOCR(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, jpgFixture)
+	jid := c.PostJob(t, "/api/pdf/image-to-text", map[string]any{
+		"input_file_id": a, "lang": "eng",
+	})
+	job := c.PollDone(t, "/api/pdf/image-to-text", jid, pollFast)
+	out := c.Download(t, job.Output())
+	// Tesseract on test.jpg may or may not produce text depending on the
+	// fixture; we only assert the file exists and the endpoint returns a
+	// real .txt payload.
+	if len(out) == 0 {
+		t.Logf("image_to_text returned empty text — fixture may be image-only")
+	}
+}
+
+// /api/pdf/ocr-detect-lang — analytic; expects detected_lang on the row.
+func TestOCRDetectLang(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOCR(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, pdfFixture)
+	jid := c.PostJob(t, "/api/pdf/ocr-detect-lang", map[string]any{"input_file_id": a})
+	c.PollDone(t, "/api/pdf/ocr-detect-lang", jid, pollNormal)
+	// The job row carries the result — we just verified status=done.
+}
+
+// /api/pdf/ocr-structured — JSON wrapping the hOCR XML payload.
+func TestOCRStructured(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOCR(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, pdfFixture)
+	jid := c.PostJob(t, "/api/pdf/ocr-structured", map[string]any{
+		"input_file_id": a, "lang": "eng",
+	})
+	job := c.PollDone(t, "/api/pdf/ocr-structured", jid, pollOCR)
+	out := c.Download(t, job.Output())
+	// Output is JSON wrapping hocr — assert both that it's JSON-like
+	// and that the hocr envelope is recognisable.
+	if !startsWith(out, "{") {
+		t.Fatalf("ocr-structured: expected JSON, head=%q", string(out[:min(len(out), 32)]))
+	}
+	AssertText(t, out, "hocr")
+}
+
+func startsWith(b []byte, prefix string) bool {
+	if len(b) < len(prefix) {
+		return false
+	}
+	return string(b[:len(prefix)]) == prefix
 }

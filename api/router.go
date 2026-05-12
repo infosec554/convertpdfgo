@@ -189,6 +189,21 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 		pdf.POST("/pdf-to-excel", h.CreatePDFToExcelJob)
 		pdf.GET("/pdf-to-excel/:id", h.GetPDFToExcelJob)
 
+		// 5g.1 OCR family (ocrmypdf + tesseract). Tesseract data
+		// packs (eng/uzb/uzb_cyrl/rus/kir) ship in the worker image.
+		pdf.POST("/ocr", h.CreateOCRJob)
+		pdf.GET("/ocr/:id", h.GetOCRJob)
+		pdf.POST("/scan-to-pdf", h.CreateScanToPDFJob)
+		pdf.GET("/scan-to-pdf/:id", h.GetScanToPDFJob)
+		pdf.POST("/ocr-extract-text", h.CreateOCRExtractTextJob)
+		pdf.GET("/ocr-extract-text/:id", h.GetOCRExtractTextJob)
+		pdf.POST("/image-to-text", h.CreateImageToTextJob)
+		pdf.GET("/image-to-text/:id", h.GetImageToTextJob)
+		pdf.POST("/ocr-detect-lang", h.CreateOCRDetectLangJob)
+		pdf.GET("/ocr-detect-lang/:id", h.GetOCRDetectLangJob)
+		pdf.POST("/ocr-structured", h.CreateOCRStructuredJob)
+		pdf.GET("/ocr-structured/:id", h.GetOCRStructuredJob)
+
 		// 5h. Phase 1 features (PDF_FEATURES.md): watermark, extract-text,
 		// n-up, url-to-pdf, metadata.
 		pdf.POST("/watermark", h.CreateWatermarkJob)

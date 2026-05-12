@@ -215,6 +215,21 @@ func (s *Store) QRCode() storage.IQRCodeStorage {
 	return NewQRCodeRepo(s.pool, s.log)
 }
 
+func (s *Store) OCR() storage.IOCRStorage           { return NewOCRRepo(s.pool, s.log) }
+func (s *Store) ScanToPDF() storage.IScanToPDFStorage { return NewScanToPDFRepo(s.pool, s.log) }
+func (s *Store) OCRExtractText() storage.IOCRExtractTextStorage {
+	return NewOCRExtractTextRepo(s.pool, s.log)
+}
+func (s *Store) ImageToText() storage.IImageToTextStorage {
+	return NewImageToTextRepo(s.pool, s.log)
+}
+func (s *Store) OCRDetectLang() storage.IOCRDetectLangStorage {
+	return NewOCRDetectLangRepo(s.pool, s.log)
+}
+func (s *Store) OCRStructured() storage.IOCRStructuredStorage {
+	return NewOCRStructuredRepo(s.pool, s.log)
+}
+
 func (s *Store) PDFToHTML() storage.IPDFToHTMLStorage {
 	return NewPDFToHTMLRepo(s.pool, s.log)
 }

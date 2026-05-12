@@ -59,6 +59,50 @@ type IStorage interface {
 	PDFToHTML() IPDFToHTMLStorage
 	PDFToPPT() IPDFToPPTStorage
 	PDFToExcel() IPDFToExcelStorage
+
+	// OCR family (ocrmypdf + tesseract).
+	OCR() IOCRStorage
+	ScanToPDF() IScanToPDFStorage
+	OCRExtractText() IOCRExtractTextStorage
+	ImageToText() IImageToTextStorage
+	OCRDetectLang() IOCRDetectLangStorage
+	OCRStructured() IOCRStructuredStorage
+}
+
+type IOCRStorage interface {
+	Create(ctx context.Context, job *models.OCRJob) error
+	GetByID(ctx context.Context, id string) (*models.OCRJob, error)
+	Update(ctx context.Context, job *models.OCRJob) error
+}
+
+type IScanToPDFStorage interface {
+	Create(ctx context.Context, job *models.ScanToPDFJob) error
+	GetByID(ctx context.Context, id string) (*models.ScanToPDFJob, error)
+	Update(ctx context.Context, job *models.ScanToPDFJob) error
+}
+
+type IOCRExtractTextStorage interface {
+	Create(ctx context.Context, job *models.OCRExtractTextJob) error
+	GetByID(ctx context.Context, id string) (*models.OCRExtractTextJob, error)
+	Update(ctx context.Context, job *models.OCRExtractTextJob) error
+}
+
+type IImageToTextStorage interface {
+	Create(ctx context.Context, job *models.ImageToTextJob) error
+	GetByID(ctx context.Context, id string) (*models.ImageToTextJob, error)
+	Update(ctx context.Context, job *models.ImageToTextJob) error
+}
+
+type IOCRDetectLangStorage interface {
+	Create(ctx context.Context, job *models.OCRDetectLangJob) error
+	GetByID(ctx context.Context, id string) (*models.OCRDetectLangJob, error)
+	Update(ctx context.Context, job *models.OCRDetectLangJob) error
+}
+
+type IOCRStructuredStorage interface {
+	Create(ctx context.Context, job *models.OCRStructuredJob) error
+	GetByID(ctx context.Context, id string) (*models.OCRStructuredJob, error)
+	Update(ctx context.Context, job *models.OCRStructuredJob) error
 }
 
 type IPDFToHTMLStorage interface {
