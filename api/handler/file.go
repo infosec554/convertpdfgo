@@ -168,6 +168,14 @@ func (h Handler) GetFile(c *gin.Context) {
 		handleResponse(c, h.log, "file not found", http.StatusNotFound, err.Error())
 		return
 	}
+	// Same ownership gate as DownloadFile: guest uploads (UserID nil)
+	// are visible to anyone who knows the ID; owned files require the
+	// owner or an admin. 404 (not 403) so the response is identical
+	// whether the file exists or just isn't yours.
+	if !canAccessFile(c, file.UserID) {
+		handleResponse(c, h.log, "file not found", http.StatusNotFound, "")
+		return
+	}
 	handleResponse(c, h.log, "file found", http.StatusOK, file)
 }
 
@@ -203,18 +211,12 @@ func (h Handler) DownloadFile(c *gin.Context) {
 		return
 	}
 
-	// Ownership gate: if the file has an owner, the caller must be that
-	// owner OR an admin. Empty file.UserID (guest upload) is open.
-	if file.UserID != nil && *file.UserID != "" {
-		caller := c.GetString("user_id")
-		role := c.GetString("user_role")
-		isAdmin := role == "admin" || role == "superadmin"
-		if !isAdmin && caller != *file.UserID {
-			// Use 404 (not 403) so the response is identical whether the
-			// file exists or not — no probing-via-error-code.
-			handleResponse(c, h.log, "file not found", http.StatusNotFound, "no such file")
-			return
-		}
+	// Ownership gate, shared with GetFile/DeleteFile via canAccessFile.
+	// Use 404 (not 403) so the response is identical whether the file
+	// exists or not — no probing-via-error-code.
+	if !canAccessFile(c, file.UserID) {
+		handleResponse(c, h.log, "file not found", http.StatusNotFound, "no such file")
+		return
 	}
 
 	if _, err := os.Stat(file.FilePath); err != nil {
@@ -241,11 +243,36 @@ func (h Handler) DeleteFile(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()
 
+	// Look up first so the ownership check runs *before* we touch
+	// any state. Same 404-for-not-yours pattern as GetFile.
+	file, err := h.services.File().Get(ctx, id)
+	if err != nil {
+		handleResponse(c, h.log, "file not found", http.StatusNotFound, err.Error())
+		return
+	}
+	if !canAccessFile(c, file.UserID) {
+		handleResponse(c, h.log, "file not found", http.StatusNotFound, "")
+		return
+	}
 	if err := h.services.File().Delete(ctx, id); err != nil {
 		handleResponse(c, h.log, "delete failed", http.StatusInternalServerError, err.Error())
 		return
 	}
 	handleResponse(c, h.log, "file deleted", http.StatusOK, gin.H{"id": id})
+}
+
+// canAccessFile is the shared file-ownership gate behind GetFile,
+// DeleteFile, DownloadFile. A guest file (UserID nil/"") is open to
+// anyone who knows the ID; an owned file requires the caller to BE
+// the owner or to hold the admin role.
+func canAccessFile(c *gin.Context, ownerID *string) bool {
+	if ownerID == nil || *ownerID == "" {
+		return true
+	}
+	if c.GetString("user_role") == "admin" {
+		return true
+	}
+	return c.GetString("user_id") == *ownerID
 }
 
 // ListUserFiles godoc

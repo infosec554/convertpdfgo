@@ -22,14 +22,22 @@ import (
 // the user's external storage account.
 func registerFileRoutes(r *gin.Engine, h handler.Handler) {
 	// --- Local file IO ----------------------------------------------------
+	//
+	// Guest-uploadable + guest-readable surface. Three of the four
+	// routes use OptionalAuth + an ownership check inside the handler
+	// (canAccessFile in api/handler/file.go) so a guest who just
+	// uploaded a file can fetch metadata / download / delete it
+	// without registering, while owned files stay locked to their
+	// owner-or-admin. /file/list is the exception — it lists by
+	// user_id so the strict authed group is the right home.
 	r.POST("/file/upload", h.UploadFile)
 	r.GET("/file/:id/download", h.OptionalAuthMiddleware, h.DownloadFile)
+	r.GET("/file/:id", h.OptionalAuthMiddleware, h.GetFile)
+	r.DELETE("/file/:id", h.OptionalAuthMiddleware, h.DeleteFile)
 
 	file := r.Group("/file", h.AuthorizerMiddleware)
 	{
 		file.GET("/list", h.ListUserFiles)
-		file.GET("/:id", h.GetFile)
-		file.DELETE("/:id", h.DeleteFile)
 		// Note: the admin-only "delete files older than N days" sweep
 		// used to live here as /file/cleanup. It moved to
 		// /admin/files/cleanup so this group is purely caller-owned
