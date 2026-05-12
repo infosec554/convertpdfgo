@@ -1,0 +1,14 @@
+[Unit]
+Description=Daily convertpdfgo postgres backup at 03:00 UTC
+
+[Timer]
+# 03:00 UTC = quiet hour across Europe + UZ time zones; the daily
+# cleaner job already runs at minute-1 of every hour and is cheap, so
+# 03:00 leaves a fresh idle window for pg_dump too.
+OnCalendar=03:00:00
+# If the system was off when 03:00 fell, run as soon as it boots
+# rather than skipping the day's backup entirely.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

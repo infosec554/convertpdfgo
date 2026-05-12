@@ -1,0 +1,15 @@
+[Unit]
+Description=convertpdfgo postgres backup (deploy/backup.sh)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/root/convertpdfgo/deploy/backup.sh
+# stdout/stderr go to journal so `journalctl -u convertpdfgo-backup`
+# shows the last run's output, sizes, retention decisions, etc.
+StandardOutput=journal
+StandardError=journal
+# Backup dir lives under /var/backups/convertpdfgo; ensure it's writable.
+ProtectSystem=full
+PrivateTmp=true
