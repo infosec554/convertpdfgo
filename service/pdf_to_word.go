@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/cache"
-	"convertpdfgo/pkg/gotenberg"
+	"convertpdfgo/pkg/libreoffice"
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/storage"
 )
@@ -23,14 +24,17 @@ type PDFToWordService interface {
 }
 
 type pdfToWordService struct {
-	stg       storage.IStorage
-	log       logger.ILogger
-	gotClient gotenberg.Client
-	cache     *cache.ResultCache
+	stg   storage.IStorage
+	log   logger.ILogger
+	cache *cache.ResultCache
 }
 
-func NewPDFToWordService(stg storage.IStorage, log logger.ILogger, gotClient gotenberg.Client, c *cache.ResultCache) PDFToWordService {
-	return &pdfToWordService{stg: stg, log: log, gotClient: gotClient, cache: c}
+// NewPDFToWordService used to take a gotenberg.Client; Gotenberg's
+// libreoffice route is one-way (office→PDF only), so PDF→DOCX now goes
+// through pkg/libreoffice (CLI in-image). The arg is kept for backwards
+// compatibility with the wiring in service.New(); it's ignored.
+func NewPDFToWordService(stg storage.IStorage, log logger.ILogger, _ any, c *cache.ResultCache) PDFToWordService {
+	return &pdfToWordService{stg: stg, log: log, cache: c}
 }
 
 func (s *pdfToWordService) Create(ctx context.Context, req models.PDFToWordRequest, userID *string) (string, error) {
@@ -72,14 +76,31 @@ func (s *pdfToWordService) Process(ctx context.Context, jobID string) error {
 		}
 	}
 
-	outputFileID := uuid.NewString()
-	outputPath := filepath.Join("storage/pdf_to_word", outputFileID+".docx")
-
-	size, err := s.gotClient.PDFToWord(ctx, file.FilePath, outputPath)
+	outDir := "storage/pdf_to_word"
+	if err := os.MkdirAll(outDir, 0o755); err != nil {
+		s.markFailed(ctx, job)
+		return fmt.Errorf("mkdir: %w", err)
+	}
+	// libreoffice picks its own name (input basename + .docx). Convert
+	// writes there, then we rename to a UUID so the file row matches.
+	tmpPath, err := libreoffice.Convert(ctx, file.FilePath, outDir, "docx")
 	if err != nil {
 		s.markFailed(ctx, job)
-		return fmt.Errorf("gotenberg: %w", err)
+		return fmt.Errorf("libreoffice: %w", err)
 	}
+	outputFileID := uuid.NewString()
+	outputPath := filepath.Join(outDir, outputFileID+".docx")
+	if err := os.Rename(tmpPath, outputPath); err != nil {
+		_ = os.Remove(tmpPath)
+		s.markFailed(ctx, job)
+		return fmt.Errorf("rename: %w", err)
+	}
+	fi, err := os.Stat(outputPath)
+	if err != nil {
+		s.markFailed(ctx, job)
+		return fmt.Errorf("stat output: %w", err)
+	}
+	size := fi.Size()
 
 	if _, err := s.stg.File().Save(ctx, models.File{
 		ID:         outputFileID,

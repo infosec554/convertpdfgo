@@ -223,11 +223,12 @@ func TestWordToPDF(t *testing.T) {
 func TestPDFToWord(t *testing.T) {
 	SkipIfShort(t)
 	SkipIfOffice(t)
-	// Known broken: Gotenberg's /forms/libreoffice/convert is one-way (office → PDF).
-	// The `output: docx` parameter we pass is ignored, so the worker just round-trips
-	// the input PDF. Real fix needs a sidecar (LibreOffice headless directly, or
-	// pdf2docx). Tracked in WEAKNESSES.md.
-	t.Skip("Gotenberg can't do PDF→DOCX; see WEAKNESSES.md #pdf-to-word")
+	// Previously skipped because Gotenberg's libreoffice route is
+	// one-way (office → PDF). The worker now shells out to LibreOffice
+	// directly via pkg/libreoffice with `--infilter=writer_pdf_import`,
+	// producing a real DOCX. Validates the ZIP magic so a future round-
+	// trip regression (e.g. accidentally re-routing back through
+	// Gotenberg) is caught loudly.
 	c := NewClient(t)
 	a := c.UploadFile(t, pdfFixture)
 	jid := c.PostJob(t, "/api/pdf/pdf-to-word", map[string]any{"input_file_id": a})

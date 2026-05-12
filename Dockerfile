@@ -30,11 +30,16 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # === Runtime stage ===
 FROM alpine:3.19
 
-# pdfcpu is bundled at build time (Go binary) for the services that use
-# its library API, but rotate/crop/unlock/protect/header-footer shell out
-# to the `pdfcpu` CLI — install it from the release tarball. poppler-utils
-# brings pdftoppm (PDF→JPG) and pdftotext (extract-text).
-RUN apk add --no-cache ca-certificates tzdata poppler-utils xz && \
+# Runtime dependencies:
+# - poppler-utils: pdftoppm (PDF→JPG), pdftotext (extract-text)
+# - libreoffice + ttf-liberation: PDF→DOCX via pkg/libreoffice (worker
+#   only, but the api image and worker image are the same Dockerfile
+#   target — bigger image accepted for one consistent runtime).
+#   ttf-liberation gives us serif/sans/mono fonts so the renderer
+#   doesn't fall back to glyph squares.
+# - pdfcpu CLI is bundled from the release tarball (rotate/crop/unlock/
+#   protect/header-footer shell out to it; library API is also linked).
+RUN apk add --no-cache ca-certificates tzdata poppler-utils xz libreoffice ttf-liberation && \
     wget -qO- https://github.com/pdfcpu/pdfcpu/releases/download/v0.11.0/pdfcpu_0.11.0_Linux_x86_64.tar.xz \
         | tar -xJf- -C /tmp && \
     install -m 0755 /tmp/pdfcpu_0.11.0_Linux_x86_64/pdfcpu /usr/local/bin/pdfcpu && \
