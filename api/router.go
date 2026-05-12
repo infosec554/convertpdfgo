@@ -85,6 +85,12 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 		auth.POST("/password/forgot", h.ForgotPassword)
 		auth.POST("/password/reset", h.ResetPassword)
 
+		// Admin-invite acceptance — public; the token itself proves
+		// the link is legitimate. Preview lets the accept screen show
+		// "Invited as admin (you@example.com)" without leaking ids.
+		auth.GET("/invite/:token", h.InvitePreview)
+		auth.POST("/accept-invite", h.AcceptInvite)
+
 		// OAuth.
 		auth.GET("/google", h.GoogleLogin)
 		auth.GET("/google/callback", h.GoogleCallback)
@@ -259,6 +265,11 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 			users.POST("/:id/restore", h.RequirePermission("users:write"), h.RestoreUserAdmin)
 			users.POST("/:id/reset-password", h.RequirePermission("users:write"), h.ResetUserPasswordAdmin)
 			users.POST("/:id/revoke-tokens", h.RequirePermission("users:write"), h.RevokeUserTokensAdmin)
+			// Invite a new admin (or regular user) by email. Creates the
+			// user row as 'pending' and sends a Redis-tokenized accept
+			// link. The recipient finishes onboarding via the public
+			// /auth/invite/{token} + /auth/accept-invite pair below.
+			users.POST("/invite", h.RequirePermission("users:write"), h.InviteAdminCreate)
 		}
 
 		// 6a.1 Files (cross-user listing + force delete).
@@ -275,11 +286,10 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 			authAdmin.POST("/unlock", h.RequirePermission("users:write"), h.UnlockAccountAdmin)
 		}
 
-		// 6b. Sysusers (system operators, separate from end users).
-		sysuser := admin.Group("/sysusers")
-		{
-			sysuser.POST("", h.RequirePermission("sysusers:write"), h.CreateSysUser)
-		}
+		// 6b. Admin invite flow (POST /admin/users/invite handled below in
+		// the users group). Sysusers as a separate parallel auth model
+		// was removed in migration 0014 — admins are regular users with
+		// role='admin'.
 
 		// 6c. Roles.
 		roles := admin.Group("/roles")

@@ -120,10 +120,6 @@ func (s *Store) Role() storage.IRoleStorage {
 	return NewRoleRepo(s.pool, s.log)
 }
 
-func (s *Store) Sysuser() storage.ISysuserStorage {
-	return NewSysuserRepo(s.pool, s.log)
-}
-
 func (s *Store) AuthAudit() storage.IAuthAuditStorage {
 	return NewAuthAuditRepo(s.pool, s.log)
 }

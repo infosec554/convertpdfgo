@@ -13,7 +13,6 @@ type IServiceManager interface {
 	User() UserService
 	Otp() OtpService
 	Role() RoleService
-	SysUser() SysUserService
 	Mailer() MailerService
 	Audit() AuditService
 	AdminStats() AdminStatsService
@@ -70,13 +69,15 @@ type IServiceManager interface {
 
 	// "Save to ..." cloud-export targets.
 	StorageExport() StorageExportService
+
+	// Admin invite flow (POST /admin/users/invite, accept-invite).
+	Invite() InviteService
 }
 
 type service struct {
 	userService          UserService
 	otpService           OtpService
 	roleService          RoleService
-	sysUserService       SysUserService
 	mailer               MailerService
 	auditService         AuditService
 	adminStatsService    AdminStatsService
@@ -126,6 +127,7 @@ type service struct {
 	ocrStructuredService  OCRStructuredService
 
 	storageExportService StorageExportService
+	inviteService        InviteService
 }
 
 func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client, cfg config.Config) IServiceManager {
@@ -134,7 +136,6 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		userService:          NewUserService(storage, log),
 		otpService:           NewOtpService(storage, log, mailerCore, redis),
 		roleService:          NewRoleService(storage, log),
-		sysUserService:       NewSysUserService(storage, log),
 		mailer:               NewMailerService(mailerCore),
 		auditService:         NewAuditService(storage, log),
 		adminStatsService:    NewAdminStatsService(storage, log),
@@ -184,6 +185,7 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		ocrStructuredService:  NewOCRStructuredService(storage, log),
 
 		storageExportService: NewStorageExportService(storage, log, cfg),
+		inviteService:        NewInviteService(storage, redis, log, NewMailerService(mailerCore), cfg),
 	}
 }
 
@@ -197,10 +199,6 @@ func (s *service) Otp() OtpService {
 
 func (s *service) Role() RoleService {
 	return s.roleService
-}
-
-func (s *service) SysUser() SysUserService {
-	return s.sysUserService
 }
 
 func (s *service) Mailer() MailerService {
@@ -336,3 +334,4 @@ func (s *service) OCRDetectLang() OCRDetectLangService   { return s.ocrDetectLan
 func (s *service) OCRStructured() OCRStructuredService   { return s.ocrStructuredService }
 
 func (s *service) StorageExport() StorageExportService { return s.storageExportService }
+func (s *service) Invite() InviteService               { return s.inviteService }

@@ -85,13 +85,11 @@ func (h Handler) UpdateUserRoleAdmin(c *gin.Context) {
 		return
 	}
 
-	// Only superadmins can grant superadmin / admin roles. Otherwise an
-	// "admin" with users:write could trivially escalate.
-	actorRole := c.GetString("user_role")
-	if (req.Role == "superadmin" || req.Role == "admin") && actorRole != "superadmin" {
-		handleResponse(c, h.log, "only superadmin can grant admin/superadmin", http.StatusForbidden, nil)
-		return
-	}
+	// Two-tier model: anyone with users:write (i.e. an admin) can
+	// promote or demote between `user` and `admin`. Earlier we had a
+	// moderator/superadmin separation here; the role collapse in
+	// migration 0014 made that gate obsolete.
+	_ = c.GetString("user_role")
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()

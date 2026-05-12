@@ -19,14 +19,14 @@ type Permission struct {
 // audit honest about intent.
 type UserListFilter struct {
 	Search string `form:"q"      json:"-"` // matches email or name (ILIKE)
-	Role   string `form:"role"   json:"-"` // exact match: user | moderator | admin | superadmin
+	Role   string `form:"role"   json:"-"` // exact match: user | admin
 	Status string `form:"status" json:"-"` // active | blocked | deleted
 	Limit  int    `form:"limit"  json:"-"`
 	Offset int    `form:"offset" json:"-"`
 }
 
 type UpdateUserRoleRequest struct {
-	Role string `json:"role" binding:"required,oneof=user moderator admin superadmin"`
+	Role string `json:"role" binding:"required,oneof=user admin"`
 }
 
 type UpdateUserStatusRequest struct {

@@ -50,6 +50,68 @@ func (r *userRepo) Create(ctx context.Context, req models.CreateUser) (string, e
 	return id, nil
 }
 
+// CreatePending writes an invited user as status='pending', role=<chosen>,
+// password=NULL. The actual password gets set when the invitee POSTs
+// /auth/accept-invite — at that point status flips to 'active'.
+//
+// Returns the new row's id even when the email already exists as a
+// pending row (we reuse it instead of inserting), so re-issuing an
+// invite is idempotent. Returns sql.ErrNoRows-style "already active"
+// error so the caller can surface "this user is already a member".
+func (r *userRepo) CreatePending(ctx context.Context, email, role string) (string, error) {
+	// First, look up any existing row — refuse if active/blocked
+	// (don't overwrite a real account), recycle if pending.
+	var existingID, existingStatus string
+	err := r.db.QueryRow(ctx,
+		`SELECT id, status::text FROM users WHERE email = $1`, email,
+	).Scan(&existingID, &existingStatus)
+	switch {
+	case err == nil && existingStatus != "pending":
+		return "", errors.New("user already exists")
+	case err == nil && existingStatus == "pending":
+		// Refresh the role in case the inviter picked a different one
+		// the second time around.
+		if _, err := r.db.Exec(ctx,
+			`UPDATE users SET role = $2 WHERE id = $1`, existingID, role); err != nil {
+			return "", err
+		}
+		return existingID, nil
+	case errors.Is(err, pgx.ErrNoRows):
+		// fall through to INSERT
+	default:
+		return "", err
+	}
+
+	id := uuid.NewString()
+	const ins = `
+		INSERT INTO users (id, email, auth_provider, status, role)
+		VALUES ($1, $2, 'email', 'pending', $3)
+	`
+	if _, err := r.db.Exec(ctx, ins, id, email, role); err != nil {
+		r.log.Error("user repo: insert pending", logger.Error(err))
+		return "", err
+	}
+	return id, nil
+}
+
+// ActivatePending flips a pending row to active and sets the password
+// hash atomically — the invite-accept transition.
+func (r *userRepo) ActivatePending(ctx context.Context, id, passwordHash string) error {
+	const q = `
+		UPDATE users
+		SET status = 'active', password = $2
+		WHERE id = $1 AND status = 'pending'
+	`
+	res, err := r.db.Exec(ctx, q, id, passwordHash)
+	if err != nil {
+		return err
+	}
+	if res.RowsAffected() == 0 {
+		return errors.New("no pending invite for this user")
+	}
+	return nil
+}
+
 func (r *userRepo) GetForLoginByEmail(ctx context.Context, email string) (models.LoginUser, error) {
 	const q = `
 		SELECT id, COALESCE(password, ''), status, COALESCE(role, 'user')

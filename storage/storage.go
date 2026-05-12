@@ -11,7 +11,6 @@ type IStorage interface {
 	User() IUserStorage
 	OTP() IOTPStorage
 	Role() IRoleStorage
-	Sysuser() ISysuserStorage
 	Redis() IRedisStorage
 	AuthAudit() IAuthAuditStorage
 	Permission() IPermissionStorage
@@ -151,6 +150,16 @@ type IUserStorage interface {
 	UpdateRole(ctx context.Context, id, role string) error
 	UpdateStatus(ctx context.Context, id, status string) error
 	List(ctx context.Context, filter models.UserListFilter) ([]models.User, int, error)
+
+	// Invite flow.
+	//   CreatePending writes a status='pending' row (no password) — call
+	//   from POST /admin/users/invite. Idempotent for repeat invites
+	//   to the same email; errors when the email already maps to an
+	//   active or blocked account.
+	//   ActivatePending flips pending → active and sets the password
+	//   hash. Called from POST /auth/accept-invite.
+	CreatePending(ctx context.Context, email, role string) (string, error)
+	ActivatePending(ctx context.Context, id, passwordHash string) error
 }
 
 // IPermissionStorage maps role names to wire-format permission strings
@@ -212,12 +221,6 @@ type IRoleStorage interface {
 	Update(ctx context.Context, id, name string) error
 	GetAll(ctx context.Context) ([]models.Role, error)
 	Exists(ctx context.Context, id string) (bool, error)
-}
-
-type ISysuserStorage interface {
-	GetByPhone(ctx context.Context, phone string) (id, hashedPassword string, status string, err error)
-	Create(ctx context.Context, name, phone, hashedPassword, createdBy string) (string, error)
-	AssignRoles(ctx context.Context, sysuserID string, roleIDs []string) error
 }
 
 type IRedisStorage interface {
