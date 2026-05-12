@@ -48,6 +48,11 @@ func registerAdminRoutes(r *gin.Engine, h handler.Handler) {
 	{
 		files.GET("", h.RequirePermission("files:read"), h.ListAllFilesAdmin)
 		files.DELETE("/:id", h.RequirePermission("files:delete"), h.DeleteFileAdmin)
+		// "Delete every file older than 7 days" sweep. Used to live
+		// at /file/cleanup but that mixed an admin operation into
+		// the caller-owned /file group — moved here so admin work
+		// lives only in /admin/*.
+		files.GET("/cleanup", h.RequirePermission("files:delete"), h.CleanupOldFiles)
 	}
 
 	// --- Auth lockouts (login_limiter) -----------------------------------
@@ -87,15 +92,17 @@ func registerAdminRoutes(r *gin.Engine, h handler.Handler) {
 		stats.GET("/cache", h.StatsCacheAdmin)
 	}
 
-	// --- Job moderation (Asynq inspector) --------------------------------
+	// --- Job moderation (Asynq inspector + per-job logs) ----------------
 	jobs := admin.Group("/jobs")
 	{
 		jobs.GET("/:queue/:state", h.RequirePermission("jobs:read"), h.ListJobsAdmin)
 		jobs.POST("/:queue/:id/retry", h.RequirePermission("jobs:moderate"), h.RetryJobAdmin)
 		jobs.POST("/:queue/:id/archive", h.RequirePermission("jobs:moderate"), h.ArchiveJobAdmin)
 		jobs.DELETE("/:queue/:id", h.RequirePermission("jobs:moderate"), h.DeleteJobAdmin)
+		// Per-job logs. Used to sit at /admin/logs/:id at the root
+		// of the admin group with the legacy AdminMiddleware role
+		// check — folded into /admin/jobs/* so all job-related work
+		// shares one sub-path and one permission name.
+		jobs.GET("/logs/:id", h.RequirePermission("jobs:read"), h.GetLogsByJobID)
 	}
-
-	// --- Per-job logs (legacy AdminMiddleware — "role==admin") -----------
-	admin.GET("/logs/:id", h.AdminMiddleware, h.GetLogsByJobID)
 }

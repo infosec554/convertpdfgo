@@ -30,7 +30,10 @@ func registerFileRoutes(r *gin.Engine, h handler.Handler) {
 		file.GET("/list", h.ListUserFiles)
 		file.GET("/:id", h.GetFile)
 		file.DELETE("/:id", h.DeleteFile)
-		file.GET("/cleanup", h.AdminMiddleware, h.CleanupOldFiles) // admin-only
+		// Note: the admin-only "delete files older than N days" sweep
+		// used to live here as /file/cleanup. It moved to
+		// /admin/files/cleanup so this group is purely caller-owned
+		// operations — see routes_admin.go.
 	}
 
 	// --- "Save to ..." cloud-export targets -------------------------------
