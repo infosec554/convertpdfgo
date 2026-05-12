@@ -69,6 +69,21 @@ type IStorage interface {
 
 	// Cloud-export OAuth tokens (Dropbox / GDrive / OneDrive).
 	StorageToken() IStorageTokenStorage
+
+	// User → admin contact inbox + admin reply thread.
+	Contact() IContactStorage
+}
+
+// IContactStorage holds the contact_messages + contact_replies
+// tables (migration 0015). Submit is open to guests; the rest is
+// admin-only and gated by the contacts:* permissions.
+type IContactStorage interface {
+	Submit(ctx context.Context, m *models.ContactMessage) error
+	List(ctx context.Context, f models.ContactListFilter) ([]models.ContactMessage, int, error)
+	GetByID(ctx context.Context, id string) (*models.ContactMessage, error)
+	SaveReply(ctx context.Context, messageID, adminUserID, body string) (string, error)
+	UpdateStatus(ctx context.Context, id, status string) error
+	Delete(ctx context.Context, id string) error
 }
 
 // IStorageTokenStorage backs the "Save to ..." export targets — one

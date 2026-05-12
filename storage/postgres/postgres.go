@@ -230,6 +230,10 @@ func (s *Store) StorageToken() storage.IStorageTokenStorage {
 	return NewStorageTokenRepo(s.pool, s.log)
 }
 
+func (s *Store) Contact() storage.IContactStorage {
+	return NewContactRepo(s.pool, s.log)
+}
+
 func (s *Store) PDFToHTML() storage.IPDFToHTMLStorage {
 	return NewPDFToHTMLRepo(s.pool, s.log)
 }

@@ -92,6 +92,16 @@ func registerAdminRoutes(r *gin.Engine, h handler.Handler) {
 		stats.GET("/cache", h.StatsCacheAdmin)
 	}
 
+	// --- Contact inbox (user-submitted, admin-replies) ------------------
+	contacts := admin.Group("/contacts")
+	{
+		contacts.GET("", h.RequirePermission("contacts:read"), h.ListContactsAdmin)
+		contacts.GET("/:id", h.RequirePermission("contacts:read"), h.GetContactAdmin)
+		contacts.POST("/:id/reply", h.RequirePermission("contacts:write"), h.ReplyContactAdmin)
+		contacts.PUT("/:id/status", h.RequirePermission("contacts:write"), h.UpdateContactStatusAdmin)
+		contacts.DELETE("/:id", h.RequirePermission("contacts:write"), h.DeleteContactAdmin)
+	}
+
 	// --- Job moderation (Asynq inspector + per-job logs) ----------------
 	jobs := admin.Group("/jobs")
 	{

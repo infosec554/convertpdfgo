@@ -72,6 +72,9 @@ type IServiceManager interface {
 
 	// Admin invite flow (POST /admin/users/invite, accept-invite).
 	Invite() InviteService
+
+	// Contact inbox — public submit + admin reply.
+	Contact() ContactService
 }
 
 type service struct {
@@ -128,6 +131,7 @@ type service struct {
 
 	storageExportService StorageExportService
 	inviteService        InviteService
+	contactService       ContactService
 }
 
 func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client, cfg config.Config) IServiceManager {
@@ -186,6 +190,7 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 
 		storageExportService: NewStorageExportService(storage, log, cfg),
 		inviteService:        NewInviteService(storage, redis, log, NewMailerService(mailerCore), cfg),
+		contactService:       NewContactService(storage, log, NewMailerService(mailerCore), cfg),
 	}
 }
 
@@ -335,3 +340,4 @@ func (s *service) OCRStructured() OCRStructuredService   { return s.ocrStructure
 
 func (s *service) StorageExport() StorageExportService { return s.storageExportService }
 func (s *service) Invite() InviteService               { return s.inviteService }
+func (s *service) Contact() ContactService             { return s.contactService }
