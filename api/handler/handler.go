@@ -27,6 +27,10 @@ type Handler struct {
 	loginLimit        *loginlimiter.Limiter
 	googleOAuthConfig *oauth2.Config
 	githubOAuthConfig *oauth2.Config
+	// redis carries short-lived flow state (OAuth CSRF tokens,
+	// idempotency keys) where introducing a typed wrapper would be
+	// more ceremony than the use case warrants.
+	redis storage.IRedisStorage
 }
 
 func New(services service.IServiceManager, log logger.ILogger, cfg config.Config, queue *asynq.Client, redis storage.IRedisStorage) Handler {
@@ -37,6 +41,7 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 		queue:      queue,
 		bl:         blacklist.New(redis),
 		loginLimit: loginlimiter.New(redis, 5, 10*time.Minute),
+		redis:      redis,
 		googleOAuthConfig: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,

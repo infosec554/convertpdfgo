@@ -35,7 +35,7 @@ func main() {
 	redisStore := redis.New(cfg)
 	gotClient := gotenberg.New(cfg.GotenbergURL)
 
-	services := service.New(pgStore, log, mailService, redisStore, gotClient)
+	services := service.New(pgStore, log, mailService, redisStore, gotClient, cfg)
 
 	// Worker exposes its own /metrics on :8090 so Prometheus can scrape
 	// JobDuration / JobsProcessed counters that only the worker writes to.

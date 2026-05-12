@@ -230,6 +230,10 @@ func (s *Store) OCRStructured() storage.IOCRStructuredStorage {
 	return NewOCRStructuredRepo(s.pool, s.log)
 }
 
+func (s *Store) StorageToken() storage.IStorageTokenStorage {
+	return NewStorageTokenRepo(s.pool, s.log)
+}
+
 func (s *Store) PDFToHTML() storage.IPDFToHTMLStorage {
 	return NewPDFToHTMLRepo(s.pool, s.log)
 }

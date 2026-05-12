@@ -67,6 +67,20 @@ type IStorage interface {
 	ImageToText() IImageToTextStorage
 	OCRDetectLang() IOCRDetectLangStorage
 	OCRStructured() IOCRStructuredStorage
+
+	// Cloud-export OAuth tokens (Dropbox / GDrive / OneDrive).
+	StorageToken() IStorageTokenStorage
+}
+
+// IStorageTokenStorage backs the "Save to ..." export targets — one
+// row per (user_id, provider). Reauthenticating overwrites in place
+// via the unique index on those two columns.
+type IStorageTokenStorage interface {
+	Upsert(ctx context.Context, t *models.UserStorageToken) error
+	Get(ctx context.Context, userID, provider string) (*models.UserStorageToken, error)
+	ListByUser(ctx context.Context, userID string) ([]models.UserStorageToken, error)
+	Delete(ctx context.Context, userID, provider string) error
+	UpdateAccessOnly(ctx context.Context, userID, provider, accessToken string, expiresAt *time.Time) error
 }
 
 type IOCRStorage interface {

@@ -223,6 +223,20 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	}
 
 	// =====================================================================
+	// 5z. "Save to ..." cloud exports. Public providers listing (so the UI
+	// can render the dropdown for guests too); everything else needs auth
+	// — the token table is keyed by user_id. The callback can't run
+	// inside AuthorizerMiddleware because the provider's redirect doesn't
+	// carry our JWT; we rely on OptionalAuthMiddleware + an explicit
+	// 401 inside the handler when user_id ends up empty.
+	// =====================================================================
+	r.GET("/api/storage/providers", h.OptionalAuthMiddleware, h.ListStorageProviders)
+	r.GET("/api/storage/:provider/connect", h.AuthorizerMiddleware, h.ConnectStorageProvider)
+	r.DELETE("/api/storage/:provider", h.AuthorizerMiddleware, h.DisconnectStorageProvider)
+	r.GET("/oauth/:provider/callback", h.OptionalAuthMiddleware, h.FinishStorageProviderOAuth)
+	r.POST("/file/:id/export", h.AuthorizerMiddleware, h.ExportFile)
+
+	// =====================================================================
 	// 6. Admin (/admin/*) — RBAC, audited. Auth + AdminAuditMiddleware
 	// run for everything in this group; per-route RequirePermission
 	// declares the specific capability needed.

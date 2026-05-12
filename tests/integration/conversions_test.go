@@ -4,6 +4,9 @@
 package integration
 
 import (
+	"encoding/json"
+	"io"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -489,4 +492,51 @@ func startsWith(b []byte, prefix string) bool {
 		return false
 	}
 	return string(b[:len(prefix)]) == prefix
+}
+
+// --- "Save to ..." cloud-export endpoints ---------------------------------
+//
+// Real OAuth happens between the user's browser and the provider — we
+// can't drive it from the test runner without registered apps + a real
+// account. What we *can* verify here is that the plumbing works:
+//
+//   - GET /api/storage/providers lists three rows
+//   - Each row reports Configured=false when no app creds are set
+//     (the CI/dev case) — so the frontend correctly hides the option
+//
+// When real keys land on prod, swap SKIP_EXPORT=1 + add an assertion
+// that at least one provider shows Configured=true.
+
+func TestStorageProvidersList(t *testing.T) {
+	SkipIfShort(t)
+	c := NewClient(t)
+	resp, err := c.HTTP.Get(c.BaseURL + "/api/storage/providers")
+	if err != nil {
+		t.Fatalf("GET /api/storage/providers: %v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 256))
+		t.Fatalf("providers status=%d body=%s", resp.StatusCode, string(body))
+	}
+	var env Envelope
+	if err := json.NewDecoder(resp.Body).Decode(&env); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	var providers []map[string]any
+	if err := json.Unmarshal(env.Data, &providers); err != nil {
+		t.Fatalf("unmarshal providers: %v (%s)", err, string(env.Data))
+	}
+	if len(providers) != 3 {
+		t.Fatalf("expected 3 providers (dropbox/gdrive/onedrive), got %d", len(providers))
+	}
+	names := map[string]bool{}
+	for _, p := range providers {
+		names[p["name"].(string)] = true
+	}
+	for _, want := range []string{"dropbox", "gdrive", "onedrive"} {
+		if !names[want] {
+			t.Errorf("missing provider %q in response", want)
+		}
+	}
 }

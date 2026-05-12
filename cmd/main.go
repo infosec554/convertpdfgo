@@ -47,7 +47,7 @@ func main() {
 	queueClient := queue.NewClient(cfg)
 	defer queueClient.Close()
 
-	services := service.New(pgStore, log, mailService, redis, gotClient)
+	services := service.New(pgStore, log, mailService, redis, gotClient, cfg)
 	router := api.New(services, log, cfg, queueClient, redis)
 
 	// Background cleanup — privacy-first model:

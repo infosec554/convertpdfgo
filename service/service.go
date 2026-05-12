@@ -1,6 +1,7 @@
 package service
 
 import (
+	"convertpdfgo/config"
 	"convertpdfgo/pkg/cache"
 	"convertpdfgo/pkg/gotenberg"
 	"convertpdfgo/pkg/logger"
@@ -66,6 +67,9 @@ type IServiceManager interface {
 	NUp() NUpService
 	URLToPDF() URLToPDFService
 	Metadata() MetadataService
+
+	// "Save to ..." cloud-export targets.
+	StorageExport() StorageExportService
 }
 
 type service struct {
@@ -120,9 +124,11 @@ type service struct {
 	imageToTextService    ImageToTextService
 	ocrDetectLangService  OCRDetectLangService
 	ocrStructuredService  OCRStructuredService
+
+	storageExportService StorageExportService
 }
 
-func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client) IServiceManager {
+func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client, cfg config.Config) IServiceManager {
 	resultCache := cache.New(redis)
 	return &service{
 		userService:          NewUserService(storage, log),
@@ -176,6 +182,8 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		imageToTextService:    NewImageToTextService(storage, log),
 		ocrDetectLangService:  NewOCRDetectLangService(storage, log),
 		ocrStructuredService:  NewOCRStructuredService(storage, log),
+
+		storageExportService: NewStorageExportService(storage, log, cfg),
 	}
 }
 
@@ -326,3 +334,5 @@ func (s *service) OCRExtractText() OCRExtractTextService { return s.ocrExtractTe
 func (s *service) ImageToText() ImageToTextService       { return s.imageToTextService }
 func (s *service) OCRDetectLang() OCRDetectLangService   { return s.ocrDetectLangService }
 func (s *service) OCRStructured() OCRStructuredService   { return s.ocrStructuredService }
+
+func (s *service) StorageExport() StorageExportService { return s.storageExportService }

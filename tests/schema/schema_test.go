@@ -32,6 +32,9 @@ import (
 )
 
 // Tables we *read* but never *own*. Postgres internals + golang-migrate.
+// SQL keywords that follow our verb regex (e.g. `ON CONFLICT … DO UPDATE
+// SET …` puts "set" right after "UPDATE") are filtered out here too —
+// they're never real tables and pre-filtering keeps the regex simple.
 var ignoredTables = map[string]bool{
 	"pg_constraint":        true,
 	"pg_class":             true,
@@ -42,6 +45,10 @@ var ignoredTables = map[string]bool{
 	"pg_get_constraintdef": true, // function in pg_constraint queries
 	"schema_migrations":    true,
 	"information_schema":   true,
+	// SQL keywords that legitimately follow our verb set.
+	"set":    true, // `ON CONFLICT … DO UPDATE SET …`
+	"values": true, // `INSERT INTO foo (a,b) VALUES …`
+	"select": true, // `INSERT INTO foo SELECT …` (subquery insert)
 }
 
 // Capture the table name following the verbs that bind a relation.
