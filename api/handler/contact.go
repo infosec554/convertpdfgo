@@ -57,6 +57,7 @@ func (h Handler) SubmitContact(c *gin.Context) {
 // @Param    offset query int    false "default 0"
 // @Success  200 {object} map[string]interface{}
 // @Router   /admin/contacts [get]
+// @Security ApiKeyAuth
 func (h Handler) ListContactsAdmin(c *gin.Context) {
 	var f models.ContactListFilter
 	_ = c.ShouldBindQuery(&f)
@@ -81,6 +82,7 @@ func (h Handler) ListContactsAdmin(c *gin.Context) {
 // @Param    id path string true "message id"
 // @Success  200 {object} models.ContactMessage
 // @Router   /admin/contacts/{id} [get]
+// @Security ApiKeyAuth
 func (h Handler) GetContactAdmin(c *gin.Context) {
 	id := c.Param("id")
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
@@ -102,6 +104,7 @@ func (h Handler) GetContactAdmin(c *gin.Context) {
 // @Param    request body models.ContactReplyRequest true "reply"
 // @Success  201 {object} map[string]string
 // @Router   /admin/contacts/{id}/reply [post]
+// @Security ApiKeyAuth
 func (h Handler) ReplyContactAdmin(c *gin.Context) {
 	id := c.Param("id")
 	var req models.ContactReplyRequest
@@ -140,6 +143,7 @@ func (h Handler) ReplyContactAdmin(c *gin.Context) {
 // @Param    request body models.ContactUpdateStatusRequest true "status"
 // @Success  200 {object} map[string]string
 // @Router   /admin/contacts/{id}/status [put]
+// @Security ApiKeyAuth
 func (h Handler) UpdateContactStatusAdmin(c *gin.Context) {
 	id := c.Param("id")
 	var req models.ContactUpdateStatusRequest
@@ -163,6 +167,7 @@ func (h Handler) UpdateContactStatusAdmin(c *gin.Context) {
 // @Param    id path string true "message id"
 // @Success  200 {object} map[string]string
 // @Router   /admin/contacts/{id} [delete]
+// @Security ApiKeyAuth
 func (h Handler) DeleteContactAdmin(c *gin.Context) {
 	id := c.Param("id")
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)

@@ -23,7 +23,6 @@ import (
 
 // UploadFile godoc
 // @Router       /file/upload [POST]
-// @Security     ApiKeyAuth
 // @Summary      Upload file
 // @Tags         file
 // @Accept       multipart/form-data
@@ -150,8 +149,7 @@ func (h Handler) UploadFile(c *gin.Context) {
 
 // GetFile godoc
 // @Router       /file/{id} [GET]
-// @Security     ApiKeyAuth
-// @Summary      Get file by ID
+// @Summary      Get file by ID (guest-owned: open; user-owned: owner or admin)
 // @Tags         file
 // @Param        id path string true "File ID"
 // @Produce      json
@@ -231,8 +229,7 @@ func (h Handler) DownloadFile(c *gin.Context) {
 
 // DeleteFile godoc
 // @Router       /file/{id} [DELETE]
-// @Security     ApiKeyAuth
-// @Summary      Delete file by ID
+// @Summary      Delete file by ID (guest-owned: open; user-owned: owner or admin)
 // @Tags         file
 // @Param        id path string true "File ID"
 // @Success      200  {object}  map[string]string

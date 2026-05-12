@@ -24,6 +24,7 @@ import (
 // @Param    request body models.InviteAdminRequest true "invite"
 // @Success  202 {object} map[string]string
 // @Router   /admin/users/invite [post]
+// @Security ApiKeyAuth
 func (h Handler) InviteAdminCreate(c *gin.Context) {
 	var req models.InviteAdminRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
