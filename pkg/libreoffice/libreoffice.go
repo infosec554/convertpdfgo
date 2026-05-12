@@ -53,10 +53,15 @@ func Convert(ctx context.Context, srcPath, outDir, format string) (string, error
 		"-env:UserInstallation=file://" + profile,
 	}
 	// PDF is not a native LibreOffice format — without an explicit
-	// import filter it bails with "no export filter found". Other
-	// inputs (DOCX/XLSX/PPTX) are auto-detected just fine.
+	// import filter it bails with "no export filter found". Choose
+	// the right Application's PDF importer based on the *output*
+	// format: writer for text-y outputs (docx/html/txt), impress
+	// for slide outputs (pptx/odp). Calc has no PDF importer at all
+	// in this LibreOffice version — callers wanting xlsx have to
+	// take a different path (we use pdftotext + excelize in
+	// service/pdf_to_excel.go).
 	if strings.EqualFold(filepath.Ext(srcPath), ".pdf") {
-		args = append(args, "--infilter=writer_pdf_import")
+		args = append(args, "--infilter="+pdfInputFilterFor(format))
 	}
 	args = append(args,
 		"--convert-to", format,
@@ -115,6 +120,18 @@ func Convert(ctx context.Context, srcPath, outDir, format string) (string, error
 		return "", fmt.Errorf("convert: no output produced; soffice said: %s", trim(combined))
 	}
 	return newest, nil
+}
+
+// pdfInputFilterFor maps a target export format to the LibreOffice
+// PDF import filter that can produce it. Unknown formats default to
+// Writer — that's the safe fallback for any text-y output.
+func pdfInputFilterFor(targetFormat string) string {
+	switch strings.ToLower(strings.SplitN(targetFormat, ":", 2)[0]) {
+	case "pptx", "ppt", "odp":
+		return "impress_pdf_import"
+	default:
+		return "writer_pdf_import"
+	}
 }
 
 func trim(b []byte) string {

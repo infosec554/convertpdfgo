@@ -53,6 +53,30 @@ type IStorage interface {
 	NUp() INUpStorage
 	URLToPDF() IURLToPDFStorage
 	Metadata() IMetadataStorage
+
+	// PDF → office formats. word path lives above; html/ppt/excel were
+	// added once LibreOffice landed in the runtime image.
+	PDFToHTML() IPDFToHTMLStorage
+	PDFToPPT() IPDFToPPTStorage
+	PDFToExcel() IPDFToExcelStorage
+}
+
+type IPDFToHTMLStorage interface {
+	Create(ctx context.Context, job *models.PDFToHTMLJob) error
+	GetByID(ctx context.Context, id string) (*models.PDFToHTMLJob, error)
+	Update(ctx context.Context, job *models.PDFToHTMLJob) error
+}
+
+type IPDFToPPTStorage interface {
+	Create(ctx context.Context, job *models.PDFToPPTJob) error
+	GetByID(ctx context.Context, id string) (*models.PDFToPPTJob, error)
+	Update(ctx context.Context, job *models.PDFToPPTJob) error
+}
+
+type IPDFToExcelStorage interface {
+	Create(ctx context.Context, job *models.PDFToExcelJob) error
+	GetByID(ctx context.Context, id string) (*models.PDFToExcelJob, error)
+	Update(ctx context.Context, job *models.PDFToExcelJob) error
 }
 
 type IUserStorage interface {

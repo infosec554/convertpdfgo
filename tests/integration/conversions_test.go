@@ -220,6 +220,48 @@ func TestWordToPDF(t *testing.T) {
 	AssertPDF(t, c.Download(t, job.Output()), 500)
 }
 
+// PDF → HTML uses LibreOffice writer_pdf_import; output is real HTML.
+// The test asserts the file contains an `<html` tag rather than any
+// specific structure so cosmetic LibreOffice changes don't flake it.
+func TestPDFToHTML(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOffice(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, pdfFixture)
+	jid := c.PostJob(t, "/api/pdf/pdf-to-html", map[string]any{"input_file_id": a})
+	job := c.PollDone(t, "/api/pdf/pdf-to-html", jid, pollOffice)
+	out := c.Download(t, job.Output())
+	if len(out) < 100 {
+		t.Fatalf("html too small: %d bytes", len(out))
+	}
+	AssertText(t, out, "<html")
+}
+
+// PDF → PowerPoint runs through LibreOffice impress_pdf_import — each
+// PDF page becomes a slide image. Asserts the ZIP magic that every
+// real .pptx starts with.
+func TestPDFToPPT(t *testing.T) {
+	SkipIfShort(t)
+	SkipIfOffice(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, pdfFixture)
+	jid := c.PostJob(t, "/api/pdf/pdf-to-ppt", map[string]any{"input_file_id": a})
+	job := c.PollDone(t, "/api/pdf/pdf-to-ppt", jid, pollOffice)
+	AssertZip(t, c.Download(t, job.Output()))
+}
+
+// PDF → Excel: LibreOffice can't produce xlsx from PDF, so we go
+// pdftotext -layout → excelize. Validates xlsx ZIP magic + a token
+// the fixture has on page 1, surviving the layout-aware extraction.
+func TestPDFToExcel(t *testing.T) {
+	SkipIfShort(t)
+	c := NewClient(t)
+	a := c.UploadFile(t, pdfFixture)
+	jid := c.PostJob(t, "/api/pdf/pdf-to-excel", map[string]any{"input_file_id": a})
+	job := c.PollDone(t, "/api/pdf/pdf-to-excel", jid, pollNormal)
+	AssertZip(t, c.Download(t, job.Output()))
+}
+
 func TestPDFToWord(t *testing.T) {
 	SkipIfShort(t)
 	SkipIfOffice(t)

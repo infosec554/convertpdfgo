@@ -178,6 +178,17 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 		pdf.POST("/html-to-pdf", h.CreateHTMLToPDF)
 		pdf.GET("/html-to-pdf/:id", h.GetHTMLToPDFJob)
 
+		// 5g. PDF → Office/HTML (LibreOffice direct; not Gotenberg).
+		// Gotenberg's libreoffice route only goes Office→PDF, so the
+		// reverse direction had to be implemented in-process — see
+		// pkg/libreoffice + service/pdf_to_{html,ppt,excel}.go.
+		pdf.POST("/pdf-to-html", h.CreatePDFToHTMLJob)
+		pdf.GET("/pdf-to-html/:id", h.GetPDFToHTMLJob)
+		pdf.POST("/pdf-to-ppt", h.CreatePDFToPPTJob)
+		pdf.GET("/pdf-to-ppt/:id", h.GetPDFToPPTJob)
+		pdf.POST("/pdf-to-excel", h.CreatePDFToExcelJob)
+		pdf.GET("/pdf-to-excel/:id", h.GetPDFToExcelJob)
+
 		// 5h. Phase 1 features (PDF_FEATURES.md): watermark, extract-text,
 		// n-up, url-to-pdf, metadata.
 		pdf.POST("/watermark", h.CreateWatermarkJob)

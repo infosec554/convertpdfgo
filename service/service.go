@@ -46,6 +46,12 @@ type IServiceManager interface {
 	PowerPointToPDF() PowerPointToPDFService
 	HTMLToPDF() HTMLToPDFService
 
+	// PDF → office/web. Reverse direction of the four above; landed
+	// once LibreOffice joined the runtime (pdf_to_word was first).
+	PDFToHTML() PDFToHTMLService
+	PDFToPPT() PDFToPPTService
+	PDFToExcel() PDFToExcelService
+
 	// Phase 1 features.
 	Watermark() WatermarkService
 	ExtractText() ExtractTextService
@@ -95,6 +101,10 @@ type service struct {
 	nupService         NUpService
 	urlToPDFService    URLToPDFService
 	metadataService    MetadataService
+
+	pdfToHTMLService  PDFToHTMLService
+	pdfToPPTService   PDFToPPTService
+	pdfToExcelService PDFToExcelService
 }
 
 func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client) IServiceManager {
@@ -140,6 +150,10 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		nupService:         NewNUpService(storage, log),
 		urlToPDFService:    NewURLToPDFService(storage, log, gotClient),
 		metadataService:    NewMetadataService(storage, log),
+
+		pdfToHTMLService:  NewPDFToHTMLService(storage, log),
+		pdfToPPTService:   NewPDFToPPTService(storage, log),
+		pdfToExcelService: NewPDFToExcelService(storage, log),
 	}
 }
 
@@ -279,3 +293,7 @@ func (s *service) ExtractText() ExtractTextService { return s.extractTextService
 func (s *service) NUp() NUpService                 { return s.nupService }
 func (s *service) URLToPDF() URLToPDFService       { return s.urlToPDFService }
 func (s *service) Metadata() MetadataService       { return s.metadataService }
+
+func (s *service) PDFToHTML() PDFToHTMLService   { return s.pdfToHTMLService }
+func (s *service) PDFToPPT() PDFToPPTService     { return s.pdfToPPTService }
+func (s *service) PDFToExcel() PDFToExcelService { return s.pdfToExcelService }
