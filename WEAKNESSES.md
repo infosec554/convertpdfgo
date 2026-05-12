@@ -64,7 +64,7 @@
 
 | Marker | Muammo | Fix yo'li | Severity |
 |--------|--------|-----------|----------|
-| **pdf-to-word** | Gotenberg `/forms/libreoffice/convert` faqat office→PDF, teskari yo'q. `output: docx` ignored, worker input PDF'ni qaytaradi. | LibreOffice sidecar yoki `pdf2docx` Python service | 🟠 |
+| ~~**pdf-to-word**~~ ✅ | ~~Gotenberg `/forms/libreoffice/convert` faqat office→PDF~~ — worker endi `pkg/libreoffice` orqali to'g'ridan-to'g'ri LibreOffice CLI'ga shell qiladi (`--infilter=writer_pdf_import`). DOCX (ZIP) magic prod'da tasdiqlangan. | done | 🟠 |
 
 ## 🟢 P3 — kosmetik, "polish"
 
