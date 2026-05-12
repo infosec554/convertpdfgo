@@ -49,7 +49,11 @@ RUN apk add --no-cache \
     # alpine — pull them straight from tesseract-ocr/tessdata so /usr/
     # share/tessdata has the full set our /api/pdf/ocr endpoints
     # advertise. ~10 MB total.
-    for lang in uzb uzb_cyrl kir; do \
+    # `osd` is the orientation/script detection model — required for
+    # `tesseract --psm 0` which our /api/pdf/ocr-detect-lang endpoint
+    # invokes. Alpine doesn't package it separately, so pull alongside
+    # the language data.
+    for lang in uzb uzb_cyrl kir osd; do \
       wget -qO "/usr/share/tessdata/${lang}.traineddata" \
         "https://github.com/tesseract-ocr/tessdata/raw/main/${lang}.traineddata"; \
     done && \
