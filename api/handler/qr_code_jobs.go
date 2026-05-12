@@ -13,7 +13,6 @@ import (
 
 // CreateQRCodeJob godoc
 // @Router       /api/pdf/qr-code [POST]
-// @Security     ApiKeyAuth
 // @Summary      Add QR code to PDF (async)
 // @Tags         pdf-qr-code
 // @Accept       json
@@ -51,7 +50,6 @@ func (h Handler) CreateQRCodeJob(c *gin.Context) {
 
 // GetQRCodeJob godoc
 // @Router       /api/pdf/qr-code/{id} [GET]
-// @Security     ApiKeyAuth
 // @Summary      Get QR code job status
 // @Tags         pdf-qr-code
 // @Param        id path string true "Job ID"

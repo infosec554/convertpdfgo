@@ -13,7 +13,6 @@ import (
 
 // AddHeaderFooter godoc
 // @Router       /api/pdf/header-footer [POST]
-// @Security     ApiKeyAuth
 // @Summary      Add header/footer (async)
 // @Tags         pdf-header-footer
 // @Accept       json
@@ -51,7 +50,6 @@ func (h Handler) AddHeaderFooter(c *gin.Context) {
 
 // GetHeaderFooterJob godoc
 // @Router       /api/pdf/header-footer/{id} [GET]
-// @Security     ApiKeyAuth
 // @Summary      Get header/footer job status
 // @Tags         pdf-header-footer
 // @Param        id path string true "Job ID"

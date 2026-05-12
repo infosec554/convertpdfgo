@@ -12,7 +12,6 @@ import (
 
 // CreateInspectJob godoc
 // @Router       /api/pdf/inspect [POST]
-// @Security     ApiKeyAuth
 // @Summary      Inspect PDF metadata
 // @Description  PDF faylning strukturasi, sahifa soni, sarlavha, muallif va boshqa metadata’larni olish
 // @Tags         inspect
@@ -51,7 +50,6 @@ func (h Handler) CreateInspectJob(c *gin.Context) {
 
 // GetInspectJob godoc
 // @Router       /api/pdf/inspect/{id} [GET]
-// @Security     ApiKeyAuth
 // @Summary      Get Inspect Job
 // @Description  Inspect ishining natijasini ko‘rish
 // @Tags         inspect

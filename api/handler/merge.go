@@ -60,7 +60,6 @@ func (h Handler) CreateMergeJob(c *gin.Context) {
 
 // GetMergeJob godoc
 // @Router /api/pdf/merge/{id} [GET]
-// @Security     ApiKeyAuth
 // @Summary      Get merge job status
 // @Tags         pdf-merge
 // @Accept       json

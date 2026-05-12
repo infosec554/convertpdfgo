@@ -13,7 +13,6 @@ import (
 
 // CreateCompressJob godoc
 // @Router       /api/pdf/compress [POST]
-// @Security     ApiKeyAuth
 // @Summary      Create compress job (async)
 // @Tags         pdf-compress
 // @Accept       json
@@ -66,7 +65,6 @@ func (h *Handler) CreateCompressJob(c *gin.Context) {
 
 // GetCompressJob godoc
 // @Router       /api/pdf/compress/{id} [GET]
-// @Security     ApiKeyAuth
 // @Summary      Get compress job by ID
 // @Tags         pdf-compress
 // @Param        id path string true "compress job ID"

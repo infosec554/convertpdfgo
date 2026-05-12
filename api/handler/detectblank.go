@@ -13,7 +13,6 @@ import (
 
 // CreateDetectBlankPagesJob godoc
 // @Router       /api/pdf/detect-blank [POST]
-// @Security     ApiKeyAuth
 // @Summary      Detect blank pages (async)
 // @Tags         pdf-detect-blank
 // @Accept       json
@@ -51,7 +50,6 @@ func (h Handler) CreateDetectBlankPagesJob(c *gin.Context) {
 
 // GetDetectBlankPagesJob godoc
 // @Router       /api/pdf/detect-blank/{id} [GET]
-// @Security     ApiKeyAuth
 // @Summary      Get Detect Blank Pages Job
 // @Tags         pdf-detect-blank
 // @Param        id path string true "Job ID"
