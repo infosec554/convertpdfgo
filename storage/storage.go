@@ -190,6 +190,14 @@ type IAdminStatsStorage interface {
 	// query (FILTER aggregates), replacing five separate User().List()
 	// calls. Keys: total, active, blocked, admins, moderators.
 	UserBuckets(ctx context.Context) (map[string]int, error)
+
+	// PublicCounts aggregates the small set of numbers we're willing
+	// to expose without auth — total registered users, total jobs
+	// processed across the *_jobs tables, total files uploaded ever.
+	// One query that UNIONs SELECT COUNT(*)s; the result is cached
+	// at the service layer so polling the landing page doesn't
+	// hammer the DB.
+	PublicCounts(ctx context.Context) (models.PublicCounts, error)
 }
 
 type IOTPStorage interface {

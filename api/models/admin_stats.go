@@ -43,3 +43,14 @@ type LockedAccount struct {
 	Email     string `json:"email"`
 	FailCount int    `json:"fail_count"`
 }
+
+// PublicCounts is the un-authenticated landing-page payload. Each
+// number is a global aggregate — nothing here is tied to a specific
+// user, so it's safe to expose without auth. The service layer
+// caches this for ~30 seconds; pollers shouldn't amplify load on
+// the DB.
+type PublicCounts struct {
+	TotalUsers          int `json:"total_users"`
+	TotalFilesUploaded  int `json:"total_files_uploaded"`
+	TotalFilesProcessed int `json:"total_files_processed"` // sum of every *_jobs.status='done'
+}

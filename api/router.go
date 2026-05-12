@@ -56,9 +56,14 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	r.GET("/readyz", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ready"}) })
 	r.GET("/metrics", gin.WrapH(metrics.Handler()))
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// Public counters — service-layer cached at 30 s so this is safe
+	// to expose without auth on the landing page. Sits in the infra
+	// group (above the rate limiter) because it's the same kind of
+	// "cheap, idempotent, no body" GET as /healthz.
+	r.GET("/api/stats/public", h.GetPublicStats)
 
 	// Everything below this line is rate-limited.
-	r.Use(middleware.RateLimiterMiddleware())
+	r.Use(middleware.RateLimiterMiddleware(redis))
 
 	// =====================================================================
 	// 2. Auth — public endpoints (logout requires a valid token)

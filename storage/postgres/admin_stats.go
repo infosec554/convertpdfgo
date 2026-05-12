@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -121,6 +122,65 @@ func (r *adminStatsRepo) TopUsersByDisk(ctx context.Context, limit int) ([]model
 			continue
 		}
 		out = append(out, t)
+	}
+	return out, nil
+}
+
+// PublicCounts runs three lightweight COUNTs against indexed tables.
+// The big one is the SUM over every *_jobs table — listed by hand
+// rather than read from information_schema so adding a new job
+// shows up as a real diff here (good — keeps the metric honest).
+// Status filter is 'done' so failed / pending jobs don't inflate the
+// "files processed" headline on the landing page.
+func (r *adminStatsRepo) PublicCounts(ctx context.Context) (models.PublicCounts, error) {
+	const q = `
+		WITH done_counts AS (
+			SELECT COUNT(*) AS n FROM merge_jobs            WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM split_jobs        WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM remove_pages_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM extract_pages_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM compress_jobs     WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM rotate_jobs       WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM crop_pdf_jobs     WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM add_page_number_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM add_header_footer_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM qr_code_jobs      WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM protect_jobs      WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM unlock_jobs       WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM pdf_inspect_jobs  WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM detect_blank_pages_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM jpg_to_pdf_jobs   WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM pdf_to_jpg_jobs   WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM word_to_pdf_jobs  WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM pdf_to_word_jobs  WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM excel_to_pdf_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM powerpoint_to_pdf_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM html_to_pdf_jobs  WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM watermark_jobs    WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM extract_text_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM nup_jobs          WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM url_to_pdf_jobs   WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM metadata_jobs     WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM pdf_to_html_jobs  WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM pdf_to_ppt_jobs   WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM pdf_to_excel_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM ocr_jobs          WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM scan_to_pdf_jobs  WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM ocr_extract_text_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM image_to_text_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM ocr_detect_lang_jobs WHERE status='done'
+			UNION ALL SELECT COUNT(*) FROM ocr_structured_jobs WHERE status='done'
+		)
+		SELECT
+		    (SELECT COUNT(*) FROM users)::int                  AS total_users,
+		    (SELECT COUNT(*) FROM files)::int                  AS total_files_uploaded,
+		    (SELECT COALESCE(SUM(n),0) FROM done_counts)::int  AS total_files_processed
+	`
+	var out models.PublicCounts
+	if err := r.db.QueryRow(ctx, q).Scan(
+		&out.TotalUsers, &out.TotalFilesUploaded, &out.TotalFilesProcessed,
+	); err != nil {
+		return models.PublicCounts{}, fmt.Errorf("admin_stats.PublicCounts: %w", err)
 	}
 	return out, nil
 }
