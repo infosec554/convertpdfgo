@@ -186,10 +186,10 @@ func (o *OneDrive) Upload(ctx context.Context, tok Token, remotePath, contentTyp
 		return UploadResult{}, fmt.Errorf("onedrive upload status=%d body=%s", resp.StatusCode, string(body))
 	}
 	var meta struct {
-		ID             string `json:"id"`
-		Name           string `json:"name"`
-		WebURL         string `json:"webUrl"`
-		ParentRef      struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		WebURL    string `json:"webUrl"`
+		ParentRef struct {
 			Path string `json:"path"`
 		} `json:"parentReference"`
 	}

@@ -529,9 +529,9 @@ func (s *ocrStructuredService) Create(ctx context.Context, req models.OCRStructu
 // endpoint — clients can re-parse the embedded hocr string with any
 // HTML parser if they want bounding boxes per word.
 type hOCRPayload struct {
-	Lang  string `json:"lang"`
-	HOCR  string `json:"hocr"`
-	Note  string `json:"note"`
+	Lang string `json:"lang"`
+	HOCR string `json:"hocr"`
+	Note string `json:"note"`
 }
 
 func (s *ocrStructuredService) Process(ctx context.Context, jobID string) error {

@@ -93,4 +93,3 @@ func (r *cropRepo) Update(ctx context.Context, job *models.CropPDFJob) error {
 	r.log.Info("Crop job status updated successfully", logger.String("jobID", job.ID))
 	return nil
 }
-

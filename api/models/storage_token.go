@@ -16,25 +16,25 @@ const (
 // Same shape across providers; the differences are encapsulated in
 // pkg/storage_provider.
 type UserStorageToken struct {
-	ID            string     `json:"id"`
-	UserID        string     `json:"user_id"`
-	Provider      string     `json:"provider"`
-	AccessToken   string     `json:"-"` // never serialised to clients
-	RefreshToken  string     `json:"-"`
-	ExpiresAt     *time.Time `json:"expires_at,omitempty"`
-	Scope         string     `json:"scope,omitempty"`
-	AccountEmail  string     `json:"account_email,omitempty"`
-	CreatedAt     time.Time  `json:"created_at"`
-	UpdatedAt     time.Time  `json:"updated_at"`
+	ID           string     `json:"id"`
+	UserID       string     `json:"user_id"`
+	Provider     string     `json:"provider"`
+	AccessToken  string     `json:"-"` // never serialised to clients
+	RefreshToken string     `json:"-"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
+	Scope        string     `json:"scope,omitempty"`
+	AccountEmail string     `json:"account_email,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 // StorageProviderInfo is the public-facing description of one export
 // target, returned by GET /api/storage/providers.
 type StorageProviderInfo struct {
-	Name        string `json:"name"`         // "dropbox", "gdrive", "onedrive"
-	DisplayName string `json:"display_name"` // "Dropbox", "Google Drive", "OneDrive"
-	Configured  bool   `json:"configured"`   // false → UI hides this option
-	Connected   bool   `json:"connected"`    // current user already authed
+	Name         string `json:"name"`         // "dropbox", "gdrive", "onedrive"
+	DisplayName  string `json:"display_name"` // "Dropbox", "Google Drive", "OneDrive"
+	Configured   bool   `json:"configured"`   // false → UI hides this option
+	Connected    bool   `json:"connected"`    // current user already authed
 	AccountEmail string `json:"account_email,omitempty"`
 }
 

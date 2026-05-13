@@ -5,16 +5,16 @@ import "time"
 // --- DB rows -------------------------------------------------------------
 
 type ContactMessage struct {
-	ID         string     `json:"id"`
-	UserID     *string    `json:"user_id,omitempty"` // nil for guest submissions
-	Name       string     `json:"name"`
-	Email      string     `json:"email"`
-	Subject    string     `json:"subject,omitempty"`
-	Body       string     `json:"body"`
-	Status     string     `json:"status"` // new | replied | closed
-	RepliedAt  *time.Time `json:"replied_at,omitempty"`
-	RepliedBy  *string    `json:"replied_by,omitempty"` // admin user_id
-	CreatedAt  time.Time  `json:"created_at"`
+	ID        string     `json:"id"`
+	UserID    *string    `json:"user_id,omitempty"` // nil for guest submissions
+	Name      string     `json:"name"`
+	Email     string     `json:"email"`
+	Subject   string     `json:"subject,omitempty"`
+	Body      string     `json:"body"`
+	Status    string     `json:"status"` // new | replied | closed
+	RepliedAt *time.Time `json:"replied_at,omitempty"`
+	RepliedBy *string    `json:"replied_by,omitempty"` // admin user_id
+	CreatedAt time.Time  `json:"created_at"`
 
 	// Replies is populated only by ContactStorage.GetByID — list
 	// endpoints leave it nil to keep payloads small.
@@ -22,11 +22,11 @@ type ContactMessage struct {
 }
 
 type ContactReply struct {
-	ID                string    `json:"id"`
-	ContactMessageID  string    `json:"contact_message_id"`
-	AdminUserID       string    `json:"admin_user_id"`
-	Body              string    `json:"body"`
-	SentAt            time.Time `json:"sent_at"`
+	ID               string    `json:"id"`
+	ContactMessageID string    `json:"contact_message_id"`
+	AdminUserID      string    `json:"admin_user_id"`
+	Body             string    `json:"body"`
+	SentAt           time.Time `json:"sent_at"`
 }
 
 // --- Request / filter shapes --------------------------------------------

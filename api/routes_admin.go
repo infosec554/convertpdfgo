@@ -14,14 +14,14 @@ import (
 // Sub-groups (one block per concern, ordered roughly by frequency
 // of use in the dashboard):
 //
-//   /admin/users    — list, role / status / lifecycle, invites
-//   /admin/files    — cross-user listing + force delete
-//   /admin/auth     — login-lockout viewer + manual unlock
-//   /admin/roles    — role CRUD (role_permissions seed lives in SQL)
-//   /admin/audit    — auth_audit reader
-//   /admin/stats    — dashboard aggregates
-//   /admin/jobs     — Asynq inspector (retry / archive / delete)
-//   /admin/logs/:id — per-job logs (legacy "role==admin" check)
+//	/admin/users    — list, role / status / lifecycle, invites
+//	/admin/files    — cross-user listing + force delete
+//	/admin/auth     — login-lockout viewer + manual unlock
+//	/admin/roles    — role CRUD (role_permissions seed lives in SQL)
+//	/admin/audit    — auth_audit reader
+//	/admin/stats    — dashboard aggregates
+//	/admin/jobs     — Asynq inspector (retry / archive / delete)
+//	/admin/logs/:id — per-job logs (legacy "role==admin" check)
 func registerAdminRoutes(r *gin.Engine, h handler.Handler) {
 	admin := r.Group("/admin", h.AuthorizerMiddleware, h.AdminAuditMiddleware)
 

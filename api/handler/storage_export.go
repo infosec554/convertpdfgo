@@ -1,10 +1,10 @@
 // Handlers for the "Save to ..." cloud-export feature.
 //
-//   GET  /api/storage/providers                — list configured + connected
-//   GET  /api/storage/:provider/connect        — kick off OAuth (302 to provider)
-//   GET  /oauth/:provider/callback             — provider returns here with code
-//   POST /file/:id/export                      — upload our file to provider
-//   DELETE /api/storage/:provider              — revoke our stored token
+//	GET  /api/storage/providers                — list configured + connected
+//	GET  /api/storage/:provider/connect        — kick off OAuth (302 to provider)
+//	GET  /oauth/:provider/callback             — provider returns here with code
+//	POST /file/:id/export                      — upload our file to provider
+//	DELETE /api/storage/:provider              — revoke our stored token
 //
 // CSRF on the OAuth flow is enforced with a short-lived Redis key holding
 // the random state value the connect step generates; the callback only

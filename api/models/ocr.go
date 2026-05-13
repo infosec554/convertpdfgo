@@ -33,13 +33,13 @@ type ScanToPDFRequest struct {
 }
 
 type ScanToPDFJob struct {
-	ID            string    `json:"id"`
-	UserID        *string   `json:"user_id,omitempty"`
-	InputFileIDs  []string  `json:"input_file_ids"`
-	OutputFileID  *string   `json:"output_file_id,omitempty"`
-	Lang          string    `json:"lang"`
-	Status        string    `json:"status"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID           string    `json:"id"`
+	UserID       *string   `json:"user_id,omitempty"`
+	InputFileIDs []string  `json:"input_file_ids"`
+	OutputFileID *string   `json:"output_file_id,omitempty"`
+	Lang         string    `json:"lang"`
+	Status       string    `json:"status"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // --- /api/pdf/ocr-extract-text --------------------------------------------

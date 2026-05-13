@@ -211,7 +211,7 @@ func (s *Store) QRCode() storage.IQRCodeStorage {
 	return NewQRCodeRepo(s.pool, s.log)
 }
 
-func (s *Store) OCR() storage.IOCRStorage           { return NewOCRRepo(s.pool, s.log) }
+func (s *Store) OCR() storage.IOCRStorage             { return NewOCRRepo(s.pool, s.log) }
 func (s *Store) ScanToPDF() storage.IScanToPDFStorage { return NewScanToPDFRepo(s.pool, s.log) }
 func (s *Store) OCRExtractText() storage.IOCRExtractTextStorage {
 	return NewOCRExtractTextRepo(s.pool, s.log)

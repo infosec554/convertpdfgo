@@ -158,10 +158,10 @@ func (d *Dropbox) Upload(ctx context.Context, tok Token, remotePath, contentType
 	}
 	// Dropbox-API-Arg header carries the metadata as a JSON blob.
 	args, _ := json.Marshal(struct {
-		Path           string `json:"path"`
-		Mode           string `json:"mode"`
-		Autorename     bool   `json:"autorename"`
-		Mute           bool   `json:"mute"`
+		Path       string `json:"path"`
+		Mode       string `json:"mode"`
+		Autorename bool   `json:"autorename"`
+		Mute       bool   `json:"mute"`
 	}{
 		Path: remotePath, Mode: "add", Autorename: true, Mute: true,
 	})

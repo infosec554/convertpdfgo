@@ -29,12 +29,12 @@ import (
 // Options configures a regular `ocrmypdf` invocation (PDF in, PDF out
 // with the text layer). Zero values yield ocrmypdf's safe defaults.
 type Options struct {
-	Languages string // e.g. "eng" or "eng+uzb+rus"; empty → "eng"
-	ForceOCR  bool   // re-OCR pages that already have a text layer
-	SkipText  bool   // pass pages through untouched when they already have text
-	Sidecar   string // if non-empty, write the OCR'd plain text here
-	Deskew    bool   // straighten scanned pages
-	OutputPDFA bool  // emit PDF/A instead of PDF
+	Languages  string // e.g. "eng" or "eng+uzb+rus"; empty → "eng"
+	ForceOCR   bool   // re-OCR pages that already have a text layer
+	SkipText   bool   // pass pages through untouched when they already have text
+	Sidecar    string // if non-empty, write the OCR'd plain text here
+	Deskew     bool   // straighten scanned pages
+	OutputPDFA bool   // emit PDF/A instead of PDF
 }
 
 // OCR runs ocrmypdf src → dst with the given options. The 5-min cap
