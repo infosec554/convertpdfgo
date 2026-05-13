@@ -118,9 +118,9 @@ func TestEveryMigrationTableIsUsed(t *testing.T) {
 	codeUses := extractCodeUses(t, filepath.Join(root, "storage", "postgres"))
 	migrationDefs := extractMigrationDefs(t, filepath.Join(root, "migrations", "postgres"))
 
-	// Tables defined in migrations but read nowhere in storage code. Some
-	// historical names (add_background_jobs, translate_jobs) sit here as
-	// dead schema for endpoints that were planned but never wired.
+	// Tables defined in migrations but read nowhere in storage code.
+	// Empty in a healthy repo — historical dead schemas (add_background_jobs,
+	// translate_jobs) were dropped in migration 0016.
 	var orphan []string
 	for tbl := range migrationDefs {
 		if !codeUses[tbl] {
