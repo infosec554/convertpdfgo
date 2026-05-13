@@ -64,10 +64,20 @@ func main() {
 	defer stopUniversal()
 
 	srv := &http.Server{
-		Addr:              ":8080",
-		Handler:           router,
+		Addr:    ":8080",
+		Handler: router,
+		// ReadHeaderTimeout: just the headers — short. Slowloris guard.
 		ReadHeaderTimeout: 10 * time.Second,
-		IdleTimeout:       120 * time.Second,
+		// ReadTimeout: whole request body. Long enough to let a slow mobile
+		// connection push a 30 MB upload at 100 KB/s without timing out.
+		ReadTimeout: 10 * time.Minute,
+		// WriteTimeout: whole response. A linearised PDF + slow client must
+		// finish within this window.
+		WriteTimeout: 10 * time.Minute,
+		IdleTimeout:  120 * time.Second,
+		// 1 MiB header cap — Gin defaults to 1 MiB too, but pin it
+		// explicitly so a Server tweak elsewhere doesn't lower it.
+		MaxHeaderBytes: 1 << 20,
 	}
 
 	go func() {
