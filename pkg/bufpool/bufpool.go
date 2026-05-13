@@ -33,3 +33,36 @@ func Put(b *bytes.Buffer) {
 	}
 	pool.Put(b)
 }
+
+// CopyBufSize is the per-call copy buffer for io.CopyBuffer. 1 MiB is the
+// point where syscall overhead stops dominating io.Copy throughput on
+// modern kernels — Go's default 32 KiB makes ~30× more read/write calls
+// per large upload than necessary.
+const CopyBufSize = 1 << 20
+
+// slicePool keeps 1 MiB []byte slices alive across requests so the upload
+// hot path (file upload, MinIO put, Gotenberg conversion) reuses them
+// instead of allocating fresh on every request.
+var slicePool = sync.Pool{
+	New: func() any {
+		b := make([]byte, CopyBufSize)
+		return &b
+	},
+}
+
+// GetBytes returns a reusable []byte of length CopyBufSize. Always return
+// it via PutBytes; the slice header escapes the pool otherwise.
+func GetBytes() []byte {
+	return *slicePool.Get().(*[]byte)
+}
+
+// PutBytes returns a slice to the pool. Slices that have been re-sliced
+// smaller (cap < CopyBufSize) are dropped — keeping them would pollute
+// the pool with undersized buffers.
+func PutBytes(b []byte) {
+	if cap(b) < CopyBufSize {
+		return
+	}
+	b = b[:cap(b)]
+	slicePool.Put(&b)
+}

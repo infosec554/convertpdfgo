@@ -45,3 +45,28 @@ func TestPut_DropsOversizedBuffers(t *testing.T) {
 		t.Fatalf("next buffer must be empty, len=%d", b2.Len())
 	}
 }
+
+func TestGetBytes_Size(t *testing.T) {
+	b := GetBytes()
+	defer PutBytes(b)
+	if len(b) != CopyBufSize {
+		t.Fatalf("GetBytes len: want %d, got %d", CopyBufSize, len(b))
+	}
+}
+
+func TestPutBytes_DropsUndersized(t *testing.T) {
+	// Hand back a slice smaller than CopyBufSize — must NOT pollute pool.
+	small := make([]byte, 1024)
+	PutBytes(small) // dropped
+
+	// Next GetBytes still hands back a full-sized buffer.
+	b := GetBytes()
+	defer PutBytes(b)
+	if len(b) != CopyBufSize {
+		t.Fatalf("after dropping undersized: want %d, got %d", CopyBufSize, len(b))
+	}
+}
+
+func TestPutBytes_NilSafe(t *testing.T) {
+	PutBytes(nil) // must not panic
+}
