@@ -12,8 +12,12 @@ type MergeJob struct {
 	InputFileIDs []string  `json:"input_file_ids" db:"-"` // JOIN orqali olinadi, db da yo'q
 }
 
-// CreateMergeJobRequest – API orqali kiritiladigan inputlar
+// CreateMergeJobRequest – API orqali kiritiladigan inputlar.
+//
+// InputFileIDs: 2..50 ta fayl. Yuqori chegara — abuse / DoS himoyasi.
+// 50 ta PDF birlashishi normal foydalanish chegarasidan oshib ketmaydi
+// va worker pdfcpu uchun makul yuk.
 type CreateMergeJobRequest struct {
-	UserID       *string  `json:"user_id"`        // optional (guest user uchun nil bo'lishi mumkin)
-	InputFileIDs []string `json:"input_file_ids"` // birlashtirish uchun kerakli fayl IDlar
+	UserID       *string  `json:"user_id"`
+	InputFileIDs []string `json:"input_file_ids" binding:"required,min=2,max=50,dive,uuid"`
 }

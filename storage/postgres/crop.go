@@ -72,9 +72,6 @@ func (r *cropRepo) GetByID(ctx context.Context, id string) (*models.CropPDFJob, 
 		return nil, fmt.Errorf("failed to fetch crop job: %w", err)
 	}
 
-	// kerak bo‘lsa input fayl IDlarini qo‘shish (bu yerda bitta fayl)
-	job.InputFileIDs = []string{job.InputFileID}
-
 	return &job, nil
 }
 
@@ -97,25 +94,3 @@ func (r *cropRepo) Update(ctx context.Context, job *models.CropPDFJob) error {
 	return nil
 }
 
-// GetInputFiles – job uchun input fayllarni olish
-func (r *cropRepo) GetInputFiles(ctx context.Context, jobID string) ([]string, error) {
-	query := `SELECT file_id FROM crop_pdf_jobs WHERE job_id = $1`
-	rows, err := r.db.Query(ctx, query, jobID)
-	if err != nil {
-		r.log.Error("failed to fetch input files", logger.Error(err))
-		return nil, fmt.Errorf("failed to get input files for job %s: %w", jobID, err)
-	}
-	defer rows.Close()
-
-	var fileIDs []string
-	for rows.Next() {
-		var fileID string
-		if err := rows.Scan(&fileID); err != nil {
-			r.log.Error("failed to scan file ID", logger.Error(err))
-			return nil, err
-		}
-		fileIDs = append(fileIDs, fileID)
-	}
-
-	return fileIDs, nil
-}

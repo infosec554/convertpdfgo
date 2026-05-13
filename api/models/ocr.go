@@ -26,9 +26,9 @@ type OCRJob struct {
 // --- /api/pdf/scan-to-pdf --------------------------------------------------
 
 type ScanToPDFRequest struct {
-	// Multiple uploaded image (JPG/PNG) IDs — one PDF page per image,
-	// in the order given.
-	InputFileIDs []string `json:"input_file_ids" binding:"required,min=1"`
+	// Bir nechta yuklangan rasm IDsi (JPG/PNG) — har biri bir sahifa.
+	// 1..50 ta — image batch'i bilan bir xil chegarada.
+	InputFileIDs []string `json:"input_file_ids" binding:"required,min=1,max=50,dive,uuid"`
 	Lang         string   `json:"lang"`
 }
 
