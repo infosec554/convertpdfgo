@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	_ "net/http/pprof" // /debug/pprof on the worker side too
+	"runtime"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -59,10 +60,18 @@ func main() {
 		}
 	}()
 
+	// Concurrency tuned to host CPU: I/O-bound jobs (LibreOffice /
+	// Gotenberg / OCR) spend most of their wall time blocked on a
+	// subprocess or HTTP call, so we oversubscribe 4×NumCPU to keep
+	// the CPU pegged while sibling tasks wait. Floor at 8 so a 1-vCPU
+	// dev box still picks up parallel jobs. Cap at 64 so a 32-core
+	// host doesn't try to run 128 Gotenberg requests at once.
+	concurrency := min(64, max(8, runtime.NumCPU()*4))
+
 	srv := asynq.NewServer(
 		queue.RedisOpt(cfg),
 		asynq.Config{
-			Concurrency: 20,
+			Concurrency: concurrency,
 			Queues: map[string]int{
 				queue.QueueCritical: 6,
 				queue.QueueDefault:  3,
@@ -74,7 +83,7 @@ func main() {
 	mux := asynq.NewServeMux()
 	queue.NewHandlers(services, log).Register(mux)
 
-	log.Info("worker: starting", logger.Int("concurrency", 20))
+	log.Info("worker: starting", logger.Int("concurrency", concurrency))
 	if err := srv.Run(mux); err != nil {
 		log.Error("worker: server stopped", logger.Error(err))
 	}
