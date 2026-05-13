@@ -1,6 +1,6 @@
 // admin-bootstrap is a one-shot CLI for first-time admin setup.
 //
-//	go run ./cmd/admin-bootstrap promote --email=zarif@example.com --role=superadmin
+//	go run ./cmd/admin-bootstrap promote --email=zarif@example.com --role=admin
 //	go run ./cmd/admin-bootstrap list-permissions
 //	go run ./cmd/admin-bootstrap list-roles
 //
@@ -68,7 +68,7 @@ func usage() {
 
 Commands:
   promote --email=<EMAIL> --role=<ROLE>
-      Set the role of an existing user. ROLE in {user, moderator, admin, superadmin}.
+      Set the role of an existing user. ROLE in {user, admin}.
   list-permissions
       Print every permission row from the permissions catalog.
   list-roles
@@ -106,7 +106,7 @@ func ensureRBACMigrated(ctx context.Context, pool *pgxpool.Pool) error {
 func runPromote(ctx context.Context, pool *pgxpool.Pool, args []string) {
 	fs := flag.NewFlagSet("promote", flag.ExitOnError)
 	email := fs.String("email", "", "email of the existing user (required)")
-	role := fs.String("role", "", "new role: user | moderator | admin | superadmin (required)")
+	role := fs.String("role", "", "new role: user | admin (required)")
 	if err := fs.Parse(args); err != nil {
 		log.Fatalf("flags: %v", err)
 	}
@@ -115,7 +115,7 @@ func runPromote(ctx context.Context, pool *pgxpool.Pool, args []string) {
 		os.Exit(2)
 	}
 	switch strings.ToLower(*role) {
-	case "user", "moderator", "admin", "superadmin":
+	case "user", "admin":
 	default:
 		log.Fatalf("invalid role: %q", *role)
 	}

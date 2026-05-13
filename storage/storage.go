@@ -211,8 +211,8 @@ type IAdminStatsStorage interface {
 	TopUsersByDisk(ctx context.Context, limit int) ([]models.TopUserDisk, error)
 
 	// UserBuckets returns the dashboard's user-count summary in a single
-	// query (FILTER aggregates), replacing five separate User().List()
-	// calls. Keys: total, active, blocked, admins, moderators.
+	// query (FILTER aggregates), replacing several separate User().List()
+	// calls. Keys: total, active, blocked, admins, users.
 	UserBuckets(ctx context.Context) (map[string]int, error)
 
 	// PublicCounts aggregates the small set of numbers we're willing

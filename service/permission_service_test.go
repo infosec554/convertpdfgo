@@ -75,17 +75,16 @@ type noopLogger struct{}
 
 func TestHasPermission_GrantsAndDenies(t *testing.T) {
 	ps := &fakePermStore{byRole: map[string][]string{
-		"admin":     {"users:read", "users:write"},
-		"moderator": {"jobs:read"},
-		"user":      {},
+		"admin": {"users:read", "users:write", "jobs:read"},
+		"user":  {},
 	}}
 	svc := newTestPermissionService(ps)
 
 	if !svc.HasPermission(context.Background(), "admin", "users:write") {
 		t.Fatalf("admin must have users:write")
 	}
-	if svc.HasPermission(context.Background(), "moderator", "users:write") {
-		t.Fatalf("moderator must NOT have users:write")
+	if svc.HasPermission(context.Background(), "user", "users:write") {
+		t.Fatalf("user must NOT have users:write")
 	}
 	if svc.HasPermission(context.Background(), "user", "jobs:read") {
 		t.Fatalf("plain user must have no perms")

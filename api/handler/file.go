@@ -183,10 +183,10 @@ func (h Handler) GetFile(c *gin.Context) {
 //
 //   - Guest files (user_id IS NULL): anyone with the file ID can download.
 //     The ID is a UUIDv4 — unguessable in practice.
-//   - Owned files (user_id IS NOT NULL): only the owner or an admin /
-//     superadmin can download. Other guests / users hit 404 (the same
-//     code as "file not found" so the endpoint doesn't reveal whether
-//     a given ID exists).
+//   - Owned files (user_id IS NOT NULL): only the owner or an admin
+//     can download. Other guests / users hit 404 (the same code as
+//     "file not found" so the endpoint doesn't reveal whether a given
+//     ID exists).
 //
 // OptionalAuthMiddleware populates user_id when a valid Bearer token is
 // attached; absence means the caller is treated as a guest.

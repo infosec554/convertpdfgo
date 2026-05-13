@@ -72,13 +72,11 @@ func (s *userService) UpdateProfile(ctx context.Context, id, name string) error 
 	return nil
 }
 
-// validRoles are the only values UpdateRole will accept. Keep in sync with
-// migrations/postgres/0005_admin_rbac.up.sql.
+// validRoles are the only values UpdateRole will accept. Two-tier model
+// only — moderator/superadmin collapsed into admin in migration 0014.
 var validRoles = map[string]struct{}{
-	"user":       {},
-	"moderator":  {},
-	"admin":      {},
-	"superadmin": {},
+	"user":  {},
+	"admin": {},
 }
 
 // validStatuses likewise mirrors the user_status_enum values used by the

@@ -7,7 +7,7 @@ type User struct {
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Status    string    `json:"status"`
-	Role      string    `json:"role"` // user | moderator | admin | superadmin
+	Role      string    `json:"role"` // user | admin
 	CreatedAt time.Time `json:"created_at"`
 	CreatedBy string    `json:"created_by"`
 }
