@@ -9,6 +9,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"convertpdfgo/pkg/bufpool"
 )
 
 type Client interface {
@@ -91,7 +93,12 @@ func (g *gotenbergClient) convert(
 			err = fmt.Errorf("create form file: %w", perr)
 			return
 		}
-		if _, cerr := io.Copy(part, src); cerr != nil {
+		// 1 MiB CopyBuffer keeps syscalls down on big office files
+		// (50 MB+ docx/xlsx). Slab comes from a sync.Pool — no per-job alloc.
+		upBuf := bufpool.GetBytes()
+		_, cerr := io.CopyBuffer(part, src, upBuf)
+		bufpool.PutBytes(upBuf)
+		if cerr != nil {
 			err = fmt.Errorf("copy src: %w", cerr)
 			return
 		}
@@ -126,7 +133,9 @@ func (g *gotenbergClient) convert(
 	}
 	defer dst.Close()
 
-	n, err := io.Copy(dst, resp.Body)
+	dnBuf := bufpool.GetBytes()
+	n, err := io.CopyBuffer(dst, resp.Body, dnBuf)
+	bufpool.PutBytes(dnBuf)
 	if err != nil {
 		_ = os.Remove(dstPath)
 		return 0, fmt.Errorf("write dst: %w", err)
@@ -236,7 +245,9 @@ func (g *gotenbergClient) URLToPDF(ctx context.Context, dstPath string, opts URL
 	}
 	defer dst.Close()
 
-	n, err := io.Copy(dst, resp.Body)
+	dnBuf := bufpool.GetBytes()
+	n, err := io.CopyBuffer(dst, resp.Body, dnBuf)
+	bufpool.PutBytes(dnBuf)
 	if err != nil {
 		_ = os.Remove(dstPath)
 		return 0, fmt.Errorf("write dst: %w", err)

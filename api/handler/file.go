@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"convertpdfgo/api/models"
+	"convertpdfgo/pkg/bufpool"
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/pkg/timeouts"
 )
@@ -97,8 +98,14 @@ func (h Handler) UploadFile(c *gin.Context) {
 		return
 	}
 
+	// 1 MiB CopyBuffer keeps syscall count low for big uploads — Go's
+	// default 32 KiB io.Copy does ~30× more read/write calls per file.
+	// bufpool reuses the slab across requests so this isn't an alloc.
 	hasher := sha256.New()
-	if _, err := io.Copy(io.MultiWriter(dst, hasher), src); err != nil {
+	copyBuf := bufpool.GetBytes()
+	_, err = io.CopyBuffer(io.MultiWriter(dst, hasher), src, copyBuf)
+	bufpool.PutBytes(copyBuf)
+	if err != nil {
 		dst.Close()
 		_ = os.Remove(savePath)
 		handleResponse(c, h.log, "failed to save file", http.StatusInternalServerError, err.Error())
@@ -217,14 +224,39 @@ func (h Handler) DownloadFile(c *gin.Context) {
 		return
 	}
 
-	if _, err := os.Stat(file.FilePath); err != nil {
+	fi, err := os.Stat(file.FilePath)
+	if err != nil {
 		handleResponse(c, h.log, "file gone from disk", http.StatusNotFound, "the file was already cleaned up")
 		return
 	}
 
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.FileName))
 	c.Header("Content-Type", file.FileType)
-	c.File(file.FilePath)
+	c.Header("Accept-Ranges", "bytes")
+
+	// ETag enables If-None-Match → 304 from http.ServeContent. The sha256
+	// is the file's content hash, so it's a perfect, stable etag. Files
+	// without sha256 (legacy rows) fall back to no etag — still served
+	// fine, just with no cache validation.
+	if file.SHA256 != nil && *file.SHA256 != "" {
+		c.Header("ETag", `"`+*file.SHA256+`"`)
+		// Re-validate every hour: user-private content, cache OK but
+		// must check sha didn't change before reusing the body.
+		c.Header("Cache-Control", "private, max-age=3600, must-revalidate")
+	}
+
+	// ServeContent honours Range, If-None-Match, If-Modified-Since,
+	// HEAD — so a partial download (e.g. browser preview seeking the
+	// last 1 KiB of a large PDF) costs Range bytes instead of a full
+	// re-transfer. c.File previously bypassed Range with an extra Stat
+	// + io.Copy of the whole file.
+	f, err := os.Open(file.FilePath)
+	if err != nil {
+		handleResponse(c, h.log, "failed to open file", http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer f.Close()
+	http.ServeContent(c.Writer, c.Request, file.FileName, fi.ModTime(), f)
 }
 
 // DeleteFile godoc
