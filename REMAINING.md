@@ -1,86 +1,84 @@
-# 🔍 convertpdfgo — Qolgan Ishlar (Honest Audit)
+# 🔍 pdfninja — Qolgan Ishlar
 
-> 2026-05-06 holatiga ko'ra. Optimizatsiya 95% tugagan, lekin **production'ga ketishdan oldin** quyidagilar kerak.
-
----
-
-## 🟡 Mavjud middleware'lar (allaqachon bor)
-
-| Middleware | Joyi | Maqsadi |
-|------------|------|---------|
-| `gin.Default()` | router | Recovery + access log |
-| `gzip.Gzip()` | router | Response compression |
-| `RateLimiterMiddleware` | `pkg/middleware/rate_limiter.go` | 1 req/sec/IP, burst 3 |
-| `AuthorizerMiddleware` | `api/handler/auth.go` | JWT validation + blacklist tekshiruvi |
-| `AdminMiddleware` | `api/handler/auth.go` | role=admin tekshiruvi |
-
-❌ **Yo'qlari:** CORS, Security Headers, Request ID, Prometheus HTTP middleware, body size limit
+> Yangilangan: 2026-05-13. Production-readiness uchun qaysi ish qolganini sodda ko'rsatadi.
 
 ---
 
-## 🔴 To'liq qolganlar (priority bo'yicha)
+## ✅ Tugagan ishlar (zarari yo'q, lekin allaqachon mavjud)
 
-### A. Birinchi navbat (production-ready bo'lish uchun) — **15-30 daqiqa**
+### Middleware (router.go da wired)
+- `RequestID()` — har so'rovga unique ID
+- `SecurityHeaders()` — XSS, frame-deny, HSTS
+- `CORS()` — preflight + Allow-Origin
+- `BodyLimit(110 MiB)` — upload cap
+- `PrometheusMetrics()` — duration + count
+- `RateLimiterMiddleware` — 1 req/sec/IP
+- `AuthorizerMiddleware` + `OptionalAuthMiddleware`
+- `AdminMiddleware` + `RequirePermission` (Redis-cached)
+- `AdminAuditMiddleware` (har bir admin so'rov auth_audit ga)
 
-| # | Item | Fayl | Effort |
-|---|------|------|--------|
-| A1 | **Build verifikatsiya** | — | network qaytsa |
-| A2 | **CORS middleware** | `pkg/middleware/cors.go` | 5 daqiqa |
-| A3 | **Security headers** (XSS, frame deny, HSTS) | `pkg/middleware/security.go` | 5 daqiqa |
-| A4 | **Request ID middleware** | `pkg/middleware/requestid.go` | 5 daqiqa |
-| A5 | **Prometheus HTTP middleware** | `pkg/middleware/metrics.go` | 5 daqiqa |
-| A6 | **Body size limit** (50MB max) | `pkg/middleware/bodylimit.go` | 3 daqiqa |
-| A7 | **JWT secret fail-fast** (bo'sh bo'lsa startup fail) | `cmd/main.go` | 3 daqiqa |
-| A8 | **`.env.example`** | root | 5 daqiqa |
-| A9 | **Worker `/metrics` endpoint** | `cmd/worker/main.go` | 5 daqiqa |
-| A10 | **OAuth cookie Secure/SameSite** | `api/handler/oauth.go` | 3 daqiqa |
-| A11 | **statement_timeout pgxpool** | `storage/postgres/postgres.go` | 3 daqiqa |
-| A12 | **Error sanitization** (handleResponse'dan err.Error olib tashlash) | `api/handler/handler.go` | 5 daqiqa |
+### Security
+- JWT secret fail-fast (`JWT_REQUIRED=true` da `MustValidateSecret` panic qiladi placeholder/short key da)
+- OAuth state cookie: HttpOnly + Secure (HTTPS da) + SameSite=Strict/Lax
+- 5xx javoblarda `err.Error()` echo qilinmaydi (sirli yo'llar leak bo'lmaydi)
+- pgxpool `statement_timeout = 30s` — runaway query oldi olinadi
 
-### B. Ikkinchi navbat — **1-2 soat**
+### Infrastructure
+- Worker `/metrics` (:8090) — Prometheus scraping
+- Postgres daily backup (systemd timer)
+- 36 PDF endpoint, 24+ auth/file/admin/profile endpoint
+- Multi-stage Dockerfile (~80MB)
+- Asynq queue + 3 priority tier + Asynqmon UI
+- Result caching (Redis 24h) + SHA256 dedup
 
+### Tests
+- `pkg/jwt` (generate/parse/expire/tamper/secret-validate)
+- `pkg/blacklist` (revoke/ttl/nil-safe)
+- `pkg/cache`, `pkg/loginlimiter`, `pkg/hash`, `pkg/bufpool`, `pkg/timeouts`
+- `service/permission_service` (cache effectiveness)
+- `service/user_service` (2-role validation)
+- `tests/schema`, `tests/jsontags`, `tests/sqlcasts`
+- `tests/integration` (server kerakli)
+
+---
+
+## 🟡 Qolgan ishlar
+
+### B. Quality-of-life — har biri 30-60 min
 | # | Item | Joyi |
 |---|------|------|
-| B1 | README.md yangilash (yangi endpoint'lar, MinIO, Prometheus) | root |
+| B1 | README.md yangilash (endpoint list, MinIO, Prometheus) | root |
 | B2 | Swagger regen (`swag init`) | docs |
-| B3 | Per-session tracking (Redis: `sessions:{user_id}:[]jti`) | new |
-| B4 | "Logout all sessions" endpoint | auth |
-| B5 | Password change → revoke all sessions | auth |
-| B6 | TOCTOU fix — atomic file delete | cleaner |
-| B7 | Multipart `MaxMemory` config | upload handler |
+| B3 | "Logout all sessions" endpoint (RevokeUser allaqachon bor, faqat handler kerak) | auth_password.go |
+| B4 | Idempotency-Key header (duplicate POST himoyasi) | router |
+| B5 | Path traversal himoyasi: `fileHeader.Filename` `filepath.Clean` + reject `..` | file.go |
 
-### C. Katta ish — alohida sprint
+### C. Phase 2 PDF endpointlari — har biri ~8 fayl, 1-2 soat
+PDF_ROADMAP.md da 79 ta planlangan, 36 ta qurilgan. Quick-wins:
+- `/pdf/organize` (reorder pages) — pdfcpu da bor
+- `/pdf/grayscale` — Ghostscript Dockerfile ga qo'shish
+- `/pdf/pdf-to-png`, `/pdf/png-to-pdf` — poppler PNG converter
+- `/pdf/search` — pdfcpu text search
+- `/pdf/text-to-pdf` — gofpdf
+- WebP/BMP/TIFF konverterlar
 
+### D. Katta ish — alohida sprint
 | # | Item | Effort |
 |---|------|--------|
-| C1 | **Test coverage** (jwt, cache, blacklist, auth flows) | 1 kun |
-| C2 | **OpenTelemetry tracing** (Jaeger) | 1 kun |
-| C3 | **Multi-Gotenberg + nginx LB** | 0.5 kun |
-| C4 | **Integration tests** (testcontainers + asynq) | 1 kun |
-| C5 | **Load testing** (k6 / vegeta) + tuning | 0.5 kun |
+| D1 | OpenTelemetry tracing (Jaeger) | 1 kun |
+| D2 | Load testing (k6/vegeta) + tuning | 0.5 kun |
+| D3 | k8s manifests (hozir faqat docker-compose) | 0.5 kun |
+| D4 | Audit batching (5 sec flush, hozir per-INSERT) | 2-3 soat |
+| D5 | Keyset pagination (List() COUNT(*) ni olib tashlash) | 2-3 soat |
 
 ---
 
-## ✅ Yaxshi tomonlari (allaqachon bor)
+## 🎯 Production-readiness vaziyat
 
-- Async queue (Asynq + 19 ta task type)
-- Redis result caching
-- File deduplication (SHA256)
-- 2 darajali cleanup (5min/15min + 6h/7d)
-- Prometheus metrics (job duration, cache hit/miss)
-- pprof endpoint (lokal)
-- Auth: register/login/logout/refresh/OAuth/password reset/audit
-- Brute-force shield (5 fail/10min)
-- Token blacklist (Redis)
-- Graceful shutdown
-- HTTP/2 + connection pool (Gotenberg)
-- gzip + sync.Pool + bufpool
-- Multi-stage Dockerfile
-- docker-compose: API/worker/Postgres/Redis/Gotenberg/Asynqmon/MinIO/Prometheus/Grafana
-- Cron-based cleanup (har 6 soat)
+**Hozirgi holatda deploy qilish mumkin.** Asosiy infra tugagan. B blok (5 ta polish) deploydan keyin ham qo'shilishi mumkin.
+
+Critical bloker yo'q.
 
 ---
 
-## 🎯 Hozir qiladigan ishlar (A1-A12)
-
-Quyida sanab o'tilgan tartibda bajaramiz.
+*Hujjat 2026-05-13 da yangilandi. Rol modeli 2 darajali (admin, user).*
