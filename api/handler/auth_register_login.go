@@ -13,6 +13,7 @@ import (
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/jwt"
 	"convertpdfgo/pkg/logger"
+	"convertpdfgo/pkg/notify"
 	"convertpdfgo/pkg/timeouts"
 )
 
@@ -129,6 +130,12 @@ func (h Handler) Login(c *gin.Context) {
 
 	// Brute-force shield: too many recent fails for this email → 429.
 	if err := h.loginLimit.Check(ctx, req.Email); err != nil {
+		// Admin gets a real-time signal so they can investigate the source.
+		h.publishAdminEvent(ctx, notify.TypeSuspiciousAuth, notify.SuspiciousAuth{
+			Email:     req.Email,
+			IP:        c.ClientIP(),
+			UserAgent: c.GetHeader("User-Agent"),
+		})
 		handleResponse(c, h.log, "account temporarily locked", http.StatusTooManyRequests, nil)
 		return
 	}
@@ -303,6 +310,12 @@ func (h Handler) verifyOTPAndIssueTokens(ctx context.Context, otpID, code string
 		}
 		userID = newID
 		role = "user"
+		// Best-effort admin notification — a failure here can't roll
+		// back the just-created user so we log and move on.
+		h.publishAdminEvent(ctx, notify.TypeUserRegistered, notify.UserRegistered{
+			UserID: newID,
+			Email:  email,
+		})
 	} else if err != nil {
 		return models.AuthTokens{}, err
 	} else if user.Status != "" && user.Status != "active" {

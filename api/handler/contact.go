@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"convertpdfgo/api/models"
+	"convertpdfgo/pkg/notify"
 	"convertpdfgo/pkg/timeouts"
 )
 
@@ -42,6 +43,11 @@ func (h Handler) SubmitContact(c *gin.Context) {
 		handleResponse(c, h.log, "submit failed", http.StatusInternalServerError, err.Error())
 		return
 	}
+	h.publishAdminEvent(ctx, notify.TypeContactNew, notify.ContactNew{
+		ContactID: id,
+		Email:     req.Email,
+		Subject:   req.Subject,
+	})
 	handleResponse(c, h.log, "received", http.StatusCreated, gin.H{"id": id})
 }
 
