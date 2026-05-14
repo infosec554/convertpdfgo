@@ -45,7 +45,7 @@ func (h Handler) CreateMergeJob(c *gin.Context) {
 		return
 	}
 
-	task, opts, err := queue.NewMergeTask(id)
+	task, opts, err := queue.NewMergeTask(id, c.GetString("user_id"))
 	if err != nil {
 		handleResponse(c, h.log, "failed to build merge task", http.StatusInternalServerError, err.Error())
 		return

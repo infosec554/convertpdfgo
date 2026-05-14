@@ -35,7 +35,7 @@ func (h Handler) AddHeaderFooter(c *gin.Context) {
 		return
 	}
 
-	task, opts, err := queue.NewSimpleTask(queue.TaskHeaderFooter, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskHeaderFooter, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return

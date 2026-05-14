@@ -51,27 +51,33 @@ const (
 
 // MergePayload carries data needed to process a merge job in the worker.
 // JobID is the row in merge_jobs; the worker re-loads input file IDs from it.
+// UserID is captured at enqueue time so the worker can publish a WS
+// notification to the right user without a follow-up DB lookup.
 type MergePayload struct {
-	JobID string `json:"job_id"`
+	JobID  string `json:"job_id"`
+	UserID string `json:"user_id,omitempty"`
 }
 
 // SimpleJobPayload is the common shape for jobs that only need a job ID
-// (the worker fetches the rest from the database).
+// (the worker fetches the rest from the database). UserID carried for
+// notification routing — empty for guests.
 type SimpleJobPayload struct {
-	JobID string `json:"job_id"`
+	JobID  string `json:"job_id"`
+	UserID string `json:"user_id,omitempty"`
 }
 
 // UnlockPayload carries the password alongside the job ID. The password is
 // deliberately not stored in the database row.
 type UnlockPayload struct {
 	JobID    string `json:"job_id"`
+	UserID   string `json:"user_id,omitempty"`
 	Password string `json:"password"`
 }
 
 // NewUnlockTask builds an asynq.Task for an unlock job that needs the password
 // to be passed to the worker without persisting it.
-func NewUnlockTask(jobID, password string) (*asynq.Task, []asynq.Option, error) {
-	payload, err := json.Marshal(UnlockPayload{JobID: jobID, Password: password})
+func NewUnlockTask(jobID, userID, password string) (*asynq.Task, []asynq.Option, error) {
+	payload, err := json.Marshal(UnlockPayload{JobID: jobID, UserID: userID, Password: password})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -89,8 +95,8 @@ func retryDefaults() []asynq.Option {
 }
 
 // NewMergeTask builds an asynq.Task for a merge job. Caller picks the queue.
-func NewMergeTask(jobID string) (*asynq.Task, []asynq.Option, error) {
-	payload, err := json.Marshal(MergePayload{JobID: jobID})
+func NewMergeTask(jobID, userID string) (*asynq.Task, []asynq.Option, error) {
+	payload, err := json.Marshal(MergePayload{JobID: jobID, UserID: userID})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -98,10 +104,11 @@ func NewMergeTask(jobID string) (*asynq.Task, []asynq.Option, error) {
 	return asynq.NewTask(TaskMerge, payload), opts, nil
 }
 
-// NewSimpleTask builds a generic task carrying only a job ID.
-// Use for compress/split/rotate/etc. The handler reads the full job from DB.
-func NewSimpleTask(taskType, jobID, queue string) (*asynq.Task, []asynq.Option, error) {
-	payload, err := json.Marshal(SimpleJobPayload{JobID: jobID})
+// NewSimpleTask builds a generic task carrying only a job ID and the owning
+// user. UserID may be empty for guest jobs. Use for compress/split/rotate/
+// etc.; the handler reads the full job from DB.
+func NewSimpleTask(taskType, jobID, userID, queue string) (*asynq.Task, []asynq.Option, error) {
+	payload, err := json.Marshal(SimpleJobPayload{JobID: jobID, UserID: userID})
 	if err != nil {
 		return nil, nil, err
 	}

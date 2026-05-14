@@ -37,7 +37,7 @@ func (h *Handler) CreateURLToPDFJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create url_to_pdf job", http.StatusBadRequest, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskURLToPDF, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskURLToPDF, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return

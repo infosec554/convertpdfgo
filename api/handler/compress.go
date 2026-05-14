@@ -50,7 +50,7 @@ func (h *Handler) CreateCompressJob(c *gin.Context) {
 		return
 	}
 
-	task, opts, err := queue.NewSimpleTask(queue.TaskCompress, jobID, queue.QueueLow)
+	task, opts, err := queue.NewSimpleTask(queue.TaskCompress, jobID, c.GetString("user_id"), queue.QueueLow)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return

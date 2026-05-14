@@ -39,7 +39,7 @@ func (h *Handler) CreateWatermarkJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create watermark job", http.StatusBadRequest, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskWatermark, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskWatermark, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return

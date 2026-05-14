@@ -10,6 +10,7 @@ import (
 
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/pkg/metrics"
+	"convertpdfgo/pkg/notify"
 	"convertpdfgo/service"
 )
 
@@ -17,10 +18,14 @@ import (
 type Handlers struct {
 	services service.IServiceManager
 	log      logger.ILogger
+	bus      notify.Bus // notify.Noop when realtime disabled
 }
 
-func NewHandlers(services service.IServiceManager, log logger.ILogger) *Handlers {
-	return &Handlers{services: services, log: log}
+func NewHandlers(services service.IServiceManager, log logger.ILogger, bus notify.Bus) *Handlers {
+	if bus == nil {
+		bus = notify.Noop{}
+	}
+	return &Handlers{services: services, log: log, bus: bus}
 }
 
 // Register attaches every task type to its handler on the given mux.
@@ -70,7 +75,9 @@ func (h *Handlers) Register(mux *asynq.ServeMux) {
 
 // runByID returns a handler that decodes a SimpleJobPayload and invokes fn(ctx, jobID).
 // All structurally identical processing tasks reuse this wrapper. Records
-// duration + outcome to Prometheus.
+// duration + outcome to Prometheus, and publishes a WS notification to the
+// owning user on every terminal outcome (done | failed). Failed jobs also
+// fan out to the admin broadcast channel for monitoring.
 func (h *Handlers) runByID(name string, fn func(context.Context, string) error) asynq.HandlerFunc {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var p SimpleJobPayload
@@ -80,6 +87,7 @@ func (h *Handlers) runByID(name string, fn func(context.Context, string) error) 
 		done := metrics.ObserveJob("pdf:"+name, time.Now())
 		err := fn(ctx, p.JobID)
 		done(err)
+		h.publishJobOutcome(ctx, name, p.JobID, p.UserID, err)
 		if err != nil {
 			h.log.Error("worker: "+name+" failed", logger.String("job_id", p.JobID), logger.Error(err))
 			return err
@@ -96,9 +104,48 @@ func (h *Handlers) handleUnlock(ctx context.Context, t *asynq.Task) error {
 	done := metrics.ObserveJob("pdf:unlock", time.Now())
 	err := h.services.Unlock().Process(ctx, p.JobID, p.Password)
 	done(err)
+	h.publishJobOutcome(ctx, "unlock", p.JobID, p.UserID, err)
 	if err != nil {
 		h.log.Error("worker: unlock failed", logger.String("job_id", p.JobID), logger.Error(err))
 		return err
 	}
 	return nil
+}
+
+// publishJobOutcome emits the JobUpdate event after a task finishes.
+// Best-effort: a bus error (Redis down, etc.) is logged but doesn't fail
+// the job — the user can still poll the REST endpoint for status. The
+// admin fan-out only fires on failures so dashboards aren't flooded
+// with done events on a healthy system.
+func (h *Handlers) publishJobOutcome(ctx context.Context, jobType, jobID, userID string, jobErr error) {
+	status := "done"
+	errMsg := ""
+	if jobErr != nil {
+		status = "failed"
+		errMsg = jobErr.Error()
+	}
+	env, mErr := notify.NewEnvelope(notify.TypeJobUpdate, notify.JobUpdate{
+		UserID:  userID,
+		JobID:   jobID,
+		JobType: jobType,
+		Status:  status,
+		Error:   errMsg,
+	})
+	if mErr != nil {
+		h.log.Warning("queue: build job-update envelope", logger.Error(mErr))
+		return
+	}
+	if err := h.bus.PublishUser(ctx, userID, env); err != nil {
+		h.log.Warning("queue: publish user event", logger.Error(err))
+	}
+	if jobErr != nil {
+		adminEnv, _ := notify.NewEnvelope(notify.TypeJobFailed, notify.JobFailed{
+			JobID:   jobID,
+			JobType: jobType,
+			Error:   errMsg,
+		})
+		if err := h.bus.PublishAdmin(ctx, adminEnv); err != nil {
+			h.log.Warning("queue: publish admin event", logger.Error(err))
+		}
+	}
 }

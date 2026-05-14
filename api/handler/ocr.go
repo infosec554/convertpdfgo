@@ -46,7 +46,7 @@ func (h *Handler) CreateOCRJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskOCR, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskOCR, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
@@ -99,7 +99,7 @@ func (h *Handler) CreateScanToPDFJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskScanToPDF, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskScanToPDF, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
@@ -152,7 +152,7 @@ func (h *Handler) CreateOCRExtractTextJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskOCRExtractText, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskOCRExtractText, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
@@ -205,7 +205,7 @@ func (h *Handler) CreateImageToTextJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskImageToText, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskImageToText, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
@@ -258,7 +258,7 @@ func (h *Handler) CreateOCRDetectLangJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskOCRDetectLang, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskOCRDetectLang, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
@@ -311,7 +311,7 @@ func (h *Handler) CreateOCRStructuredJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskOCRStructured, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskOCRStructured, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return

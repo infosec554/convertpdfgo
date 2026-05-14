@@ -40,7 +40,7 @@ func (h Handler) CreateRemovePagesJob(c *gin.Context) {
 		return
 	}
 
-	task, opts, err := queue.NewSimpleTask(queue.TaskRemovePage, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskRemovePage, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return

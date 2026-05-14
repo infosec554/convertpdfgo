@@ -15,6 +15,7 @@ import (
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/pkg/mailer"
 	"convertpdfgo/pkg/metrics"
+	"convertpdfgo/pkg/notify"
 	"convertpdfgo/pkg/queue"
 	"convertpdfgo/service"
 	"convertpdfgo/storage/postgres"
@@ -37,6 +38,12 @@ func main() {
 	gotClient := gotenberg.New(cfg.GotenbergURL)
 
 	services := service.New(pgStore, log, mailService, redisStore, gotClient, cfg)
+
+	// Realtime publisher: worker emits job-status events here; the API
+	// process subscribes and fans out to WebSocket clients. Redis is
+	// the bridge between the two binaries.
+	bus := notify.NewRedisBus(cfg)
+	defer bus.Close()
 
 	// Worker exposes its own /metrics on :8090 so Prometheus can scrape
 	// JobDuration / JobsProcessed counters that only the worker writes to.
@@ -81,7 +88,7 @@ func main() {
 	)
 
 	mux := asynq.NewServeMux()
-	queue.NewHandlers(services, log).Register(mux)
+	queue.NewHandlers(services, log, bus).Register(mux)
 
 	log.Info("worker: starting", logger.Int("concurrency", concurrency))
 	if err := srv.Run(mux); err != nil {

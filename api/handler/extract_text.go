@@ -37,7 +37,7 @@ func (h *Handler) CreateExtractTextJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create extract_text job", http.StatusBadRequest, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskExtractText, jobID, queue.QueueLow)
+	task, opts, err := queue.NewSimpleTask(queue.TaskExtractText, jobID, c.GetString("user_id"), queue.QueueLow)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return

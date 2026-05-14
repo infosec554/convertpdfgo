@@ -48,7 +48,7 @@ func (h *Handler) CreatePDFToHTMLJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskPDFToHTML, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskPDFToHTML, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
@@ -111,7 +111,7 @@ func (h *Handler) CreatePDFToPPTJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskPDFToPPT, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskPDFToPPT, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
@@ -174,7 +174,7 @@ func (h *Handler) CreatePDFToExcelJob(c *gin.Context) {
 		handleResponse(c, h.log, "failed to create job", http.StatusInternalServerError, err.Error())
 		return
 	}
-	task, opts, err := queue.NewSimpleTask(queue.TaskPDFToExcel, jobID, queue.QueueDefault)
+	task, opts, err := queue.NewSimpleTask(queue.TaskPDFToExcel, jobID, c.GetString("user_id"), queue.QueueDefault)
 	if err != nil {
 		handleResponse(c, h.log, "failed to build task", http.StatusInternalServerError, err.Error())
 		return
