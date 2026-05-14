@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	_ "net/http/pprof" // exposes /debug/pprof on the pprof port
@@ -17,7 +18,9 @@ import (
 	appjwt "convertpdfgo/pkg/jwt"
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/pkg/mailer"
+	"convertpdfgo/pkg/notify"
 	"convertpdfgo/pkg/queue"
+	"convertpdfgo/pkg/wshub"
 	"convertpdfgo/service"
 	"convertpdfgo/storage/postgres"
 	"convertpdfgo/storage/redis"
@@ -47,8 +50,38 @@ func main() {
 	queueClient := queue.NewClient(cfg)
 	defer queueClient.Close()
 
+	// Realtime fan-out:
+	//   - hub keeps the per-replica registry of open WS connections.
+	//   - bus is the cross-process backplane (Redis pub/sub). The API
+	//     replica both publishes admin events here AND subscribes so
+	//     job-status events the worker emits land back in the local Hub.
+	hub := wshub.NewHub()
+	bus := notify.NewRedisBus(cfg)
+	defer bus.Close()
+
+	subCtx, subCancel := context.WithCancel(context.Background())
+	defer subCancel()
+	go func() {
+		err := bus.Subscribe(subCtx, func(audience, userID string, env notify.Envelope) {
+			payload, mErr := json.Marshal(env)
+			if mErr != nil {
+				log.Warning("notify: marshal envelope", logger.Error(mErr))
+				return
+			}
+			switch audience {
+			case "u":
+				hub.SendToUser(userID, payload)
+			case "a":
+				hub.BroadcastAdmins(payload)
+			}
+		})
+		if err != nil && !errors.Is(err, context.Canceled) {
+			log.Error("notify: subscribe stopped", logger.Error(err))
+		}
+	}()
+
 	services := service.New(pgStore, log, mailService, redis, gotClient, cfg)
-	router := api.New(services, log, cfg, queueClient, redis)
+	router := api.New(services, log, cfg, queueClient, redis, hub, bus)
 
 	// Background cleanup — privacy-first model:
 	//   - primary: every 1min, drop ANY file (guest + registered) older

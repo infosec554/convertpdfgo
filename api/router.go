@@ -29,6 +29,8 @@ import (
 	"convertpdfgo/config"
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/pkg/middleware"
+	"convertpdfgo/pkg/notify"
+	"convertpdfgo/pkg/wshub"
 	"convertpdfgo/service"
 	"convertpdfgo/storage"
 )
@@ -42,8 +44,8 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
-func New(services service.IServiceManager, log logger.ILogger, cfg config.Config, queue *asynq.Client, redis storage.IRedisStorage) *gin.Engine {
-	h := handler.New(services, log, cfg, queue, redis)
+func New(services service.IServiceManager, log logger.ILogger, cfg config.Config, queue *asynq.Client, redis storage.IRedisStorage, hub *wshub.Hub, bus notify.Bus) *gin.Engine {
+	h := handler.New(services, log, cfg, queue, redis, hub, bus)
 	r := gin.Default()
 
 	// --- Global middlewares (order = execution order on each request) ----
@@ -68,6 +70,13 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	registerPDFRoutes(r, h)
 	registerContactRoutes(r, h)
 	registerAdminRoutes(r, h)
+
+	// WebSocket endpoints. Auth lives in the handler (token via query
+	// param) since browsers can't send Authorization headers in the
+	// upgrade request. Both routes belong here below the rate limiter
+	// so they share IP-level abuse protection.
+	r.GET("/ws", h.WS)
+	r.GET("/ws/admin", h.WSAdmin)
 
 	return r
 }
