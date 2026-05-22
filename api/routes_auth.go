@@ -7,8 +7,8 @@ import (
 )
 
 // registerAuthRoutes mounts /auth/* — registration, login (email +
-// password OR passwordless OTP), password reset, OAuth (google +
-// github), and the public side of the admin-invite flow.
+// password), password reset, OAuth (google + github), and the public
+// side of the admin-invite flow.
 //
 // /logout is the only auth-required endpoint here; everything else
 // is intentionally pre-login.
@@ -21,10 +21,6 @@ func registerAuthRoutes(r *gin.Engine, h handler.Handler) {
 		auth.POST("/login", h.Login)
 		auth.POST("/refresh", h.Refresh)
 		auth.POST("/logout", h.AuthorizerMiddleware, h.Logout)
-
-		// Passwordless (email + 6-digit OTP).
-		auth.POST("/login/otp/request", h.OTPLoginRequest)
-		auth.POST("/login/otp/verify", h.OTPLoginVerify)
 
 		// Password reset.
 		auth.POST("/password/forgot", h.ForgotPassword)

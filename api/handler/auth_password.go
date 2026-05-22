@@ -13,61 +13,6 @@ import (
 	"convertpdfgo/pkg/timeouts"
 )
 
-// OTPLoginRequest godoc
-// @Router       /auth/login/otp/request [post]
-// @Summary      Passwordless login: request a 6-digit OTP via email
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body models.OTPLoginRequest true "email"
-// @Success      200 {object} map[string]string
-// @Failure      400 {object} models.Response
-// @Failure      500 {object} models.Response
-func (h Handler) OTPLoginRequest(c *gin.Context) {
-	var req models.OTPLoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
-	defer cancel()
-
-	otpID, err := h.services.Otp().SendOtp(ctx, req.Email)
-	if err != nil {
-		handleResponse(c, h.log, "failed to send OTP", http.StatusInternalServerError, err.Error())
-		return
-	}
-	handleResponse(c, h.log, "OTP sent", http.StatusOK, gin.H{"otp_id": otpID})
-}
-
-// OTPLoginVerify godoc
-// @Router       /auth/login/otp/verify [post]
-// @Summary      Passwordless login: verify OTP and receive tokens
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body models.OTPLoginVerifyRequest true "OTP"
-// @Success      200 {object} models.AuthTokens
-// @Failure      401 {object} models.Response
-func (h Handler) OTPLoginVerify(c *gin.Context) {
-	var req models.OTPLoginVerifyRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
-	defer cancel()
-
-	tokens, err := h.verifyOTPAndIssueTokens(ctx, req.OtpID, req.Code)
-	if err != nil {
-		writeOTPError(c, h.log, err)
-		return
-	}
-	handleResponse(c, h.log, "login ok", http.StatusOK, tokens)
-}
-
 // ForgotPassword godoc
 // @Router       /auth/password/forgot [post]
 // @Summary      Send a password-reset OTP

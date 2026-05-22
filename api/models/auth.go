@@ -29,17 +29,6 @@ type EmailPasswordLoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// === OTP-based passwordless login ===
-
-type OTPLoginRequest struct {
-	Email string `json:"email" binding:"required,email"`
-}
-
-type OTPLoginVerifyRequest struct {
-	OtpID string `json:"otp_id" binding:"required"`
-	Code  string `json:"code" binding:"required,len=6"`
-}
-
 // === Refresh / logout ===
 
 type RefreshRequest struct {
