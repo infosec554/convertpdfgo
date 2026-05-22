@@ -17,7 +17,6 @@ func registerAuthRoutes(r *gin.Engine, h handler.Handler) {
 	{
 		// Email + password.
 		auth.POST("/register", h.Register)
-		auth.POST("/register/confirm", h.RegisterConfirm)
 		auth.POST("/login", h.Login)
 		auth.POST("/refresh", h.Refresh)
 		auth.POST("/logout", h.AuthorizerMiddleware, h.Logout)

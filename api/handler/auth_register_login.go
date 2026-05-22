@@ -2,12 +2,10 @@ package handler
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 
 	"convertpdfgo/api/models"
@@ -20,12 +18,12 @@ import (
 // Register godoc
 // @Router       /auth/register [post]
 // @Summary      Register a new account (email + password)
-// @Description  Creates an unverified user and emails a 6-digit OTP. Call /auth/register/confirm with the OTP to activate.
+// @Description  Creates an active user and returns auth tokens. No email verification step.
 // @Tags         auth
 // @Accept       json
 // @Produce      json
 // @Param        request body models.RegisterRequest true "register"
-// @Success      201 {object} models.RegisterResponse
+// @Success      201 {object} models.AuthTokens
 // @Failure      400 {object} models.Response
 // @Failure      409 {object} models.Response
 // @Failure      500 {object} models.Response
@@ -55,57 +53,30 @@ func (h Handler) Register(c *gin.Context) {
 		return
 	}
 
-	if _, err := h.services.User().Create(ctx, models.CreateUser{
+	userID, err := h.services.User().Create(ctx, models.CreateUser{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: string(hashed),
 		Provider: "email",
-	}); err != nil {
+	})
+	if err != nil {
 		handleResponse(c, h.log, "user creation failed", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	otpID, err := h.services.Otp().SendOtp(ctx, req.Email)
+	tokens, err := issueTokens(userID, "user")
 	if err != nil {
-		handleResponse(c, h.log, "failed to send OTP", http.StatusInternalServerError, err.Error())
+		handleResponse(c, h.log, "token error", http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	h.audit(c, models.AuthEventRegister, "", req.Email, "email")
-	h.log.Info("user registered, OTP sent", logger.String("email", req.Email))
-	handleResponse(c, h.log, "registration started; verify via OTP", http.StatusCreated, models.RegisterResponse{
-		OtpID:   otpID,
-		Message: "We sent a 6-digit code to " + req.Email,
+	h.audit(c, models.AuthEventRegister, userID, req.Email, "email")
+	h.publishAdminEvent(ctx, notify.TypeUserRegistered, notify.UserRegistered{
+		UserID: userID,
+		Email:  req.Email,
 	})
-}
-
-// RegisterConfirm godoc
-// @Router       /auth/register/confirm [post]
-// @Summary      Verify email by OTP and finalise registration
-// @Tags         auth
-// @Accept       json
-// @Produce      json
-// @Param        request body models.RegisterConfirmRequest true "OTP confirmation"
-// @Success      200 {object} models.AuthTokens
-// @Failure      400 {object} models.Response
-// @Failure      401 {object} models.Response
-// @Failure      500 {object} models.Response
-func (h Handler) RegisterConfirm(c *gin.Context) {
-	var req models.RegisterConfirmRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
-	defer cancel()
-
-	tokens, err := h.verifyOTPAndIssueTokens(ctx, req.OtpID, req.Code)
-	if err != nil {
-		writeOTPError(c, h.log, err)
-		return
-	}
-	handleResponse(c, h.log, "account verified", http.StatusOK, tokens)
+	h.log.Info("user registered", logger.String("email", req.Email), logger.String("user_id", userID))
+	handleResponse(c, h.log, "registered", http.StatusCreated, tokens)
 }
 
 // Login godoc
@@ -279,74 +250,3 @@ func issueTokens(userID, role string) (models.AuthTokens, error) {
 	return models.AuthTokens{AccessToken: access, RefreshToken: refresh}, nil
 }
 
-// verifyOTPAndIssueTokens checks the OTP, marks it confirmed, ensures the
-// user exists, and returns a token pair. Used by both registration confirm
-// and OTP-based passwordless login.
-func (h Handler) verifyOTPAndIssueTokens(ctx context.Context, otpID, code string) (models.AuthTokens, error) {
-	email, savedCode, expiresAt, err := h.services.Otp().GetUnconfirmedByID(ctx, otpID)
-	if err != nil {
-		return models.AuthTokens{}, ErrOTPNotFound
-	}
-	if time.Now().After(expiresAt) {
-		return models.AuthTokens{}, ErrOTPExpired
-	}
-	if code != savedCode {
-		return models.AuthTokens{}, ErrOTPMismatch
-	}
-	if err := h.services.Otp().UpdateStatusToConfirmed(ctx, otpID); err != nil {
-		return models.AuthTokens{}, err
-	}
-
-	user, err := h.services.User().GetForLoginByEmail(ctx, email)
-	userID := user.ID
-	role := user.Role
-	if errors.Is(err, pgx.ErrNoRows) || userID == "" {
-		newID, createErr := h.services.User().Create(ctx, models.CreateUser{
-			Email:    email,
-			Provider: "otp",
-		})
-		if createErr != nil {
-			return models.AuthTokens{}, createErr
-		}
-		userID = newID
-		role = "user"
-		// Best-effort admin notification — a failure here can't roll
-		// back the just-created user so we log and move on.
-		h.publishAdminEvent(ctx, notify.TypeUserRegistered, notify.UserRegistered{
-			UserID: newID,
-			Email:  email,
-		})
-	} else if err != nil {
-		return models.AuthTokens{}, err
-	} else if user.Status != "" && user.Status != "active" {
-		return models.AuthTokens{}, ErrAccountInactive
-	}
-	if role == "" {
-		role = "user"
-	}
-	return issueTokens(userID, role)
-}
-
-// === Sentinel errors for OTP flow ===
-
-var (
-	ErrOTPNotFound     = errors.New("otp not found")
-	ErrOTPExpired      = errors.New("otp expired")
-	ErrOTPMismatch     = errors.New("otp mismatch")
-	ErrAccountInactive = errors.New("account not active")
-)
-
-func writeOTPError(c *gin.Context, log logger.ILogger, err error) {
-	switch {
-	case errors.Is(err, ErrOTPNotFound):
-		handleResponse(c, log, "OTP not found", http.StatusUnauthorized, nil)
-	case errors.Is(err, ErrOTPExpired):
-		handleResponse(c, log, "OTP expired", http.StatusUnauthorized, nil)
-	case errors.Is(err, ErrOTPMismatch):
-		handleResponse(c, log, "incorrect OTP", http.StatusUnauthorized, nil)
-	case errors.Is(err, ErrAccountInactive):
-		handleResponse(c, log, "account not active", http.StatusForbidden, nil)
-	default:
-		handleResponse(c, log, "OTP verification failed", http.StatusInternalServerError, err.Error())
-	}
-}
