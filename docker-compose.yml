@@ -126,6 +126,12 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    # OAuth/JWT/Brevo/cloud-export secrets come from .env (gitignored).
+    # The inline `environment:` keys below override .env for infra
+    # plumbing — postgres/redis hostnames are docker-network names and
+    # must NOT leak out of the compose file.
+    env_file:
+      - .env
     environment:
       # Only the API runs migrations. Worker shares the DB but must NOT
       # call migrate.Up() — otherwise both racing on schema_migrations
@@ -160,6 +166,8 @@ services:
         TARGET: worker
     container_name: convertpdfgo_worker
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
