@@ -3,14 +3,8 @@ package models
 import "time"
 
 const (
-	AuthEventLoginOK        = "login_ok"
-	AuthEventLoginFail      = "login_fail"
-	AuthEventLogout         = "logout"
-	AuthEventPasswordChange = "password_change"
-	AuthEventPasswordReset  = "password_reset"
-	AuthEventOTPLoginOK     = "otp_login_ok"
-	AuthEventRegister       = "register"
-	AuthEventOAuthLogin     = "oauth_login"
+	AuthEventLogout     = "logout"
+	AuthEventOAuthLogin = "oauth_login"
 )
 
 type AuthAudit struct {

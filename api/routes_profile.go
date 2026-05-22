@@ -14,7 +14,6 @@ func registerProfileRoutes(r *gin.Engine, h handler.Handler) {
 	{
 		me.GET("", h.GetMyProfile)
 		me.PUT("", h.UpdateMyProfile)
-		me.PUT("/password", h.ChangePassword)
 		me.GET("/auth-history", h.GetMyAuthHistory)
 		me.GET("/stats", h.GetUserStats)
 	}

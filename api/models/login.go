@@ -1,15 +1,10 @@
 package models
 
-type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
-	UserType string `json:"user_type"`
-}
-
-type LoginResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
+// LoginUser is returned by user_service.GetForLoginByEmail(). The OAuth
+// completion path uses it to decide whether an inbound social profile
+// matches an existing local user. The Password field is preserved for
+// schema compatibility but is no longer consulted now that the
+// email+password login route has been removed.
 type LoginUser struct {
 	ID       string `json:"id"`
 	Password string `json:"password"`

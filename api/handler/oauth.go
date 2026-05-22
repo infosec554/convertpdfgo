@@ -13,6 +13,7 @@ import (
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
+	"convertpdfgo/pkg/notify"
 	"convertpdfgo/pkg/timeouts"
 )
 
@@ -203,6 +204,12 @@ func (h Handler) completeOAuthLogin(c *gin.Context, email, name, provider string
 		userID = newID
 		role = "user"
 		h.log.Info("oauth: created user", logger.String("provider", provider), logger.String("email", email))
+		// Surface new sign-ups to admins. Best-effort: a notify failure
+		// can't roll back the user we just persisted, so we don't return.
+		h.publishAdminEvent(ctx, notify.TypeUserRegistered, notify.UserRegistered{
+			UserID: newID,
+			Email:  email,
+		})
 	} else if err != nil {
 		handleResponse(c, h.log, "lookup failed", http.StatusInternalServerError, err.Error())
 		return
