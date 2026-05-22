@@ -190,11 +190,32 @@ services:
         condition: service_started
     profiles: ["full"]
 
+  caddy:
+    # Edge: reverse-proxy + automatic Let's Encrypt SSL for convertpdfgo.com
+    # and www. DNS must point at this host before Caddy can complete the
+    # HTTP-01 ACME challenge.
+    image: caddy:2-alpine
+    container_name: convertpdfgo_caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    profiles: ["full"]
+
 volumes:
   postgres_data:
   redis_data:
   app_storage:
   app_uploads:
+  caddy_data:
+  caddy_config:
   minio_data:
   prometheus_data:
   grafana_data:

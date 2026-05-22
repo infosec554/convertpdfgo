@@ -1,0 +1,38 @@
+# Caddyfile — convertpdfgo.com edge config.
+#
+# Caddy fetches a Let's Encrypt cert automatically the first time port 443
+# is hit for a configured hostname. DNS must already point to this host
+# (A record → server IP) and port 80 must be reachable from the public
+# internet so the HTTP-01 ACME challenge can complete.
+#
+# The api service runs on the docker-compose internal network, listens on
+# 8080, and is NOT published to the host any more (port mapping removed
+# from docker-compose.yml). Caddy is the only ingress.
+
+# Canonical hostname. All real traffic terminates here.
+convertpdfgo.com {
+	encode gzip zstd
+
+	# Body size cap — PDF uploads. 200 MB matches the api's internal limit;
+	# raise both sides together if that ever changes.
+	request_body {
+		max_size 200MB
+	}
+
+	reverse_proxy api:8080 {
+		# Pass the original host/scheme/IP through so the api can build
+		# accurate OAuth redirect URLs (uses APP_URL but still logs the
+		# client IP for rate-limiting / audit).
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Forwarded-Host {host}
+	}
+}
+
+# www → apex redirect. OAuth providers register a single canonical
+# redirect_uri; serving both www and apex without a redirect risks
+# state-cookie mismatches when a user lands on the "wrong" hostname.
+www.convertpdfgo.com {
+	redir https://convertpdfgo.com{uri} permanent
+}
