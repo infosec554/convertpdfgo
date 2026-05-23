@@ -30,21 +30,23 @@
 
 | Tur | Yuklash limiti | Auth kerakmi |
 |---|---|---|
-| **Mehmon** (guest) | 20 MB | Yo'q |
-| **Ro'yxatdan o'tgan** | 30 MB | Ha (JWT Bearer) |
+| **Mehmon** (guest) | 30 MB | Yo'q |
+| **Ro'yxatdan o'tgan** | 50 MB | Ha (JWT Bearer) |
 
-20 MB+ fayl mehmonda → HTTP **401**:
+30 MB+ fayl mehmonda → HTTP **401**:
 ```json
 {
   "StatusCode": 401,
   "Description": "Unauthorized",
   "Data": {
-    "limit_bytes": 20971520,
+    "limit_bytes": 31457280,
     "file_size": 34567890,
-    "sign_up_path": "/auth/google"
+    "sign_in_paths": ["/auth/google", "/auth/github"]
   }
 }
 ```
+
+Frontend bu javobni ko'rsa, "Katta fayl uchun Google yoki GitHub orqali kiring" tugmasini ko'rsatishi kerak. 50 MB+ esa hatto auth bilan ham `400 "File exceeds your 50 MB account limit"`.
 
 ### 1.2 Javob format
 
@@ -91,7 +93,7 @@ Hamma fayllar (input va output) **5 daqiqada o'chiriladi**. Frontend:
 | 307 / 302 | OAuth redirect | `window.location` ga yo'naltir |
 | 400 | Validation | `Data.errors` map'idan field xatolarni ko'rsat |
 | 401 | Token yo'q/yaroqsiz | OAuth'ga yo'naltir |
-| 401 + `sign_up_path` | Guest katta fayl | "Kirib oling" CTA |
+| 401 + `sign_in_paths` | Guest 30 MB dan katta fayl | "Google/GitHub bilan kiring" CTA |
 | 403 | Ruxsat yo'q | "Sizda ruxsat yo'q" |
 | 404 | Topilmadi yoki ACL | "Mavjud emas" |
 | 422 | Yomon PDF (corrupt) | "Fayl buzuq" |
@@ -320,7 +322,7 @@ curl https://convertpdfgo.com/me -H "Authorization: Bearer $T"
 
 ### 4.1 `POST /file/upload` — fayl yuklash
 
-**Auth:** Optional. Bor bo'lsa fayl user'ga biriktiriladi (30 MB limit). Yo'q bo'lsa guest (20 MB limit).
+**Auth:** Optional. Bor bo'lsa fayl user'ga biriktiriladi (50 MB limit). Yo'q bo'lsa guest (30 MB limit).
 
 **Format:** `multipart/form-data`, field nomi `file`.
 
@@ -359,8 +361,8 @@ const { Data: { id } } = await res.json();
 **Xatolar:**
 - 400 `"file is required"` — multipart field yo'q
 - 400 `"request Content-Type isn't multipart/form-data"` — Content-Type noto'g'ri
-- 401 + `sign_up_path` — guest 20 MB ortib ketdi
-- 400 `"File exceeds your 30 MB account limit"` — user 30 MB ortib ketdi
+- 401 + `sign_in_paths` — guest 30 MB dan oshib ketdi (OAuth'ga yo'naltir)
+- 400 `"File exceeds your 50 MB account limit"` — auth user 50 MB dan oshib ketdi
 - 500 — diskdagi yozish xatosi
 
 ### 4.2 `GET /file/:id` — metadata olish
@@ -1313,7 +1315,7 @@ J: Polling fallback (yuqorida 10-bo'limda misol).
 J: 30 kun. Access 1 soat.
 
 **S: Mehmon sifatida qaysi operatsiyalar mumkin?**
-J: HAMMASI — faqat 20 MB+ fayl yuklamasligi mumkin.
+J: HAMMASI — faqat 30 MB dan katta fayl yuklay olmaydi. 30-50 MB orasidagi fayl uchun OAuth kerak. 50 MB+ esa umuman qabul qilinmaydi.
 
 **S: Dedup boshqa user'ning faylini ko'rsatadimi?**
 J: Yo'q. User-scoped — har user o'z slice'i ichida dedup.

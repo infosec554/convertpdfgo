@@ -46,28 +46,31 @@ func (h Handler) UploadFile(c *gin.Context) {
 		return
 	}
 
-	// Tiered upload caps (tightened from earlier 30/100 MB):
-	//   * Guests get 20 MB — most invoice / receipt scans still fit.
-	//   * Registered users get 30 MB. Anything over is a sign-in nudge
-	//     for guests (clients can show a "Register to upload larger
-	//     files" CTA) and a hard refusal for members.
+	// Tiered upload caps:
+	//   * Guests get 30 MB — most everyday invoices / scans / reports fit.
+	//   * Registered users get 50 MB. Larger than 30 MB as a guest gets a
+	//     401 with sign_up_path so the UI can render a "Sign in with
+	//     Google / GitHub to upload larger files" CTA. Larger than 50 MB
+	//     for a signed-in user is a hard refusal.
 	//
-	// The router-level BodyLimit middleware caps the request size
-	// somewhat above this so the multipart parser doesn't waste memory.
+	// The router-level BodyLimit middleware caps the request size at
+	// ~110 MiB so the multipart parser doesn't waste memory on rejects.
 	const (
-		guestMaxSize      = 20 * 1024 * 1024 // 20 MB
-		registeredMaxSize = 30 * 1024 * 1024 // 30 MB
+		guestMaxSize      = 30 * 1024 * 1024 // 30 MB
+		registeredMaxSize = 50 * 1024 * 1024 // 50 MB
 	)
 	if ptrUserID == nil && fileHeader.Size > guestMaxSize {
-		handleResponse(c, h.log, "Register to upload files larger than 30 MB", http.StatusUnauthorized, gin.H{
-			"limit_bytes":  guestMaxSize,
-			"file_size":    fileHeader.Size,
-			"sign_up_path": "/auth/register",
+		// Email+password registration was removed — point the UI at the
+		// OAuth providers we actually support.
+		handleResponse(c, h.log, "Sign in to upload files larger than 30 MB", http.StatusUnauthorized, gin.H{
+			"limit_bytes":   guestMaxSize,
+			"file_size":     fileHeader.Size,
+			"sign_in_paths": []string{"/auth/google", "/auth/github"},
 		})
 		return
 	}
 	if ptrUserID != nil && fileHeader.Size > registeredMaxSize {
-		handleResponse(c, h.log, "File exceeds your 100 MB account limit", http.StatusBadRequest, gin.H{
+		handleResponse(c, h.log, "File exceeds your 50 MB account limit", http.StatusBadRequest, gin.H{
 			"limit_bytes": registeredMaxSize,
 			"file_size":   fileHeader.Size,
 		})
