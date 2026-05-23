@@ -195,7 +195,7 @@ func humaniseValidationError(data interface{}) interface{} {
 		if tagStart > len("failed on the '")-1 && tagEnd > tagStart {
 			tag = line[tagStart:tagEnd]
 		}
-		errs[lowerCamel(field)] = validationReason(tag, field)
+		errs[toSnakeCase(field)] = validationReason(tag, field)
 	}
 	if len(errs) == 0 {
 		return data
@@ -233,26 +233,34 @@ func validationReason(tag, field string) string {
 	}
 }
 
-// lowerCamel converts "InputFileID" → "inputFileId" so the keys match
-// what the JSON tags would produce on the frontend side.
-func lowerCamel(s string) string {
+// toSnakeCase converts a Go-style field name into the snake_case JSON
+// shape the rest of the API uses ("InputFileID" → "input_file_id",
+// "Mode" → "mode"). Adjacent uppercase letters are treated as an acronym
+// and collapse together — only a boundary between an upper and a lower
+// letter (or vice-versa) emits an underscore.
+func toSnakeCase(s string) string {
 	if s == "" {
 		return s
 	}
-	// Lowercase the leading run of uppercase letters except the last
-	// one when it's followed by a lowercase letter — keeps acronyms
-	// like "ID" → "id" while "InputFile" → "inputFile".
+	var b []byte
 	r := []rune(s)
-	for i := 0; i < len(r); i++ {
-		next := i + 1
-		if next < len(r) && r[next] >= 'a' && r[next] <= 'z' && i > 0 {
-			break
+	for i, c := range r {
+		isUpper := c >= 'A' && c <= 'Z'
+		if isUpper && i > 0 {
+			prevLower := r[i-1] >= 'a' && r[i-1] <= 'z'
+			// "MyXMLValue" → boundary before "X" (lower→upper) AND
+			// before "Value" (upper run followed by a lowercase).
+			nextLower := i+1 < len(r) && r[i+1] >= 'a' && r[i+1] <= 'z'
+			prevUpper := r[i-1] >= 'A' && r[i-1] <= 'Z'
+			if prevLower || (prevUpper && nextLower) {
+				b = append(b, '_')
+			}
 		}
-		if r[i] >= 'A' && r[i] <= 'Z' {
-			r[i] = r[i] + 32
+		if isUpper {
+			b = append(b, byte(c)+32)
 		} else {
-			break
+			b = append(b, byte(c))
 		}
 	}
-	return string(r)
+	return string(b)
 }
