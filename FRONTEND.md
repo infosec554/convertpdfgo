@@ -1340,7 +1340,904 @@ J: 3 ta (Dropbox + GDrive + OneDrive) bir vaqtda.
 
 ---
 
-## 12. Status: Live va Ishlayotgan
+## 12. Frontend implementation qo'llanmasi — har funksiya uchun
+
+> Har bir endpoint uchun: qaysi UI komponent, default qiymat, validation, UX maslahatlar.
+
+### 12.1 Umumiy patternlar (barcha sahifalarga)
+
+#### A) Axios/fetch interceptor — token refresh
+
+```js
+axios.interceptors.response.use(
+  res => res,
+  async err => {
+    if (err.response?.status === 401 && err.response?.data?.Data === null) {
+      // Access token expired — refresh & retry
+      const refresh = localStorage.getItem("refresh_token");
+      const { data } = await axios.post("/auth/refresh", { refresh_token: refresh });
+      localStorage.setItem("access_token", data.Data.access_token);
+      localStorage.setItem("refresh_token", data.Data.refresh_token);
+      err.config.headers.Authorization = `Bearer ${data.Data.access_token}`;
+      return axios.request(err.config);
+    }
+    throw err;
+  }
+);
+```
+
+#### B) Error toast — `Data.errors` map
+
+```js
+function showApiError(res) {
+  const data = res.data?.Data;
+  if (data?.errors) {
+    // Validation: highlight form fields
+    for (const [field, msg] of Object.entries(data.errors)) {
+      setFieldError(field, msg);
+    }
+  } else if (res.status === 401 && data?.sign_in_paths) {
+    // Guest hit file size limit
+    showSignInModal(data.sign_in_paths);
+  } else if (res.status === 422) {
+    toast.error("Fayl buzuq yoki PDF emas");
+  } else if (res.status === 429) {
+    toast.error("Juda ko'p so'rov yubordingiz, birozdan keyin");
+  } else if (res.status >= 500 && data?.request_id) {
+    toast.error(`Server xatosi. Yordam uchun: ${data.request_id}`);
+  } else {
+    toast.error("Noma'lum xato");
+  }
+}
+```
+
+#### C) Job polling helper
+
+```js
+async function pollJob(op, jobId, opts = {}) {
+  const { interval = 1500, timeout = 60000, onProgress } = opts;
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const { data } = await axios.get(`/api/pdf/${op}/${jobId}`);
+    onProgress?.(data.Data.status);
+    if (data.Data.status === "done") return data.Data;
+    if (data.Data.status === "failed") throw new Error(data.Data.error || "Job failed");
+    await new Promise(r => setTimeout(r, interval));
+  }
+  throw new Error("Timeout");
+}
+```
+
+#### D) WebSocket bilan job tugashini kutish (polling o'rniga)
+
+```js
+function waitForJobWS(jobId, token) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(`wss://convertpdfgo.com/ws?token=${token}`);
+    const timeout = setTimeout(() => { ws.close(); reject(new Error("Timeout")); }, 60000);
+    ws.onmessage = ({ data }) => {
+      const e = JSON.parse(data);
+      if (e.job_id !== jobId) return;
+      if (e.status === "done") { clearTimeout(timeout); ws.close(); resolve(e); }
+      if (e.status === "failed") { clearTimeout(timeout); ws.close(); reject(new Error(e.error)); }
+    };
+    ws.onerror = () => reject(new Error("WS error"));
+  });
+}
+```
+
+#### E) Drag-drop file uploader
+
+```jsx
+function FileDropzone({ onUpload, accept = ".pdf", multiple = false, maxSize = 30 * 1024 * 1024 }) {
+  const [dragging, setDragging] = useState(false);
+  return (
+    <div
+      onDragOver={e => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={e => {
+        e.preventDefault();
+        setDragging(false);
+        const files = Array.from(e.dataTransfer.files);
+        // Client-side size check (skip server roundtrip)
+        const oversized = files.find(f => f.size > maxSize);
+        if (oversized) {
+          showSignInModal(["/auth/google", "/auth/github"]);
+          return;
+        }
+        onUpload(multiple ? files : files[0]);
+      }}
+      className={dragging ? "border-blue-500" : "border-gray-300"}
+    >
+      Faylni shu yerga tashlang yoki bosing
+    </div>
+  );
+}
+```
+
+#### F) "5 daqiqada o'chiriladi" countdown
+
+Natija fayl tayyor bo'lganda:
+```jsx
+function ExpiryCountdown({ uploadedAt }) {
+  const [remaining, setRemaining] = useState(300);
+  useEffect(() => {
+    const id = setInterval(() => {
+      const elapsed = (Date.now() - new Date(uploadedAt)) / 1000;
+      setRemaining(Math.max(0, 300 - elapsed));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [uploadedAt]);
+  if (remaining < 60) return <span className="text-red-500">⚠️ {Math.ceil(remaining)}s da o'chadi</span>;
+  return <span>⏱ {Math.floor(remaining / 60)}m da o'chadi</span>;
+}
+```
+
+---
+
+### 12.2 Auth sahifa (login/register UI)
+
+**UI:** Bitta sahifa, ikkita katta tugma:
+```
+┌─────────────────────────────┐
+│   convertpdfgo               │
+│                             │
+│   [G] Google bilan kirish    │
+│   [⌐] GitHub bilan kirish    │
+│                             │
+│   Tezda boshlash uchun:      │
+│   - 30 MB gacha mehmon       │
+│   - 50 MB gacha auth         │
+└─────────────────────────────┘
+```
+
+**Tugma onClick:**
+```js
+window.location.href = "https://convertpdfgo.com/auth/google";
+```
+
+**Callback page** (`/auth/callback` yoki sayt root):
+URL hash/query'dan token olib, localStorage'ga saqlang, asosiy sahifaga yo'naltir.
+
+```js
+// Callback handlerda:
+const params = new URLSearchParams(window.location.search);
+// Backend JSON qaytaradi (HTML emas). Token'larni darhol storage'ga:
+const res = await fetch("/auth/google/callback" + window.location.search);
+const { Data } = await res.json();
+localStorage.setItem("access_token", Data.access_token);
+localStorage.setItem("refresh_token", Data.refresh_token);
+window.location.href = "/";
+```
+
+---
+
+### 12.3 Profil sahifasi (`/me`)
+
+**Layout:**
+- Yuqorida: avatar + ism + email + provider belgisi
+- Bo'limlar: Profil | Statistika | Login tarixi | Cloud aloqalar
+
+**`GET /me` qachon chaqirish:**
+- App load (token bor bo'lsa)
+- Login'dan keyin
+- "Mening sahifam" sahifasiga kirgan paytda
+
+**`PUT /me` ism o'zgartirish:**
+```jsx
+<input type="text" value={name} minLength={2} required />
+<button onClick={() => axios.put("/me", { name })}>Saqlash</button>
+```
+
+Validation: client-side `minLength=2`, server qaytaradi `{"errors":{"name":"..."}}` agar muammo bo'lsa.
+
+**`GET /me/auth-history`** — jadval ko'rinishda:
+```
+| Sana            | Provider | IP             | Holat       |
+| 22 May 22:18    | google   | 188.113.197.69 | login_ok    |
+| 22 May 22:30    | -        | 188.113.197.69 | logout      |
+```
+
+Faqat oxirgi 20 ta yoki paginatsiya bilan.
+
+**`GET /me/stats`** — dashboard widget:
+```
+┌─────────────────────────┐
+│ Jami konvertatsiya: 19  │
+│ ──────────────────────  │
+│ 📦 Compressed:      5   │
+│ 🖼  PDF→JPG:        12  │
+│ 🔄 Rotated:         2   │
+│ Disk: 0 MB              │
+└─────────────────────────┘
+```
+
+---
+
+### 12.4 Cloud Export — Settings sahifa
+
+**UI** (`/api/storage/providers` natijasi asosida):
+```
+┌────────────────────────────────────────────┐
+│ Bulutga saqlash                            │
+│                                            │
+│ 📦 Dropbox                                 │
+│    ✓ Ulangan       [Disconnect]            │
+│                                            │
+│ ☁  Google Drive                            │
+│    Ulanmagan       [Connect]               │
+│                                            │
+│ OneDrive — hozircha mavjud emas            │
+└────────────────────────────────────────────┘
+```
+
+**Connect tugmasi:**
+```js
+window.open(`https://convertpdfgo.com/api/storage/${provider}/connect?token=${accessToken}`, "_blank");
+```
+
+Yangi tab'da OAuth flow → user ruxsat beradi → callback → tab yopiladi.
+
+**Asosiy oqimga qo'shilgandan keyin** har bir job result oynasida:
+```
+[ Download ]  [ Save to Dropbox ]  [ Save to Google Drive ]
+```
+
+`Save to X` tugmasi:
+```js
+await axios.post(`/file/${outputFileId}/export`, { provider: "dropbox" });
+toast.success("Dropbox'ga yuborildi");
+```
+
+---
+
+### 12.5 Fayl operatsiyalari uchun UI patternlar
+
+Hamma PDF op uchun **umumiy struktura**:
+
+```
+1. [ Drag-drop / file picker ]   ← input fayl tanlash
+2. [ Operatsiyaga oid sozlamalar ] ← op-specific controls
+3. [ Convert tugmasi ]
+4. [ Progress bar yoki spinner ] ← polling/WS bilan
+5. [ Natija: download + cloud export tugmalari ]
+6. [ "5 daqiqada o'chadi" countdown ]
+```
+
+---
+
+### 12.6 Har PDF operatsiya uchun aniq UI specs
+
+#### 📑 merge — PDF birlashtirish
+
+**UI:**
+- Multi-file picker (`<input multiple accept=".pdf">`)
+- Yuklangan fayllar ro'yxati + **drag-and-drop tartib o'zgartirish**
+- Har faylda "X" tugmasi (o'chirish)
+- Disable Submit agar < 2 fayl yoki > 50 fayl
+- Ko'rsatish: "Jami: 5 PDF, 12 MB"
+
+**Validation:**
+- Min 2 fayl
+- Max 50 fayl
+- Har fayl ≤ 30/50 MB
+
+**Tip:** Drag-drop bilan tartib o'zgartirish katta UX yutuq. `react-dnd` yoki `react-beautiful-dnd` ishlatish mumkin.
+
+---
+
+#### ✂️ split — PDF bo'lish
+
+**UI:**
+- Single file picker
+- Avval `/api/pdf/inspect` chaqirib `page_count` olish → user ko'rishi mumkin
+- Range input + visual page preview (ixtiyoriy)
+- Ikkita rejim:
+  - "Range bilan: 1-3, 5, 7-9" (text input)
+  - "Har sahifani alohida fayl qil" (checkbox → backend'ga `"1,2,3,...,N"` yuborish)
+
+**Validation:** range format `^[\d,\-\s]+$` (raqamlar, vergul, defis, bo'sh joy).
+
+**Natija:** Bir nechta `output_file_ids`. Foydalanuvchiga:
+- "Hammasini ZIP'da yuklab olish" tugmasi (frontend ZIP yasaydi)
+- Yoki har birini alohida download
+
+---
+
+#### 🗑 removepage — sahifa o'chirish
+
+**UI:**
+- File picker
+- Avval inspect → page_count olib visual page grid (thumbnail bilan ko'rinsa yana yaxshi)
+- User sahifalarni klik bilan tanlaydi
+- Tanlanganlar `pages_to_remove` ga aylanadi
+
+**Tip:** Visual sahifa preview ko'rsatish uchun `pdf-to-jpg` bilan thumbnail yaratish mumkin. Yoki yengilroq — `pdf.js` bilan brauzerda render.
+
+---
+
+#### 📤 extract — kerakli sahifalarni ajratish
+
+Xuddi `removepage` kabi — faqat user "qoldiriladigan"larni tanlaydi.
+
+**UI farqi:** Tanlanganlar yashil (qoladi), tanlanmaganlar kulrang.
+
+---
+
+#### 📦 compress — siqish
+
+**UI:**
+- File picker
+- Radio button:
+  ```
+  ( ) Low      ~30-50% kichik, eng yuqori sifat
+  (•) Medium   ~50-70% kichik, normal sifat (tavsiya)
+  ( ) High     ~70%+ kichik, past sifat (faqat skan uchun)
+  ```
+- "Convert" tugmasi
+- Natijada: "Hajm: 5 MB → 1.8 MB (64% kichik)"
+
+**Tip:** Default `medium`. Estimated savings ko'rsatish (statistik bo'lsin).
+
+---
+
+#### 🔄 rotate — aylantirish
+
+**UI:**
+- File picker → inspect → page_count
+- Burchak tanlash:
+  ```
+  [ ↻ 90° ]  [ ↺ 270° ]  [ ⤴ 180° ]
+  ```
+- Sahifa range (default: hammasi):
+  - Radio: ( ) Hamma sahifalar  ( ) Tanlangan: [input "1-3,5"]
+
+**Default qiymatlar:**
+- `angle: 90`
+- `pages: "all"`
+
+**UX:** "Visual preview" — sahifani aylantirib ko'rsatish (frontend tomondan `transform: rotate(90deg)`).
+
+---
+
+#### ✂️ crop — kesish
+
+**UI:**
+- File picker
+- Visual crop tool — sahifani ko'rsatib, foydalanuvchi qirralarni sudraydi
+- Yoki oddiy variant — 4 ta input: top, right, bottom, left (pikselda)
+- Page range selector
+
+**Tip:** "Auto-crop" tugmasi (oq joylarni avtomatik aniqlash) qo'shimcha funksiya bo'lishi mumkin.
+
+---
+
+#### 🔢 add-page-numbers
+
+**UI:**
+```
+Birinchi raqam:    [ 1 ]
+Sahifalar:         [ Hamma ▾ ] [ 1-10 ]
+Pozitsiya:         [ Pastki o'ng ▾ ]
+                   ( top-left | top-center | top-right
+                   | bottom-left | bottom-center | bottom-right )
+Rang:              [⬛ qora] [color picker]
+Font o'lchami:     [ 12 ] px
+```
+
+**Default'lar:**
+- first_number: 1
+- page_range: "all"
+- position: "bottom-right"
+- color: "black"
+- font_size: 12
+
+**Tip:** Mini preview ko'rsatish — bitta sahifa ko'rinishida raqam joyini ko'rsatish.
+
+---
+
+#### 📋 header-footer
+
+**UI:**
+```
+Yuqori matn:    [____________________]
+Pastki matn:    [____________________]
+Font o'lchami:  [ 12 ]
+Rang:           [⬛ ▾]
+Joylashuv:      ( ) Chap (•) O'rta ( ) O'ng
+```
+
+**Default'lar:**
+- font_size: 12
+- font_color: "black"
+- position: "center"
+
+Bo'sh field'lar — server tomondan default ishlatiladi.
+
+---
+
+#### 🔲 qr-code — QR kod qo'shish
+
+**UI:**
+```
+QR kontent:     [____________________]
+                (URL, matn, telefon)
+Pozitsiya:      [Yuqori o'ng ▾]
+O'lcham (px):   [ 80 ] slider 30-200
+```
+
+**Preview:** Frontend tomondan `qrcode.js` bilan live preview ko'rsatish — user backend'ga yuborishdan oldin natijani ko'radi.
+
+**Default'lar:**
+- size: 80
+- position: "top-right"
+
+---
+
+#### 💧 watermark
+
+**UI — Mode tab:**
+```
+( Text )  ( Image )
+```
+
+**Text mode:**
+```
+Matn:           [DRAFT_____________]
+Pozitsiya:      [Markaz ▾]
+                ( c | tl | tr | bl | br )
+Burilish:       [-45°] slider -90...90
+Shaffoflik:     [0.4] slider 0...1
+Sahifalar:      [ Hamma ▾ ]
+```
+
+**Image mode:**
+```
+Logo fayl:      [ Yuklash ]   ← oldin PNG/JPG yuklang
+Pozitsiya:      [Pastki o'ng ▾]
+Shaffoflik:     [0.5]
+```
+
+**Tip:** Visual preview obyekt — text/image'ni real PDF ustida ko'rsatish.
+
+---
+
+#### 🔒 protect — parol qo'yish
+
+**UI:**
+```
+Parol:                  [ ●●●●●●●●●● ] [👁]
+Parolni qaytaring:      [ ●●●●●●●●●● ]
+```
+
+**Client-side validation:**
+- Min 6 ta belgi
+- Ikkala parol mos kelishi
+
+Backend `password` ni qabul qiladi, lekin **parol mosligini frontend tekshirishi** kerak.
+
+**Warning:** "Parolingizni saqlang — yo'qotsangiz, biz tiklamaymiz".
+
+---
+
+#### 🔓 unlock — parolni olib tashlash
+
+**UI:**
+```
+Parol:    [ ●●●●●●●●●● ] [👁]
+```
+
+**Error handling:**
+- 202 → polling → `status: "failed"` + error contains "this file is not encrypted" → toast "Bu PDF himoyalangan emas"
+- error contains "wrong password" → toast "Parol noto'g'ri"
+
+---
+
+#### 🔍 inspect ⚡ SYNC
+
+**UI:**
+- File picker
+- "Tahlil qilish" tugmasi
+- **Polling YO'Q** — javob darhol keladi
+- Natija:
+  ```
+  Sahifalar: 12
+  Sarlavha: ...
+  Muallif: ...
+  Mavzu: ...
+  Kalit so'zlar: ...
+  ```
+
+**Error 422 → toast "PDF buzuq yoki PDF formati emas".
+
+**Tip:** Boshqa PDF operatsiyalarda yuklashdan keyin avtomatik inspect chaqirish — user page_count ni darhol ko'rsin (range tanlash uchun).
+
+---
+
+#### ⬜ detect-blank — bo'sh sahifalarni topish
+
+**UI:**
+- File picker
+- Natija ro'yxat ko'rinishda:
+  ```
+  Bo'sh sahifalar: 3, 7, 12
+  [ O'chirish ]   ← darhol /removepage chaqiradi
+  ```
+
+**Tip:** "Bo'shlarni avtomatik o'chirish" tugmasi = `removepage` ga `blank_pages.join(",")` yuborish.
+
+---
+
+#### 🖼 jpg-to-pdf — rasmlardan PDF
+
+**UI:**
+- Multi-file picker `accept="image/jpeg, image/png"`
+- Yuklangan rasmlar thumbnail grid (drag-and-drop tartib)
+- Rasm sonini ko'rsatish ("12 rasm, 8 MB")
+- Disable agar > 50
+
+**Tip:** Brauzer ichida thumbnail yaratish (FileReader + `<img>`), yuklashdan oldin user tartibni o'zgartira oladi.
+
+---
+
+#### 🖼 pdf-to-jpg
+
+**UI:**
+- File picker
+- "Aylantirish" tugmasi
+- Natija: thumbnail grid + ikkita tugma:
+  - "Hammasini ZIP'da yuklash" (`zip_file_id`)
+  - "Faqat tanlanganlarni yuklash" (selected `output_file_ids`)
+
+---
+
+#### 📄 word-to-pdf, excel-to-pdf, ppt-to-pdf
+
+**UI har biriga bir xil:**
+- File picker (accept .doc/.docx, .xls/.xlsx, .ppt/.pptx)
+- "Aylantirish" tugmasi
+- Result download
+
+**Frontend MIME tekshirish:**
+```js
+const allowed = {
+  "word-to-pdf": [".doc", ".docx"],
+  "excel-to-pdf": [".xls", ".xlsx"],
+  "ppt-to-pdf": [".ppt", ".pptx"]
+};
+```
+
+---
+
+#### 🌐 html-to-pdf
+
+**UI:**
+- Code editor (`<textarea>` yoki Monaco) — HTML matn kiritish
+- Yoki HTML fayl picker → FileReader bilan o'qib yuborish
+- Live preview (right pane)
+
+**Tip:** Default template (`<!DOCTYPE html>...`) avtomatik o'rab qo'yish — user faqat content yozsin.
+
+---
+
+#### 🔗 url-to-pdf
+
+**UI:**
+```
+URL:              [ https://_______________________ ]
+Sahifa o'lchami:  [ A4 ▾ ]   (A3, A4, A5, B4, B5)
+Yo'nalish:        ( • ) Portret  ( ) Landscape
+Kutish:           [ 2 ] soniya  (JS ko'p saytlar uchun)
+```
+
+**Validation:** URL format `^https?://...`.
+
+**Warning:** "Auth talab qiluvchi saytlar ishlamaydi" — frontend ogohlantiradi.
+
+---
+
+#### 📄 pdf-to-word, pdf-to-ppt, pdf-to-excel, pdf-to-html
+
+**UI bir xil:** File picker + "Aylantirish" tugmasi.
+
+**Natija:** Output fayl extension'iga qarab tugma matni:
+- pdf-to-word → "Word fayl yuklash (.docx)"
+- pdf-to-ppt → "PowerPoint yuklash (.pptx)"
+- pdf-to-excel → "Excel yuklash (.xlsx)"
+- pdf-to-html → "HTML yuklash"
+
+---
+
+#### 🔤 OCR oilasi (6 ta) — umumiy UI
+
+**Til tanlash dropdown:**
+```
+Til:  [ Inglizcha (eng) ▾ ]
+  - Inglizcha (eng)
+  - Ruscha (rus)
+  - O'zbekcha lotin (uzb)
+  - O'zbekcha kirill (uzb_cyrl)
+  - Qirg'izcha (kir)
+  - + Boshqa til qo'shish (multi-select uchun "eng+rus")
+```
+
+**Per-op UI:**
+
+| Op | Input | Output ko'rinish |
+|---|---|---|
+| `/ocr` | PDF | Yangi searchable PDF (download) |
+| `/scan-to-pdf` | Multi-image (max 50) | Searchable PDF |
+| `/ocr-extract-text` | PDF | .txt fayl + matn preview |
+| `/image-to-text` | Bitta rasm | .txt + preview |
+| `/ocr-detect-lang` | PDF/rasm | "Til: eng (97% ishonch)" |
+| `/ocr-structured` | PDF | HOCR/JSON fayl |
+
+**Force OCR checkbox** (`/ocr` uchun):
+```
+☐ Mavjud matn qatlamini ham qayta OCR qil
+   (default: faqat skan sahifalar)
+```
+
+**Edge case'lar:**
+- Juda kichik rasm → `failed` → toast "Rasm juda kichik, kamida 3px kerak"
+- Bo'sh PDF (faqat oq sahifalar) → `failed` → toast "Sahifada matn yo'q"
+
+---
+
+#### 📝 extract-text — OCR'siz matn
+
+**UI:**
+```
+Format:  ( • ) TXT (oddiy matn)  ( ) JSON (sahifa bo'yicha)
+```
+
+**Default:** txt.
+
+**Natijani frontend'da preview qilish** — txt'ni matn maydonida ko'rsatish.
+
+---
+
+#### 📊 nup — bir varaqqa N sahifa
+
+**UI:**
+```
+Bir varaqqa nechta sahifa:
+  ( ) 2-up   ( • ) 4-up   ( ) 6-up   ( ) 9-up
+
+Yo'nalish:    ( • ) Portret  ( ) Landscape
+Chegara:      ☑ Sahifalar orasiga chegara qo'yish
+```
+
+**Default:** n=4, orientation=portrait, border=false.
+
+**Tip:** Visual misol ko'rsatish — har n qiymati uchun kichik diagramma.
+
+---
+
+#### 🏷 metadata — metadata o'zgartirish
+
+**UI:**
+```
+Avval mavjud metadata ko'rsatish (inspect orqali):
+─────────────────────────────────
+Sarlavha:  [ Eski sarlavha______ ]
+Muallif:   [ Eski muallif_______ ]
+Mavzu:     [ ___________________ ]
+Kalit so'zlar: [tag1, tag2, ...]
+─────────────────────────────────
+[ Saqlash ]
+```
+
+**MUHIM:** Bo'sh maydon bersangiz, backend `failed` qaytaradi ("no metadata fields provided"). Frontend kamida bitta field to'ldirilganini tekshirishi kerak.
+
+**Tip:** "Bo'shatish" tugmasi — hamma field'ni bo'sh `null` qilib yuborish (lekin server qo'llab-quvvatlaydimi? — sinab ko'ring).
+
+---
+
+#### 🔗 share — public link yaratish
+
+**UI:**
+```
+Bu faylni public qilib ulashing:
+
+TTL (qancha vaqt ishlasin):
+  ( ) 1 soat
+  ( • ) 24 soat (default)
+  ( ) 7 kun
+  ( ) Maxsus: [ 60 ] daqiqa
+
+[ Link yaratish ]
+
+Natija:
+https://convertpdfgo.com/api/pdf/share/abc123...
+[ Nusxa olish ] [ QR code ko'rish ]
+```
+
+**Field nomi:** `file_id` (boshqalarda `input_file_id`!).
+
+**UX:** Link nusxa olingach toast "Link nusxa olindi". QR code generation — `qrcode.js` bilan brauzerda.
+
+---
+
+### 12.7 Aloqa formasi UI
+
+**Validatsiya:**
+
+| Field | Constraint |
+|---|---|
+| name | 2-255 belgi |
+| email | valid email |
+| subject | 0-255 (ixtiyoriy) |
+| body | 5-8000 belgi |
+
+**UI:**
+```
+Ism:     [ _________________ ] *
+Email:   [ _________________ ] *
+Mavzu:   [ _________________ ]
+Xabar:
+┌──────────────────────────────┐
+│                              │
+│                              │  500/8000
+│                              │
+└──────────────────────────────┘
+                          [ Yuborish ]
+```
+
+**Auth bo'lsa:** ism va email avtomatik to'ldirilsin (`/me` dan).
+
+**Natija (201):** toast "Xabaringiz qabul qilindi. Email orqali javob beramiz."
+
+---
+
+### 12.8 WebSocket connection lifecycle
+
+**Best practice — global WS manager:**
+
+```js
+class JobWatcher {
+  constructor(token) {
+    this.token = token;
+    this.handlers = new Map();   // jobId → callback
+    this.connect();
+  }
+
+  connect() {
+    this.ws = new WebSocket(`wss://convertpdfgo.com/ws?token=${this.token}`);
+    this.ws.onmessage = ({ data }) => {
+      const e = JSON.parse(data);
+      const cb = this.handlers.get(e.job_id);
+      if (cb) cb(e);
+    };
+    this.ws.onclose = () => setTimeout(() => this.connect(), 2000);   // auto-reconnect
+  }
+
+  watch(jobId, cb) {
+    this.handlers.set(jobId, cb);
+    return () => this.handlers.delete(jobId);   // unwatch
+  }
+}
+
+// Foydalanish:
+const watcher = new JobWatcher(token);
+const unwatch = watcher.watch(jobId, (event) => {
+  if (event.status === "done") {
+    showDownloadButton(event.output_file_id);
+    unwatch();
+  }
+});
+```
+
+---
+
+### 12.9 Tezroq UX patternlar
+
+#### Inspect dan oldin avtomatik chaqirish
+
+Foydalanuvchi PDF yuklagandan keyin **darhol** inspect chaqiring va saqlang:
+
+```js
+const fileId = await uploadFile(pdfBlob);
+const { Data: meta } = await axios.post("/api/pdf/inspect", { file_id: fileId });
+// Endi meta.page_count user'ga "10 sahifa" deb ko'rsatish mumkin
+// Va boshqa op'larning page range input'iga limit qo'yish
+setPageRange({ max: meta.page_count });
+```
+
+#### Page range input — visual validator
+
+Foydalanuvchi "1-3,5,15" deb yozsa, agar PDF 10 sahifa bo'lsa, 15 noto'g'ri. Frontend tekshirsin:
+
+```js
+function validateRange(input, maxPage) {
+  const parts = input.split(",").map(s => s.trim());
+  for (const p of parts) {
+    if (p.includes("-")) {
+      const [a, b] = p.split("-").map(Number);
+      if (a < 1 || b > maxPage || a > b) return false;
+    } else {
+      const n = Number(p);
+      if (!Number.isInteger(n) || n < 1 || n > maxPage) return false;
+    }
+  }
+  return true;
+}
+```
+
+#### Cloud export tugmasini conditional ko'rsatish
+
+```jsx
+{providers.filter(p => p.connected).map(p => (
+  <button onClick={() => exportTo(p.name)}>
+    Save to {p.display_name}
+  </button>
+))}
+```
+
+#### Drag-drop yagona endpoint uchun emas, butun sahifa uchun
+
+Foydalanuvchi istalgan joyga fayl tashlasa, app modal ochib operatsiyani tanlatsin.
+
+```js
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file.type === "application/pdf") {
+    showOperationPicker(file);   // "Nima qilamiz: Compress? Rotate? OCR?"
+  }
+});
+```
+
+---
+
+### 12.10 Kontekstli ogohlantirishlar
+
+Har joyda foydalanuvchini ogohlantirish:
+
+| Kontekst | Toast / Tooltip |
+|---|---|
+| Guest 28 MB fayl yuklamoqchi | "Kirish bilan 50 MB gacha yuklay olasiz" |
+| OCR 10+ sahifa | "Bu jarayon 30+ soniya olishi mumkin" |
+| compress=high | "Yuqori siqish sifatni kamaytiradi, faqat skan/email uchun" |
+| Same file yuklash | "Bu fayl avval yuklangan, qayta convert qilamiz" |
+| Job 30 soniyadan ko'p | "Sekin ishlayapti, sabr qiling..." |
+| Result 5 daqiqa qoldi | "Faylingiz tez orada o'chiriladi, hozir saqlang" |
+
+---
+
+### 12.11 Loading states — har op uchun progress
+
+**Spinner emas, progress message:**
+
+```
+Job pending...      "Navbatda..."
+Job processing...   "Ishlanyapti..."
+Job done            ✓ "Tayyor!"
+Job failed          ✗ "Xato: ..."
+```
+
+**Long-running** uchun progress bar (vaqt asosida emas, indeterminate):
+```jsx
+{status === "processing" && (
+  <div>
+    <CircularProgress />
+    <p>{op === "ocr" ? "OCR ishlanmoqda... (~30s)" : "Aylantirilmoqda..."}</p>
+  </div>
+)}
+```
+
+---
+
+### 12.12 Mobile-first tafsiyalar
+
+- Drag-drop YO'Q mobile'da → "Fayl tanlash" tugmasini ko'rsating
+- Cloud export tugmalari kichik bo'lsin
+- PDF preview mobile'da memory-heavy → faqat thumbnail
+- Page range input — "Hamma sahifa" radio button default
+
+---
+
+## 13. Status: Live va Ishlayotgan
 
 ✅ HTTPS: `https://convertpdfgo.com` (Let's Encrypt)
 ✅ OAuth: Google + GitHub
@@ -1351,6 +2248,8 @@ J: 3 ta (Dropbox + GDrive + OneDrive) bir vaqtda.
 ✅ Snake_case validation errors
 ✅ User-scoped dedup (privacy)
 ✅ HTTP→HTTPS auto-redirect
+✅ Upload limit: 30 MB guest / 50 MB auth
+✅ 401 da `sign_in_paths` OAuth tugmalari uchun
 
 ---
 
