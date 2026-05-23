@@ -30,7 +30,13 @@ func registerFileRoutes(r *gin.Engine, h handler.Handler) {
 	// without registering, while owned files stay locked to their
 	// owner-or-admin. /file/list is the exception — it lists by
 	// user_id so the strict authed group is the right home.
-	r.POST("/file/upload", h.UploadFile)
+	// Upload runs under OptionalAuth so the handler can read user_id
+	// from the JWT (when present) and scope dedup to the uploader's
+	// own slice. Without it every request looks like a guest, and the
+	// SHA-keyed lookup would silently return another user's row,
+	// re-attaching their "private" upload to the guest pool. Cap-tier
+	// logic (20 MB guest / 30 MB member) is in the handler.
+	r.POST("/file/upload", h.OptionalAuthMiddleware, h.UploadFile)
 	r.GET("/file/:id/download", h.OptionalAuthMiddleware, h.DownloadFile)
 	r.GET("/file/:id", h.OptionalAuthMiddleware, h.GetFile)
 	r.DELETE("/file/:id", h.OptionalAuthMiddleware, h.DeleteFile)
