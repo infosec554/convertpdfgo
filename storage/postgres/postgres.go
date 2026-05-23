@@ -71,6 +71,17 @@ func New(ctx context.Context, cfg config.Config, log logger.ILogger, redis stora
 		return nil, err
 	}
 
+	// Wait until postgres actually accepts our credentials before we
+	// trust the pool. NewWithConfig is lazy — it doesn't dial — so a
+	// pool that "succeeded" can still fail every query with auth
+	// errors if the password drifted at first init (sync-password.sh
+	// race during cold boot) or the docker network isn't fully wired
+	// yet. Empirically the second container start always works, so a
+	// short bounded retry here turns a crash-loop into a clean boot.
+	if err := waitForDB(ctx, pool, log); err != nil {
+		return nil, err
+	}
+
 	// Migrations should run on the API service only. Worker (and any other
 	// process that shares the DB) skips this entirely so two boots can't
 	// race on the schema_migrations row and leave it in a "dirty" state —
@@ -83,7 +94,12 @@ func New(ctx context.Context, cfg config.Config, log logger.ILogger, redis stora
 			log.Error("failed to get absolute path for migrations", logger.Error(err))
 			return nil, err
 		}
-		m, err := migrate.New("file://"+absPath, url)
+		// Same retry envelope as the pool: migrate.New opens its own
+		// connection internally with lib/pq, which on cold boot trips
+		// the same transient auth failure we just survived in the pool
+		// ping above. One unified retry budget keeps the wait time
+		// predictable instead of doubling it.
+		m, err := newMigrateWithRetry("file://"+absPath, url, log)
 		if err != nil {
 			log.Error("migration error", logger.Error(err))
 			return nil, err
@@ -106,6 +122,62 @@ func New(ctx context.Context, cfg config.Config, log logger.ILogger, redis stora
 
 func (s *Store) Close() {
 	s.pool.Close()
+}
+
+// waitForDB pings the pool with an exponential backoff until either the
+// ping succeeds or the budget is exhausted. The schedule (1s, 2s, 4s, 8s,
+// 16s — ~30s total) covers every transient failure we've seen during
+// cold-boot deploys without making a real outage hang the process.
+func waitForDB(ctx context.Context, pool *pgxpool.Pool, log logger.ILogger) error {
+	delays := []time.Duration{time.Second, 2 * time.Second, 4 * time.Second, 8 * time.Second, 16 * time.Second}
+	var lastErr error
+	for attempt := 1; attempt <= len(delays)+1; attempt++ {
+		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err := pool.Ping(pingCtx)
+		cancel()
+		if err == nil {
+			if attempt > 1 {
+				log.Info(fmt.Sprintf("postgres reachable after %d attempts", attempt))
+			}
+			return nil
+		}
+		lastErr = err
+		if attempt > len(delays) {
+			break
+		}
+		log.Warning(fmt.Sprintf("postgres ping failed (attempt %d/%d): %v — retrying in %s",
+			attempt, len(delays)+1, err, delays[attempt-1]))
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delays[attempt-1]):
+		}
+	}
+	log.Error("postgres unreachable after retries", logger.Error(lastErr))
+	return fmt.Errorf("postgres unreachable: %w", lastErr)
+}
+
+// newMigrateWithRetry wraps migrate.New (which opens its own connection)
+// in the same retry envelope as the pool ping. migrate.New uses lib/pq,
+// not pgx, so a successful pool ping does not guarantee migrate's auth
+// will also succeed on the very first try.
+func newMigrateWithRetry(sourceURL, dbURL string, log logger.ILogger) (*migrate.Migrate, error) {
+	delays := []time.Duration{time.Second, 2 * time.Second, 4 * time.Second}
+	var lastErr error
+	for attempt := 1; attempt <= len(delays)+1; attempt++ {
+		m, err := migrate.New(sourceURL, dbURL)
+		if err == nil {
+			return m, nil
+		}
+		lastErr = err
+		if attempt > len(delays) {
+			break
+		}
+		log.Warning(fmt.Sprintf("migrate.New failed (attempt %d/%d): %v — retrying in %s",
+			attempt, len(delays)+1, err, delays[attempt-1]))
+		time.Sleep(delays[attempt-1])
+	}
+	return nil, lastErr
 }
 
 func (s *Store) User() storage.IUserStorage {

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -134,6 +135,13 @@ func handleResponse(c *gin.Context, log logger.ILogger, msg string, statusCode i
 	case code < 500:
 		resp.Description = "Bad Request"
 		log.Error("BAD REQUEST", logger.String("msg", msg), logger.Any("status", code))
+		// 4xx payloads commonly carry the raw `err.Error()` string from
+		// Gin's validator ("Key: 'XxxRequest.Field' Error:Field
+		// validation for 'Field' failed on the 'required' tag\n..."),
+		// which is fine for logs but useless to a UI. Reshape it into a
+		// map[field]reason so the frontend can drive form-field errors
+		// directly. Non-validator bodies pass through untouched.
+		data = humaniseValidationError(data)
 	default:
 		resp.Description = "Internal Server Error"
 		log.Error("INTERNAL SERVER ERROR", logger.String("msg", msg), logger.Any("status", code), logger.Any("detail", data))
@@ -150,4 +158,101 @@ func handleResponse(c *gin.Context, log logger.ILogger, msg string, statusCode i
 	resp.Data = data
 
 	c.JSON(resp.StatusCode, resp)
+}
+
+// humaniseValidationError converts the raw Go-validator error string that
+// Gin returns from ShouldBindJSON into something a frontend can consume
+// directly. The validator emits one line per failing field shaped like:
+//
+//	Key: 'WatermarkRequest.Mode' Error:Field validation for 'Mode' failed on the 'required' tag
+//
+// We pull the field name and the failing tag out of each line and map
+// the tag to a short, human-readable reason. Anything that doesn't look
+// like the validator format (a plain string from a handler, a structured
+// gin.H, nil, etc.) is returned unchanged.
+func humaniseValidationError(data interface{}) interface{} {
+	raw, ok := data.(string)
+	if !ok || !strings.HasPrefix(raw, "Key: '") {
+		return data
+	}
+	errs := map[string]string{}
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, "Key: '") {
+			continue
+		}
+		// Extract field: between "Key: 'Struct." and "'".
+		fieldStart := strings.Index(line, ".") + 1
+		fieldEnd := strings.Index(line[fieldStart:], "'")
+		if fieldStart <= 0 || fieldEnd < 0 {
+			continue
+		}
+		field := line[fieldStart : fieldStart+fieldEnd]
+		// Extract tag: between "failed on the '" and "' tag".
+		tagStart := strings.LastIndex(line, "failed on the '") + len("failed on the '")
+		tagEnd := strings.LastIndex(line, "' tag")
+		tag := ""
+		if tagStart > len("failed on the '")-1 && tagEnd > tagStart {
+			tag = line[tagStart:tagEnd]
+		}
+		errs[lowerCamel(field)] = validationReason(tag, field)
+	}
+	if len(errs) == 0 {
+		return data
+	}
+	return gin.H{"errors": errs}
+}
+
+// validationReason maps a validator tag to a short, user-facing message.
+// The default fall-through ("is invalid") keeps unknown tags safe rather
+// than echoing them verbatim — adding a new tag means writing the message
+// here, which forces us to consider how it should render in the UI.
+func validationReason(tag, field string) string {
+	switch tag {
+	case "required":
+		return field + " is required"
+	case "email":
+		return "must be a valid email address"
+	case "uuid":
+		return "must be a valid UUID"
+	case "min":
+		return "value is too short"
+	case "max":
+		return "value is too long"
+	case "len":
+		return "value has the wrong length"
+	case "url":
+		return "must be a valid URL"
+	case "oneof":
+		return "value is not allowed"
+	default:
+		if tag == "" {
+			return field + " is invalid"
+		}
+		return field + " is invalid (" + tag + ")"
+	}
+}
+
+// lowerCamel converts "InputFileID" → "inputFileId" so the keys match
+// what the JSON tags would produce on the frontend side.
+func lowerCamel(s string) string {
+	if s == "" {
+		return s
+	}
+	// Lowercase the leading run of uppercase letters except the last
+	// one when it's followed by a lowercase letter — keeps acronyms
+	// like "ID" → "id" while "InputFile" → "inputFile".
+	r := []rune(s)
+	for i := 0; i < len(r); i++ {
+		next := i + 1
+		if next < len(r) && r[next] >= 'a' && r[next] <= 'z' && i > 0 {
+			break
+		}
+		if r[i] >= 'A' && r[i] <= 'Z' {
+			r[i] = r[i] + 32
+		} else {
+			break
+		}
+	}
+	return string(r)
 }

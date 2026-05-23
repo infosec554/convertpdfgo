@@ -36,13 +36,6 @@ type Config struct {
 	GithubClientID     string
 	GithubClientSecret string
 
-	// MinIO / S3 — leave Endpoint empty to fall back to local-disk storage.
-	MinIOEndpoint  string
-	MinIOAccessKey string
-	MinIOSecretKey string
-	MinIOBucket    string
-	MinIOUseSSL    bool
-
 	// Cloud-storage export targets ("Save to..." in the UI).
 	//
 	// Each provider is independent: leave its credentials blank to hide
@@ -149,13 +142,6 @@ func Load() Config {
 	cfg.GoogleClientSecret = cast.ToString(getOrReturnDefault("GOOGLE_CLIENT_SECRET", ""))
 	cfg.GithubClientID = cast.ToString(getOrReturnDefault("GITHUB_CLIENT_ID", ""))
 	cfg.GithubClientSecret = cast.ToString(getOrReturnDefault("GITHUB_CLIENT_SECRET", ""))
-
-	// MinIO (optional — empty endpoint = local disk).
-	cfg.MinIOEndpoint = cast.ToString(getOrReturnDefault("MINIO_ENDPOINT", ""))
-	cfg.MinIOAccessKey = cast.ToString(getOrReturnDefault("MINIO_ACCESS_KEY", "minioadmin"))
-	cfg.MinIOSecretKey = cast.ToString(getOrReturnDefault("MINIO_SECRET_KEY", "minioadmin"))
-	cfg.MinIOBucket = cast.ToString(getOrReturnDefault("MINIO_BUCKET", "convertpdfgo"))
-	cfg.MinIOUseSSL = cast.ToBool(getOrReturnDefault("MINIO_USE_SSL", false))
 
 	// Cloud-export targets (optional — each empty by default).
 	cfg.DropboxAppKey = cast.ToString(getOrReturnDefault("DROPBOX_APP_KEY", ""))
