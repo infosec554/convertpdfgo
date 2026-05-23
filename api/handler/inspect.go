@@ -2,12 +2,14 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"convertpdfgo/api/models"
+	"convertpdfgo/service"
 )
 
 // CreateInspectJob godoc
@@ -39,6 +41,12 @@ func (h Handler) CreateInspectJob(c *gin.Context) {
 
 	jobID, err := h.services.Inspect().Create(ctx, req, userPtr(c))
 	if err != nil {
+		// Bad PDF is a client problem, not a server fault — surface
+		// 422 so monitoring doesn't page on every malformed upload.
+		if errors.Is(err, service.ErrInvalidPDF) {
+			handleResponse(c, h.log, "invalid or malformed PDF", http.StatusUnprocessableEntity, err.Error())
+			return
+		}
 		handleResponse(c, h.log, "failed to inspect PDF", http.StatusInternalServerError, err.Error())
 		return
 	}

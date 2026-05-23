@@ -92,16 +92,36 @@ func (f *fileRepo) ListByUser(ctx context.Context, userID string) ([]models.File
 	return files, nil
 }
 
-func (f *fileRepo) FindBySHA256(ctx context.Context, sha string) (models.File, error) {
-	var file models.File
-	query := `
-		SELECT id, user_id, file_name, file_path, file_type, file_size, sha256, uploaded_at
-		FROM files
-		WHERE sha256 = $1
-		ORDER BY uploaded_at DESC
-		LIMIT 1
-	`
-	err := f.db.QueryRow(ctx, query, sha).Scan(
+func (f *fileRepo) FindBySHA256(ctx context.Context, sha string, userID *string) (models.File, error) {
+	// Dedup is scoped to the uploader's own slice: guests dedup against
+	// guest rows (user_id IS NULL), authenticated users dedup against
+	// their own rows. Crossing the boundary would silently expose one
+	// user's "private" upload through another user's reused row.
+	var (
+		file  models.File
+		query string
+		args  []interface{}
+	)
+	if userID == nil {
+		query = `
+			SELECT id, user_id, file_name, file_path, file_type, file_size, sha256, uploaded_at
+			FROM files
+			WHERE sha256 = $1 AND user_id IS NULL
+			ORDER BY uploaded_at DESC
+			LIMIT 1
+		`
+		args = []interface{}{sha}
+	} else {
+		query = `
+			SELECT id, user_id, file_name, file_path, file_type, file_size, sha256, uploaded_at
+			FROM files
+			WHERE sha256 = $1 AND user_id = $2
+			ORDER BY uploaded_at DESC
+			LIMIT 1
+		`
+		args = []interface{}{sha, *userID}
+	}
+	err := f.db.QueryRow(ctx, query, args...).Scan(
 		&file.ID, &file.UserID, &file.FileName, &file.FilePath,
 		&file.FileType, &file.FileSize, &file.SHA256, &file.UploadedAt)
 	if err != nil {

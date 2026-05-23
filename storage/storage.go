@@ -260,9 +260,16 @@ type IFileStorage interface {
 	GetOldFiles(ctx context.Context, olderThanDays int) ([]models.OldFile, error)
 	DeleteByID(ctx context.Context, id string) error
 
-	// FindBySHA256 returns the most recent file with the given hash, or
-	// (zero, sql.ErrNoRows) if none exists. Used for upload deduplication.
-	FindBySHA256(ctx context.Context, sha string) (models.File, error)
+	// FindBySHA256 returns the most recent file with the given hash that
+	// belongs to the same owner as the incoming upload, or (zero,
+	// pgx.ErrNoRows) if there's no match. Scoping by user prevents the
+	// dedup short-circuit from cross-pollinating ownership — an
+	// authenticated user uploading the same bytes a guest happened to
+	// share earlier must NOT inherit the guest row, otherwise their
+	// "private" file is silently world-readable. Pass nil for guest
+	// uploads (matches the IS NULL slice); pass &userID for owned
+	// uploads (matches that user's slice only).
+	FindBySHA256(ctx context.Context, sha string, userID *string) (models.File, error)
 
 	// GetGuestFilesOlderThanMinutes returns guest (NULL user_id) files
 	// uploaded more than N minutes ago. Used by the fast cleaner so the DB

@@ -121,9 +121,12 @@ func (h Handler) UploadFile(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()
 
-	// Deduplicate: if a file with this hash already exists, drop the
-	// freshly written copy and reuse the previous row's ID.
-	if existing, err := h.services.File().FindBySHA256(ctx, sha); err == nil && existing.ID != "" {
+	// Deduplicate within the caller's own slice. Cross-user dedup would
+	// silently expose private uploads — a guest pre-populating the
+	// content hash and then any signed-in user reuploading the same
+	// bytes would have inherited the orphan row. Scoping the lookup to
+	// `(sha256, user_id)` prevents that.
+	if existing, err := h.services.File().FindBySHA256(ctx, sha, ptrUserID); err == nil && existing.ID != "" {
 		_ = os.Remove(savePath)
 		handleResponse(c, h.log, "file already exists (dedup)", http.StatusOK, gin.H{
 			"id":    existing.ID,

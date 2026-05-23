@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -11,6 +13,11 @@ import (
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/storage"
 )
+
+// ErrInvalidPDF signals that pdfcpu refused to parse the input bytes — a
+// caller-side problem (corrupt or non-PDF upload), not a server fault.
+// Handlers should translate it to 422 instead of 500.
+var ErrInvalidPDF = errors.New("invalid or malformed PDF")
 
 type InspectService interface {
 	// Create runs the inspect synchronously inside Create (no enqueue),
@@ -41,8 +48,12 @@ func (s *inspectService) Create(ctx context.Context, req models.InspectRequest, 
 
 	ctxPDF, err := api.ReadContextFile(file.FilePath)
 	if err != nil {
-		s.log.Error("inspect: read pdf context", logger.Error(err))
-		return "", err
+		// pdfcpu surfaces parse failures via a string that always
+		// includes "pdfcpu:" — wrap them in ErrInvalidPDF so the
+		// handler can return 422 instead of leaking a stack-trace 500
+		// for what is fundamentally a bad upload.
+		s.log.Warning("inspect: pdfcpu rejected input", logger.Error(err))
+		return "", fmt.Errorf("%w: %s", ErrInvalidPDF, err.Error())
 	}
 
 	job := &models.InspectJob{

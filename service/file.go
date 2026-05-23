@@ -26,7 +26,7 @@ type FileService interface {
 	// runs it at 5-minute retention.
 	CleanupAllFiles(ctx context.Context, minutes int) (int, error)
 
-	FindBySHA256(ctx context.Context, sha string) (models.File, error)
+	FindBySHA256(ctx context.Context, sha string, userID *string) (models.File, error)
 
 	// ListAll is the admin-side cross-user listing.
 	ListAll(ctx context.Context, filter models.AdminFileFilter) ([]models.File, int, error)
@@ -72,9 +72,10 @@ func (s *fileService) List(ctx context.Context, userID string) ([]models.File, e
 	return s.stg.ListByUser(ctx, userID)
 }
 
-// FindBySHA256 returns the most recent existing file with the given hash.
-func (s *fileService) FindBySHA256(ctx context.Context, sha string) (models.File, error) {
-	return s.stg.FindBySHA256(ctx, sha)
+// FindBySHA256 returns the most recent existing file with the given hash
+// owned by the caller. nil userID means "the guest slice".
+func (s *fileService) FindBySHA256(ctx context.Context, sha string, userID *string) (models.File, error) {
+	return s.stg.FindBySHA256(ctx, sha, userID)
 }
 
 // ListAll — admin-side cross-user file listing with pagination.
