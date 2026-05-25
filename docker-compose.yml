@@ -171,6 +171,29 @@ services:
         condition: service_started
     profiles: ["full"]
 
+  web:
+    # Next.js frontend (apps/web from BahromWeb/converto).
+    # Source lives at /root/converto on the host — kept up to date by
+    # the frontend repo's GitHub Action, which fast-forwards on every
+    # push to main and asks docker-compose to rebuild this service.
+    # `output: "standalone"` in next.config.mjs means the runtime image
+    # is ~150 MB instead of an 800 MB pnpm-managed monorepo.
+    image: converto-web
+    container_name: convertpdfgo_web
+    restart: unless-stopped
+    build:
+      context: /root/converto
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      # Frontend reads tokens out of the OAuth callback URL hash/query
+      # and talks to the API at the same hostname; APIs and the SPA share
+      # convertpdfgo.com under Caddy's path routing.
+      NEXT_PUBLIC_API_URL: https://convertpdfgo.com
+      NEXT_PUBLIC_SITE_URL: https://convertpdfgo.com
+    profiles: ["full"]
+
   caddy:
     # Edge: reverse-proxy + automatic Let's Encrypt SSL for convertpdfgo.com
     # and www. DNS must point at this host before Caddy can complete the
@@ -188,6 +211,7 @@ services:
       - caddy_config:/config
     depends_on:
       - api
+      - web
     profiles: ["full"]
 
 volumes:

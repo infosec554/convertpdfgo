@@ -1,32 +1,47 @@
-# Caddyfile — convertpdfgo.com edge config.
+# Caddyfile — convertpdfgo.com edge config
 #
-# Caddy fetches a Let's Encrypt cert automatically the first time port 443
-# is hit for a configured hostname. DNS must already point to this host
-# (A record → server IP) and port 80 must be reachable from the public
-# internet so the HTTP-01 ACME challenge can complete.
+# Two upstreams share the apex domain:
+#   * Backend (Go API, `api:8080`) — everything auth/api/file/oauth/ws
+#     related plus Swagger + healthchecks.
+#   * Frontend (Next.js, `web:3000`) — every other route, including the
+#     marketing pages, tool UIs, and the /auth/callback SPA route that
+#     finalises OAuth login.
 #
-# The api service runs on the docker-compose internal network, listens on
-# 8080, and is NOT published to the host any more (port mapping removed
-# from docker-compose.yml). Caddy is the only ingress.
+# Path order matters: more specific `handle_path` / `handle` blocks
+# come first, then the catch-all to web.
 
-# Canonical hostname. All real traffic terminates here.
 convertpdfgo.com {
 	encode gzip zstd
 
-	# Body size cap — PDF uploads. 200 MB matches the api's internal limit;
-	# raise both sides together if that ever changes.
-	request_body {
-		max_size 200MB
+	# Backend endpoints — see api/routes_*.go for the full list.
+	# Matchers cover both the bare path (/api/contact) and any
+	# subtree under it (/api/contact/123, /file/abc/download).
+	@backend {
+		path /api/* /auth/* /me /me/* /file /file/* /oauth/* /ws /ws/* /swagger /swagger/* /healthz /readyz /metrics /list
+	}
+	handle @backend {
+		# 200 MB body cap matches the api's internal upload guard,
+		# raise both sides together when bumping the tier limits.
+		request_body {
+			max_size 200MB
+		}
+		reverse_proxy api:8080 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+		}
 	}
 
-	reverse_proxy api:8080 {
-		# Pass the original host/scheme/IP through so the api can build
-		# accurate OAuth redirect URLs (uses APP_URL but still logs the
-		# client IP for rate-limiting / audit).
-		header_up X-Real-IP {remote_host}
-		header_up X-Forwarded-For {remote_host}
-		header_up X-Forwarded-Proto {scheme}
-		header_up X-Forwarded-Host {host}
+	# Everything else → Next.js. The frontend itself handles its own
+	# 404s and routing tree.
+	handle {
+		reverse_proxy web:3000 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+		}
 	}
 }
 
