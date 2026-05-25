@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
@@ -227,5 +228,22 @@ func (h Handler) completeOAuthLogin(c *gin.Context, email, name, provider string
 	}
 	h.audit(c, models.AuthEventOAuthLogin, userID, email, provider)
 	h.log.Info("oauth: login ok", logger.String("provider", provider), logger.String("user_id", userID))
+
+	// FRONTEND_URL set ⇒ hand off to the SPA via a 302 to
+	// `${FRONTEND_URL}/auth/callback#access_token=…&refresh_token=…`.
+	// We deliberately use a hash fragment (not query string):
+	//   - fragments are never sent to a server in a subsequent request,
+	//     so the JWTs don't end up in CDN/access logs or Referer headers
+	//   - fragments don't appear in the browser's Network panel for
+	//     navigation requests either
+	// Frontend reads them via `new URLSearchParams(window.location.hash.slice(1))`.
+	// FRONTEND_URL empty ⇒ fall back to JSON (handy for curl/Swagger).
+	if h.cfg.FrontendURL != "" {
+		target := h.cfg.FrontendURL + "/auth/callback#" +
+			"access_token=" + url.QueryEscape(tokens.AccessToken) +
+			"&refresh_token=" + url.QueryEscape(tokens.RefreshToken)
+		c.Redirect(http.StatusFound, target)
+		return
+	}
 	handleResponse(c, h.log, "login ok", http.StatusOK, tokens)
 }

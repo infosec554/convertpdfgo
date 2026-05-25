@@ -36,6 +36,13 @@ type Config struct {
 	GithubClientID     string
 	GithubClientSecret string
 
+	// FrontendURL is where the OAuth callback hands off after exchanging
+	// the provider code for our own JWT pair. Empty means "respond with
+	// JSON directly" — useful for curl / Swagger Try-it-out. When set,
+	// the callback issues a 302 to `${FrontendURL}/auth/callback#...` so
+	// the SPA can read the tokens from window.location.hash.
+	FrontendURL string
+
 	// Cloud-storage export targets ("Save to..." in the UI).
 	//
 	// Each provider is independent: leave its credentials blank to hide
@@ -142,6 +149,7 @@ func Load() Config {
 	cfg.GoogleClientSecret = cast.ToString(getOrReturnDefault("GOOGLE_CLIENT_SECRET", ""))
 	cfg.GithubClientID = cast.ToString(getOrReturnDefault("GITHUB_CLIENT_ID", ""))
 	cfg.GithubClientSecret = cast.ToString(getOrReturnDefault("GITHUB_CLIENT_SECRET", ""))
+	cfg.FrontendURL = cast.ToString(getOrReturnDefault("FRONTEND_URL", ""))
 
 	// Cloud-export targets (optional — each empty by default).
 	cfg.DropboxAppKey = cast.ToString(getOrReturnDefault("DROPBOX_APP_KEY", ""))
