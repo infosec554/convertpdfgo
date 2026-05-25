@@ -30,16 +30,15 @@ func randomState() string {
 	return hex.EncodeToString(b)
 }
 
-// setOAuthStateCookie writes the state cookie with the strongest flags the
-// connection allows. Behind HTTPS we require Secure + SameSite=Strict; over
-// plain HTTP (dev) we relax Secure but keep SameSite=Lax so the cookie
-// still survives the OAuth provider redirect.
+// setOAuthStateCookie writes the state cookie that the provider's redirect
+// will have to echo back. Must be SameSite=Lax (not Strict): Strict refuses
+// to send the cookie on top-level cross-site navigations, which is exactly
+// what google.com → convertpdfgo.com is, so Strict bricked the callback
+// with a "invalid oauth state" 400 on every login attempt. Lax keeps the
+// cookie safe from CSRF on POST-style cross-site requests while still
+// shipping it on the OAuth GET redirect, which is the standard pattern.
 func (h Handler) setOAuthStateCookie(c *gin.Context, state string, maxAge int) {
 	secure := c.Request.TLS != nil || c.GetHeader("X-Forwarded-Proto") == "https"
-	sameSite := http.SameSiteLaxMode
-	if secure {
-		sameSite = http.SameSiteStrictMode
-	}
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     oauthStateCookie,
 		Value:    state,
@@ -47,7 +46,7 @@ func (h Handler) setOAuthStateCookie(c *gin.Context, state string, maxAge int) {
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		Secure:   secure,
-		SameSite: sameSite,
+		SameSite: http.SameSiteLaxMode,
 	})
 }
 
