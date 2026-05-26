@@ -1813,7 +1813,7 @@ index 69794c5..62769f1 100644
 2.34.1
 
 
-From beb588accb0a9ec5d5da880df32c4b63e4eb6908 Mon Sep 17 00:00:00 2001
+From dd7895e8d500d6553007f5a85020a43ef43bf8da Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:15:25 +0500
 Subject: [PATCH 2/2] feat: wire remaining 25 PDF ops + cloud export
@@ -1858,7 +1858,7 @@ Registry: 12 → 35 tools in packages/data/src/tools.ts.
  apps/web/app/(tools)/html-to-pdf/page.tsx     |  21 +++
  .../image-to-text/image-to-text-client.tsx    |  42 +++++
  apps/web/app/(tools)/image-to-text/page.tsx   |  21 +++
- .../app/(tools)/inspect/inspect-client.tsx    |  95 +++++++++++
+ .../app/(tools)/inspect/inspect-client.tsx    |  99 +++++++++++
  apps/web/app/(tools)/inspect/page.tsx         |  21 +++
  .../app/(tools)/metadata/metadata-client.tsx  |  90 ++++++++++
  apps/web/app/(tools)/metadata/page.tsx        |  21 +++
@@ -1896,7 +1896,7 @@ Registry: 12 → 35 tools in packages/data/src/tools.ts.
  .../components/tools/simple-tool-client.tsx   |   2 +
  apps/web/lib/api.ts                           |  56 +++++++
  packages/data/src/tools.ts                    | 155 ++++++++++++++++++
- 56 files changed, 2118 insertions(+), 12 deletions(-)
+ 56 files changed, 2122 insertions(+), 12 deletions(-)
  create mode 100644 apps/web/app/(tools)/add-page-numbers/add-page-numbers-client.tsx
  create mode 100644 apps/web/app/(tools)/add-page-numbers/page.tsx
  create mode 100644 apps/web/app/(tools)/crop/crop-client.tsx
@@ -2056,7 +2056,7 @@ index 0000000..063f737
 +}
 diff --git a/apps/web/app/(tools)/add-page-numbers/page.tsx b/apps/web/app/(tools)/add-page-numbers/page.tsx
 new file mode 100644
-index 0000000..8c8680d
+index 0000000..c78f9db
 --- /dev/null
 +++ b/apps/web/app/(tools)/add-page-numbers/page.tsx
 @@ -0,0 +1,21 @@
@@ -2067,8 +2067,8 @@ index 0000000..8c8680d
 +import { AddPageNumbersClient } from "./add-page-numbers-client";
 +
 +export const metadata: Metadata = {
-+  title: "Add\",
-+  description: "Page\ Numbers Sequential\ numbering\ with\ full\ style\ control.",
++  title: "Add Page Numbers",
++  description: "Sequential numbering with full style control.",
 +};
 +
 +export default function Page() {
@@ -2146,7 +2146,7 @@ index 0000000..59c3195
 +}
 diff --git a/apps/web/app/(tools)/crop/page.tsx b/apps/web/app/(tools)/crop/page.tsx
 new file mode 100644
-index 0000000..d678e06
+index 0000000..f8564da
 --- /dev/null
 +++ b/apps/web/app/(tools)/crop/page.tsx
 @@ -0,0 +1,21 @@
@@ -2157,8 +2157,8 @@ index 0000000..d678e06
 +import { CropClient } from "./crop-client";
 +
 +export const metadata: Metadata = {
-+  title: "Crop\",
-+  description: "PDF Trim\ margins\ or\ focus\ a\ region\ across\ every\ page.",
++  title: "Crop PDF",
++  description: "Trim margins or focus a region across every page.",
 +};
 +
 +export default function Page() {
@@ -2194,7 +2194,7 @@ index 0000000..98ccbc4
 +}
 diff --git a/apps/web/app/(tools)/detect-blank/page.tsx b/apps/web/app/(tools)/detect-blank/page.tsx
 new file mode 100644
-index 0000000..f144cd0
+index 0000000..ffc12e3
 --- /dev/null
 +++ b/apps/web/app/(tools)/detect-blank/page.tsx
 @@ -0,0 +1,21 @@
@@ -2205,8 +2205,8 @@ index 0000000..f144cd0
 +import { DetectBlankClient } from "./detect-blank-client";
 +
 +export const metadata: Metadata = {
-+  title: "Detect\",
-+  description: "Blank\ Pages Find\ every\ empty\ page\ so\ you\ can\ prune\ them.",
++  title: "Detect Blank Pages",
++  description: "Find every empty page so you can prune them.",
 +};
 +
 +export default function Page() {
@@ -2242,7 +2242,7 @@ index 0000000..291aa41
 +}
 diff --git a/apps/web/app/(tools)/excel-to-pdf/page.tsx b/apps/web/app/(tools)/excel-to-pdf/page.tsx
 new file mode 100644
-index 0000000..32f43ff
+index 0000000..53e2cbe
 --- /dev/null
 +++ b/apps/web/app/(tools)/excel-to-pdf/page.tsx
 @@ -0,0 +1,21 @@
@@ -2253,8 +2253,8 @@ index 0000000..32f43ff
 +import { ExcelToPdfClient } from "./excel-to-pdf-client";
 +
 +export const metadata: Metadata = {
-+  title: "Excel\",
-+  description: "to\ PDF Workbooks\ to\ clean\ PDFs.",
++  title: "Excel to PDF",
++  description: "Workbooks to clean PDFs.",
 +};
 +
 +export default function Page() {
@@ -2314,7 +2314,7 @@ index 0000000..270845b
 +}
 diff --git a/apps/web/app/(tools)/extract-text/page.tsx b/apps/web/app/(tools)/extract-text/page.tsx
 new file mode 100644
-index 0000000..002700d
+index 0000000..87a6349
 --- /dev/null
 +++ b/apps/web/app/(tools)/extract-text/page.tsx
 @@ -0,0 +1,21 @@
@@ -2325,8 +2325,8 @@ index 0000000..002700d
 +import { ExtractTextClient } from "./extract-text-client";
 +
 +export const metadata: Metadata = {
-+  title: "Extract\",
-+  description: "Text Plain\ text\ out\ of\ a\ PDF\ with\ a\ text\ layer.",
++  title: "Extract Text",
++  description: "Plain text out of a PDF with a text layer.",
 +};
 +
 +export default function Page() {
@@ -2380,7 +2380,7 @@ index 0000000..b3f0d6f
 +}
 diff --git a/apps/web/app/(tools)/extract/page.tsx b/apps/web/app/(tools)/extract/page.tsx
 new file mode 100644
-index 0000000..24f7431
+index 0000000..a610969
 --- /dev/null
 +++ b/apps/web/app/(tools)/extract/page.tsx
 @@ -0,0 +1,21 @@
@@ -2391,8 +2391,8 @@ index 0000000..24f7431
 +import { ExtractClient } from "./extract-client";
 +
 +export const metadata: Metadata = {
-+  title: "Extract\",
-+  description: "Pages Keep\ only\ the\ pages\ you\ want,\ in\ their\ own\ PDF.",
++  title: "Extract Pages",
++  description: "Keep only the pages you want, in their own PDF.",
 +};
 +
 +export default function Page() {
@@ -2499,7 +2499,7 @@ index 0000000..749b602
 +}
 diff --git a/apps/web/app/(tools)/header-footer/page.tsx b/apps/web/app/(tools)/header-footer/page.tsx
 new file mode 100644
-index 0000000..a2f7e37
+index 0000000..40974e1
 --- /dev/null
 +++ b/apps/web/app/(tools)/header-footer/page.tsx
 @@ -0,0 +1,21 @@
@@ -2510,8 +2510,8 @@ index 0000000..a2f7e37
 +import { HeaderFooterClient } from "./header-footer-client";
 +
 +export const metadata: Metadata = {
-+  title: "Header\",
-+  description: "&\ Footer Drop\ a\ header\ or\ footer\ on\ every\ page.",
++  title: "Header & Footer",
++  description: "Drop a header or footer on every page.",
 +};
 +
 +export default function Page() {
@@ -2590,7 +2590,7 @@ index 0000000..0598ff8
 +
 diff --git a/apps/web/app/(tools)/html-to-pdf/page.tsx b/apps/web/app/(tools)/html-to-pdf/page.tsx
 new file mode 100644
-index 0000000..bc40c3c
+index 0000000..f1612d4
 --- /dev/null
 +++ b/apps/web/app/(tools)/html-to-pdf/page.tsx
 @@ -0,0 +1,21 @@
@@ -2601,8 +2601,8 @@ index 0000000..bc40c3c
 +import { HtmlToPdfClient } from "./html-to-pdf-client";
 +
 +export const metadata: Metadata = {
-+  title: "HTML\",
-+  description: "to\ PDF Paste\ HTML,\ get\ a\ clean\ PDF.",
++  title: "HTML to PDF",
++  description: "Paste HTML, get a clean PDF.",
 +};
 +
 +export default function Page() {
@@ -2665,7 +2665,7 @@ index 0000000..8c7eeb7
 +}
 diff --git a/apps/web/app/(tools)/image-to-text/page.tsx b/apps/web/app/(tools)/image-to-text/page.tsx
 new file mode 100644
-index 0000000..5587e79
+index 0000000..7de8c99
 --- /dev/null
 +++ b/apps/web/app/(tools)/image-to-text/page.tsx
 @@ -0,0 +1,21 @@
@@ -2676,8 +2676,8 @@ index 0000000..5587e79
 +import { ImageToTextClient } from "./image-to-text-client";
 +
 +export const metadata: Metadata = {
-+  title: "Image\",
-+  description: "to\ Text Read\ text\ from\ any\ photo\ or\ screenshot.",
++  title: "Image to Text",
++  description: "Read text from any photo or screenshot.",
 +};
 +
 +export default function Page() {
@@ -2692,10 +2692,10 @@ index 0000000..5587e79
 +}
 diff --git a/apps/web/app/(tools)/inspect/inspect-client.tsx b/apps/web/app/(tools)/inspect/inspect-client.tsx
 new file mode 100644
-index 0000000..2ad9e89
+index 0000000..12c2566
 --- /dev/null
 +++ b/apps/web/app/(tools)/inspect/inspect-client.tsx
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,99 @@
 +"use client";
 +
 +import { useState } from "react";
@@ -2703,15 +2703,16 @@ index 0000000..2ad9e89
 +import { Button } from "@converto/ui/components/button";
 +import { Card } from "@converto/ui/components/card";
 +import { FileDropzone } from "@/components/tools/file-dropzone";
-+import { uploadFile, runJobSync } from "@/lib/api";
++import { uploadFile, api } from "@/lib/api";
 +
 +interface InspectResult {
++  id: string;
++  status: string;
 +  page_count: number;
 +  title: string;
 +  author: string;
 +  subject: string;
 +  keywords: string;
-+  status: string;
 +}
 +
 +/**
@@ -2734,8 +2735,11 @@ index 0000000..2ad9e89
 +    setResult(null);
 +    try {
 +      const up = await uploadFile(file);
-+      const res = await runJobSync<InspectResult>("inspect", { file_id: up.id });
-+      setResult(res);
++      const res = await api.post<InspectResult>("/api/pdf/inspect", { file_id: up.id });
++      if (res.StatusCode >= 400) {
++        throw new Error(res.Description ?? "Inspection failed");
++      }
++      setResult(res.Data);
 +      setPhase("done");
 +    } catch (e) {
 +      setError(e instanceof Error ? e.message : "Inspection failed");
@@ -2793,7 +2797,7 @@ index 0000000..2ad9e89
 +}
 diff --git a/apps/web/app/(tools)/inspect/page.tsx b/apps/web/app/(tools)/inspect/page.tsx
 new file mode 100644
-index 0000000..6a047f0
+index 0000000..ce3d3ad
 --- /dev/null
 +++ b/apps/web/app/(tools)/inspect/page.tsx
 @@ -0,0 +1,21 @@
@@ -2804,8 +2808,8 @@ index 0000000..6a047f0
 +import { InspectClient } from "./inspect-client";
 +
 +export const metadata: Metadata = {
-+  title: "Inspect\",
-+  description: "PDF Instant\ page\ count\ +\ metadata.\ No\ polling.",
++  title: "Inspect PDF",
++  description: "Instant page count and metadata. No polling.",
 +};
 +
 +export default function Page() {
@@ -2916,7 +2920,7 @@ index 0000000..6c30c27
 +}
 diff --git a/apps/web/app/(tools)/metadata/page.tsx b/apps/web/app/(tools)/metadata/page.tsx
 new file mode 100644
-index 0000000..1cc1ec2
+index 0000000..0a8b4b1
 --- /dev/null
 +++ b/apps/web/app/(tools)/metadata/page.tsx
 @@ -0,0 +1,21 @@
@@ -2927,8 +2931,8 @@ index 0000000..1cc1ec2
 +import { MetadataClient } from "./metadata-client";
 +
 +export const metadata: Metadata = {
-+  title: "Edit\",
-+  description: "Metadata Rewrite\ title,\ author,\ subject,\ keywords,\ creator.",
++  title: "Edit Metadata",
++  description: "Rewrite title, author, subject, keywords, creator.",
 +};
 +
 +export default function Page() {
@@ -3013,7 +3017,7 @@ index 0000000..4a938f4
 +}
 diff --git a/apps/web/app/(tools)/nup/page.tsx b/apps/web/app/(tools)/nup/page.tsx
 new file mode 100644
-index 0000000..fe43587
+index 0000000..9de1db1
 --- /dev/null
 +++ b/apps/web/app/(tools)/nup/page.tsx
 @@ -0,0 +1,21 @@
@@ -3024,8 +3028,8 @@ index 0000000..fe43587
 +import { NupClient } from "./nup-client";
 +
 +export const metadata: Metadata = {
-+  title: "N-up\",
-+  description: "Layout Fit\ 2,\ 4,\ 6,\ or\ 9\ pages\ onto\ a\ single\ sheet.",
++  title: "N-up Layout",
++  description: "Fit 2, 4, 6, or 9 pages onto a single sheet.",
 +};
 +
 +export default function Page() {
@@ -3061,7 +3065,7 @@ index 0000000..1fc88b4
 +}
 diff --git a/apps/web/app/(tools)/ocr-detect-lang/page.tsx b/apps/web/app/(tools)/ocr-detect-lang/page.tsx
 new file mode 100644
-index 0000000..f87a478
+index 0000000..05f4028
 --- /dev/null
 +++ b/apps/web/app/(tools)/ocr-detect-lang/page.tsx
 @@ -0,0 +1,21 @@
@@ -3072,8 +3076,8 @@ index 0000000..f87a478
 +import { OcrDetectLangClient } from "./ocr-detect-lang-client";
 +
 +export const metadata: Metadata = {
-+  title: "Detect\",
-+  description: "Language What\ language\ is\ this\ document\ in?",
++  title: "Detect Language",
++  description: "What language is this document in?",
 +};
 +
 +export default function Page() {
@@ -3137,7 +3141,7 @@ index 0000000..8b813f1
 +}
 diff --git a/apps/web/app/(tools)/ocr-extract-text/page.tsx b/apps/web/app/(tools)/ocr-extract-text/page.tsx
 new file mode 100644
-index 0000000..f9b3451
+index 0000000..b7d5741
 --- /dev/null
 +++ b/apps/web/app/(tools)/ocr-extract-text/page.tsx
 @@ -0,0 +1,21 @@
@@ -3148,8 +3152,8 @@ index 0000000..f9b3451
 +import { OcrExtractTextClient } from "./ocr-extract-text-client";
 +
 +export const metadata: Metadata = {
-+  title: "Extract\",
-+  description: "Text\ (OCR) Pull\ words\ out\ of\ a\ scanned\ PDF.",
++  title: "Extract Text (OCR)",
++  description: "Pull words out of a scanned PDF.",
 +};
 +
 +export default function Page() {
@@ -3211,7 +3215,7 @@ index 0000000..7dc7ced
 +}
 diff --git a/apps/web/app/(tools)/ocr-structured/page.tsx b/apps/web/app/(tools)/ocr-structured/page.tsx
 new file mode 100644
-index 0000000..499b32a
+index 0000000..50ed291
 --- /dev/null
 +++ b/apps/web/app/(tools)/ocr-structured/page.tsx
 @@ -0,0 +1,21 @@
@@ -3222,8 +3226,8 @@ index 0000000..499b32a
 +import { OcrStructuredClient } from "./ocr-structured-client";
 +
 +export const metadata: Metadata = {
-+  title: "Structured\",
-+  description: "OCR OCR\ with\ layout\ info\ for\ downstream\ parsing.",
++  title: "Structured OCR",
++  description: "OCR with layout info for downstream parsing.",
 +};
 +
 +export default function Page() {
@@ -3238,7 +3242,7 @@ index 0000000..499b32a
 +}
 diff --git a/apps/web/app/(tools)/pdf-to-excel/page.tsx b/apps/web/app/(tools)/pdf-to-excel/page.tsx
 new file mode 100644
-index 0000000..5121198
+index 0000000..3fbd92a
 --- /dev/null
 +++ b/apps/web/app/(tools)/pdf-to-excel/page.tsx
 @@ -0,0 +1,21 @@
@@ -3249,8 +3253,8 @@ index 0000000..5121198
 +import { PdfToExcelClient } from "./pdf-to-excel-client";
 +
 +export const metadata: Metadata = {
-+  title: "PDF\",
-+  description: "to\ Excel Layout-aware\ text\ into\ a\ workbook.",
++  title: "PDF to Excel",
++  description: "Layout-aware text into a workbook.",
 +};
 +
 +export default function Page() {
@@ -3285,7 +3289,7 @@ index 0000000..f72be2c
 +}
 diff --git a/apps/web/app/(tools)/pdf-to-html/page.tsx b/apps/web/app/(tools)/pdf-to-html/page.tsx
 new file mode 100644
-index 0000000..57873ba
+index 0000000..54458d4
 --- /dev/null
 +++ b/apps/web/app/(tools)/pdf-to-html/page.tsx
 @@ -0,0 +1,21 @@
@@ -3296,8 +3300,8 @@ index 0000000..57873ba
 +import { PdfToHtmlClient } from "./pdf-to-html-client";
 +
 +export const metadata: Metadata = {
-+  title: "PDF\",
-+  description: "to\ HTML Browser-ready\ HTML\ out\ of\ any\ PDF.",
++  title: "PDF to HTML",
++  description: "Browser-ready HTML out of any PDF.",
 +};
 +
 +export default function Page() {
@@ -3332,7 +3336,7 @@ index 0000000..0db72a4
 +}
 diff --git a/apps/web/app/(tools)/pdf-to-jpg/page.tsx b/apps/web/app/(tools)/pdf-to-jpg/page.tsx
 new file mode 100644
-index 0000000..870e2c4
+index 0000000..b33a613
 --- /dev/null
 +++ b/apps/web/app/(tools)/pdf-to-jpg/page.tsx
 @@ -0,0 +1,21 @@
@@ -3343,8 +3347,8 @@ index 0000000..870e2c4
 +import { PdfToJpgClient } from "./pdf-to-jpg-client";
 +
 +export const metadata: Metadata = {
-+  title: "PDF\",
-+  description: "to\ JPG Every\ page\ as\ its\ own\ JPG,\ packaged\ in\ a\ ZIP.",
++  title: "PDF to JPG",
++  description: "Every page as its own JPG, packaged in a ZIP.",
 +};
 +
 +export default function Page() {
@@ -3380,7 +3384,7 @@ index 0000000..68fa6e0
 +}
 diff --git a/apps/web/app/(tools)/pdf-to-ppt/page.tsx b/apps/web/app/(tools)/pdf-to-ppt/page.tsx
 new file mode 100644
-index 0000000..ee9ec41
+index 0000000..749b513
 --- /dev/null
 +++ b/apps/web/app/(tools)/pdf-to-ppt/page.tsx
 @@ -0,0 +1,21 @@
@@ -3391,8 +3395,8 @@ index 0000000..ee9ec41
 +import { PdfToPptClient } from "./pdf-to-ppt-client";
 +
 +export const metadata: Metadata = {
-+  title: "PDF\",
-+  description: "to\ PowerPoint Page-per-slide\ deck\ you\ can\ keep\ editing.",
++  title: "PDF to PowerPoint",
++  description: "Page-per-slide deck you can keep editing.",
 +};
 +
 +export default function Page() {
@@ -3427,7 +3431,7 @@ index 0000000..2f17e84
 +}
 diff --git a/apps/web/app/(tools)/ppt-to-pdf/page.tsx b/apps/web/app/(tools)/ppt-to-pdf/page.tsx
 new file mode 100644
-index 0000000..c1485f5
+index 0000000..26b7593
 --- /dev/null
 +++ b/apps/web/app/(tools)/ppt-to-pdf/page.tsx
 @@ -0,0 +1,21 @@
@@ -3438,8 +3442,8 @@ index 0000000..c1485f5
 +import { PptToPdfClient } from "./ppt-to-pdf-client";
 +
 +export const metadata: Metadata = {
-+  title: "PowerPoint\",
-+  description: "to\ PDF Slides\ to\ PDF,\ one\ slide\ per\ page.",
++  title: "PowerPoint to PDF",
++  description: "Slides to PDF, one slide per page.",
 +};
 +
 +export default function Page() {
@@ -3475,7 +3479,7 @@ index 0000000..63ba2e6
 +}
 diff --git a/apps/web/app/(tools)/qr-code/page.tsx b/apps/web/app/(tools)/qr-code/page.tsx
 new file mode 100644
-index 0000000..e4f17ca
+index 0000000..2f305bd
 --- /dev/null
 +++ b/apps/web/app/(tools)/qr-code/page.tsx
 @@ -0,0 +1,21 @@
@@ -3486,8 +3490,8 @@ index 0000000..e4f17ca
 +import { QrCodeClient } from "./qr-code-client";
 +
 +export const metadata: Metadata = {
-+  title: "Add\",
-+  description: "QR\ Code Embed\ a\ QR\ code\ anywhere\ on\ the\ page.",
++  title: "Add QR Code",
++  description: "Embed a QR code anywhere on the page.",
 +};
 +
 +export default function Page() {
@@ -3578,7 +3582,7 @@ index 0000000..9a34cec
 +}
 diff --git a/apps/web/app/(tools)/removepage/page.tsx b/apps/web/app/(tools)/removepage/page.tsx
 new file mode 100644
-index 0000000..ba27d2f
+index 0000000..a6dc85b
 --- /dev/null
 +++ b/apps/web/app/(tools)/removepage/page.tsx
 @@ -0,0 +1,21 @@
@@ -3589,8 +3593,8 @@ index 0000000..ba27d2f
 +import { RemovePageClient } from "./removepage-client";
 +
 +export const metadata: Metadata = {
-+  title: "Remove\",
-+  description: "Pages Drop\ specific\ pages\ from\ a\ PDF\ in\ seconds.",
++  title: "Remove Pages",
++  description: "Drop specific pages from a PDF in seconds.",
 +};
 +
 +export default function Page() {
@@ -3643,7 +3647,7 @@ index 0000000..426324c
 +}
 diff --git a/apps/web/app/(tools)/rotate/page.tsx b/apps/web/app/(tools)/rotate/page.tsx
 new file mode 100644
-index 0000000..1228a5c
+index 0000000..cf41662
 --- /dev/null
 +++ b/apps/web/app/(tools)/rotate/page.tsx
 @@ -0,0 +1,21 @@
@@ -3654,8 +3658,8 @@ index 0000000..1228a5c
 +import { RotateClient } from "./rotate-client";
 +
 +export const metadata: Metadata = {
-+  title: "Rotate\",
-+  description: "PDF Spin\ pages\ by\ 90°,\ 180°,\ or\ 270°.",
++  title: "Rotate PDF",
++  description: "Spin pages by 90, 180, or 270 degrees.",
 +};
 +
 +export default function Page() {
@@ -3734,7 +3738,7 @@ index 0000000..184867b
 +}
 diff --git a/apps/web/app/(tools)/scan-to-pdf/page.tsx b/apps/web/app/(tools)/scan-to-pdf/page.tsx
 new file mode 100644
-index 0000000..0fe032f
+index 0000000..a6be0f8
 --- /dev/null
 +++ b/apps/web/app/(tools)/scan-to-pdf/page.tsx
 @@ -0,0 +1,21 @@
@@ -3745,8 +3749,8 @@ index 0000000..0fe032f
 +import { ScanToPdfClient } from "./scan-to-pdf-client";
 +
 +export const metadata: Metadata = {
-+  title: "Scan\",
-+  description: "to\ PDF Photos\ of\ paper\ →\ one\ searchable\ PDF.",
++  title: "Scan to PDF",
++  description: "Photos of paper into one searchable PDF.",
 +};
 +
 +export default function Page() {
@@ -3811,7 +3815,7 @@ index 0000000..f03ce7e
 +}
 diff --git a/apps/web/app/(tools)/url-to-pdf/page.tsx b/apps/web/app/(tools)/url-to-pdf/page.tsx
 new file mode 100644
-index 0000000..bcf750b
+index 0000000..9602958
 --- /dev/null
 +++ b/apps/web/app/(tools)/url-to-pdf/page.tsx
 @@ -0,0 +1,21 @@
@@ -3822,8 +3826,8 @@ index 0000000..bcf750b
 +import { UrlToPdfClient } from "./url-to-pdf-client";
 +
 +export const metadata: Metadata = {
-+  title: "URL\",
-+  description: "to\ PDF Snapshot\ any\ public\ page\ as\ a\ PDF.",
++  title: "URL to PDF",
++  description: "Snapshot any public page as a PDF.",
 +};
 +
 +export default function Page() {
