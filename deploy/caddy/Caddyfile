@@ -13,6 +13,21 @@
 convertpdfgo.com {
 	encode gzip zstd
 
+	# /auth/callback is the SPA's own page (reads tokens from the
+	# query string and hops to the home screen). Has to be carved out
+	# of the broader /auth/* matcher below — otherwise the catch-all
+	# would send it to the backend, which has no such route, and the
+	# user would land on a 404.
+	@frontend_auth path /auth/callback
+	handle @frontend_auth {
+		reverse_proxy web:3000 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+		}
+	}
+
 	# Backend endpoints — see api/routes_*.go for the full list.
 	# Matchers cover both the bare path (/api/contact) and any
 	# subtree under it (/api/contact/123, /file/abc/download).
