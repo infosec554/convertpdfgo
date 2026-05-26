@@ -1,0 +1,1814 @@
+From 4c5e73751d837eb2d3458eb9f6293425e051c1b8 Mon Sep 17 00:00:00 2001
+From: Claude <claude@convertpdfgo.com>
+Date: Wed, 27 May 2026 01:00:27 +0500
+Subject: [PATCH] feat: wire backend API to all 10 tools + foundation
+
+- lib/api.ts: uploadFile, downloadFile, runJob, runJobSync helpers
+- components/tools/: FileDropzone, JobStatusPanel, useJobRunner, SimpleToolClient
+- 10 tool client components: compress, merge, split, pdf-to-word, word-to-pdf,
+  jpg-to-pdf, protect, unlock, ocr, watermark
+- 10 page.tsx updates: keep marketing card, add functional widget below
+- app/account/files: My files page (GET /file/list)
+---
+ .dockerignore                                 |  16 ++
+ .github/workflows/deploy.yml                  |  50 ++++++
+ Dockerfile                                    |  51 +++++++
+ .../app/(tools)/compress/compress-client.tsx  |  82 ++++++++++
+ apps/web/app/(tools)/compress/page.tsx        |   5 +
+ .../(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx  |  17 +++
+ apps/web/app/(tools)/jpg-to-pdf/page.tsx      |   5 +
+ apps/web/app/(tools)/merge/merge-client.tsx   |  70 +++++++++
+ apps/web/app/(tools)/merge/page.tsx           |   5 +
+ apps/web/app/(tools)/ocr/ocr-client.tsx       |  60 ++++++++
+ apps/web/app/(tools)/ocr/page.tsx             |   5 +
+ apps/web/app/(tools)/pdf-to-word/page.tsx     |   5 +
+ .../pdf-to-word/pdf-to-word-client.tsx        |  15 ++
+ apps/web/app/(tools)/protect/page.tsx         |   5 +
+ .../app/(tools)/protect/protect-client.tsx    | 100 ++++++++++++
+ apps/web/app/(tools)/split/page.tsx           |   5 +
+ apps/web/app/(tools)/split/split-client.tsx   |  96 ++++++++++++
+ apps/web/app/(tools)/unlock/page.tsx          |   5 +
+ apps/web/app/(tools)/unlock/unlock-client.tsx |  47 ++++++
+ apps/web/app/(tools)/watermark/page.tsx       |   5 +
+ .../(tools)/watermark/watermark-client.tsx    |  96 ++++++++++++
+ apps/web/app/(tools)/word-to-pdf/page.tsx     |   5 +
+ .../word-to-pdf/word-to-pdf-client.tsx        |  18 +++
+ apps/web/app/account/files/page.tsx           | 130 ++++++++++++++++
+ apps/web/components/tools/file-dropzone.tsx   | 131 ++++++++++++++++
+ apps/web/components/tools/job-status.tsx      |  76 ++++++++++
+ .../components/tools/simple-tool-client.tsx   | 100 ++++++++++++
+ apps/web/components/tools/use-job-runner.ts   |  83 ++++++++++
+ apps/web/lib/api.ts                           | 142 ++++++++++++++++++
+ apps/web/next.config.mjs                      |  10 ++
+ 30 files changed, 1440 insertions(+)
+ create mode 100644 .dockerignore
+ create mode 100644 .github/workflows/deploy.yml
+ create mode 100644 Dockerfile
+ create mode 100644 apps/web/app/(tools)/compress/compress-client.tsx
+ create mode 100644 apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx
+ create mode 100644 apps/web/app/(tools)/merge/merge-client.tsx
+ create mode 100644 apps/web/app/(tools)/ocr/ocr-client.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx
+ create mode 100644 apps/web/app/(tools)/protect/protect-client.tsx
+ create mode 100644 apps/web/app/(tools)/split/split-client.tsx
+ create mode 100644 apps/web/app/(tools)/unlock/unlock-client.tsx
+ create mode 100644 apps/web/app/(tools)/watermark/watermark-client.tsx
+ create mode 100644 apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx
+ create mode 100644 apps/web/app/account/files/page.tsx
+ create mode 100644 apps/web/components/tools/file-dropzone.tsx
+ create mode 100644 apps/web/components/tools/job-status.tsx
+ create mode 100644 apps/web/components/tools/simple-tool-client.tsx
+ create mode 100644 apps/web/components/tools/use-job-runner.ts
+
+diff --git a/.dockerignore b/.dockerignore
+new file mode 100644
+index 0000000..15c45bd
+--- /dev/null
++++ b/.dockerignore
+@@ -0,0 +1,16 @@
++node_modules
++**/node_modules
++.next
++**/.next
++.turbo
++**/.turbo
++.git
++.github
++*.md
++.env*
++!.env.example
++.vscode
++.idea
++coverage
++dist
++build
+diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml
+new file mode 100644
+index 0000000..cb52dc1
+--- /dev/null
++++ b/.github/workflows/deploy.yml
+@@ -0,0 +1,50 @@
++# Simple SSH-based deploy
++#
++# On every push to main, log into the Contabo box, fast-forward the
++# frontend repo to the new HEAD, then ask the backend's docker-compose
++# to rebuild + restart only the `web` service. Caddy keeps running
++# untouched so the prod TLS cert and routing never blink.
++#
++# Required GitHub secrets (Settings → Secrets and variables → Actions):
++#   SSH_HOST     = 194.163.184.94
++#   SSH_USER     = root
++#   SSH_PASSWORD = (server password)
++#
++# Why password (not a key)? Lower setup friction for now. Switch to a
++# deploy key once the team is bigger than one person.
++
++name: Deploy frontend to Contabo
++
++on:
++  push:
++    branches: [main]
++  workflow_dispatch:
++
++jobs:
++  deploy:
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    steps:
++      - name: Deploy via SSH
++        uses: appleboy/ssh-action@v1.2.0
++        with:
++          host: ${{ secrets.SSH_HOST }}
++          username: ${{ secrets.SSH_USER }}
++          password: ${{ secrets.SSH_PASSWORD }}
++          script_stop: true
++          script: |
++            set -e
++            echo "==> Pulling frontend repo"
++            cd /root/converto
++            git fetch --quiet origin main
++            git reset --hard origin/main
++
++            echo "==> Rebuilding web container"
++            cd /root/convertpdfgo
++            docker compose --profile full up -d --build web
++
++            echo "==> Waiting for container health"
++            sleep 5
++            docker compose --profile full ps web
++
++            echo "==> Done"
+diff --git a/Dockerfile b/Dockerfile
+new file mode 100644
+index 0000000..dc69b59
+--- /dev/null
++++ b/Dockerfile
+@@ -0,0 +1,51 @@
++# Dockerfile — apps/web Next.js production image
++#
++# Three-stage build:
++#   1. deps    — install pnpm workspace deps (cached unless lockfile/manifests change)
++#   2. builder — compile the web app + transpile workspace packages
++#   3. runner  — slim runtime, Next standalone server only
++#
++# Build context expects the monorepo root:
++#   docker build -t converto-web .
++
++FROM node:20-alpine AS deps
++RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
++WORKDIR /app
++COPY . .
++RUN pnpm install --frozen-lockfile
++
++# -----------------------------------------------------------------------------
++
++FROM node:20-alpine AS builder
++RUN corepack enable && corepack prepare pnpm@9.12.3 --activate
++WORKDIR /app
++# Copy the whole tree from deps. pnpm scatters node_modules across every
++# workspace package (apps/web/node_modules, packages/ui/node_modules,
++# etc.), so cherry-picking the root one alone left every workspace
++# package without its deps and `next: not found` at build time.
++COPY --from=deps /app /app
++ENV NEXT_TELEMETRY_DISABLED=1
++# next.config.mjs sets `output: "standalone"` so the build emits a
++# self-contained server bundle under apps/web/.next/standalone.
++RUN pnpm --filter web build
++
++# -----------------------------------------------------------------------------
++
++FROM node:20-alpine AS runner
++WORKDIR /app
++ENV NODE_ENV=production
++ENV NEXT_TELEMETRY_DISABLED=1
++ENV PORT=3000
++ENV HOSTNAME=0.0.0.0
++
++# Standalone output is a single-process Node server with every needed
++# module already bundled — no pnpm install at runtime, no 800-MB
++# node_modules in the image. Static assets and public/ are copied
++# alongside; Next leaves them out of the standalone bundle on purpose
++# so CDN-fronted setups can serve them from the edge.
++COPY --from=builder /app/apps/web/.next/standalone ./
++COPY --from=builder /app/apps/web/.next/static ./apps/web/.next/static
++COPY --from=builder /app/apps/web/public ./apps/web/public
++
++EXPOSE 3000
++CMD ["node", "apps/web/server.js"]
+diff --git a/apps/web/app/(tools)/compress/compress-client.tsx b/apps/web/app/(tools)/compress/compress-client.tsx
+new file mode 100644
+index 0000000..b4d54e2
+--- /dev/null
++++ b/apps/web/app/(tools)/compress/compress-client.tsx
+@@ -0,0 +1,82 @@
++"use client";
++
++import { useState } from "react";
++import { ArrowRight } from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { FileDropzone } from "@/components/tools/file-dropzone";
++import { JobStatusPanel } from "@/components/tools/job-status";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++const presets = [
++  { key: "low", name: "Light", desc: "~30% smaller" },
++  { key: "medium", name: "Recommended", desc: "~75% smaller" },
++  { key: "high", name: "Extreme", desc: "~92% smaller" },
++] as const;
++
++type Preset = (typeof presets)[number]["key"];
++
++/**
++ * Client-side runner for /api/pdf/compress. Lives next to the static
++ * marketing card in page.tsx so the design stays untouched — this widget
++ * sits below it once the page lands.
++ */
++export function CompressClient() {
++  const [files, setFiles] = useState<File[]>([]);
++  const [preset, setPreset] = useState<Preset>("medium");
++  const runner = useJobRunner();
++  const file = files[0];
++
++  async function onSubmit() {
++    if (!file) return;
++    await runner.run(files, (ids) => ({ input_file_id: ids[0], compression: preset }), "compress");
++  }
++
++  return (
++    <Card className="grid gap-8 p-8">
++      <FileDropzone files={files} onChange={setFiles} maxSizeMB={30} />
++
++      <div className="grid gap-4 sm:grid-cols-3">
++        {presets.map((p) => (
++          <button
++            key={p.key}
++            type="button"
++            onClick={() => setPreset(p.key)}
++            className={`flex flex-col items-start gap-1 rounded-xl border p-4 text-left transition-colors ${
++              preset === p.key
++                ? "border-primary bg-primary/5"
++                : "border-border bg-card hover:border-primary/40"
++            }`}
++          >
++            <span className="text-sm font-semibold">{p.name}</span>
++            <span className="text-xs text-muted-foreground">{p.desc}</span>
++          </button>
++        ))}
++      </div>
++
++      <div className="flex items-center justify-between rounded-2xl bg-foreground p-5 text-background">
++        <div className="font-mono text-xs uppercase tracking-wider">
++          {file ? (
++            <>
++              <span className="text-primary">{file.name}</span>{" "}
++              · {(file.size / 1024 / 1024).toFixed(1)} MB
++            </>
++          ) : (
++            <>Pick a PDF to begin</>
++          )}
++        </div>
++        <Button size="lg" disabled={!file || runner.phase === "uploading" || runner.phase === "running"} onClick={onSubmit}>
++          Compress now <ArrowRight className="ml-1.5 size-4" />
++        </Button>
++      </div>
++
++      <JobStatusPanel
++        phase={runner.phase}
++        error={runner.error}
++        onDownload={() => runner.download(`compressed-${file?.name ?? "result.pdf"}`)}
++        onReset={runner.reset}
++        downloadLabel="Download compressed PDF"
++      />
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/compress/page.tsx b/apps/web/app/(tools)/compress/page.tsx
+index f4909a6..89480dd 100644
+--- a/apps/web/app/(tools)/compress/page.tsx
++++ b/apps/web/app/(tools)/compress/page.tsx
+@@ -5,6 +5,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { CompressClient } from "./compress-client";
+ 
+ export const metadata: Metadata = {
+   title: "Compress PDF",
+@@ -77,6 +78,10 @@ export default function CompressPage() {
+           </div>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <CompressClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx b/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx
+new file mode 100644
+index 0000000..07952ad
+--- /dev/null
++++ b/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx
+@@ -0,0 +1,17 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** One PDF assembled from a stack of JPG/PNG images (up to 50). */
++export function JpgToPdfClient() {
++  return (
++    <SimpleToolClient
++      op="jpg-to-pdf"
++      cta="Build PDF →"
++      accept="image/jpeg,image/png,.jpg,.jpeg,.png"
++      multiple
++      resultFilename={() => "images.pdf"}
++      downloadLabel="Download PDF"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/jpg-to-pdf/page.tsx b/apps/web/app/(tools)/jpg-to-pdf/page.tsx
+index 5adf157..7eb1dea 100644
+--- a/apps/web/app/(tools)/jpg-to-pdf/page.tsx
++++ b/apps/web/app/(tools)/jpg-to-pdf/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { JpgToPdfClient } from "./jpg-to-pdf-client";
+ import { Image, ArrowRight } from "lucide-react";
+ 
+ export const metadata: Metadata = {
+@@ -63,6 +64,10 @@ export default function JpgToPdfPage() {
+           <Button size="lg">Create PDF →</Button>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <JpgToPdfClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/merge/merge-client.tsx b/apps/web/app/(tools)/merge/merge-client.tsx
+new file mode 100644
+index 0000000..8e386aa
+--- /dev/null
++++ b/apps/web/app/(tools)/merge/merge-client.tsx
+@@ -0,0 +1,70 @@
++"use client";
++
++import { useState } from "react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { FileDropzone } from "@/components/tools/file-dropzone";
++import { JobStatusPanel } from "@/components/tools/job-status";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++/**
++ * Multi-file merge. Backend accepts 2-50 PDFs and returns a single merged
++ * output_file_id. Reordering is left to the dropzone for now (drop in
++ * the order you want them concatenated) — a drag-handle list can replace
++ * the inline file list later without touching this client logic.
++ */
++export function MergeClient() {
++  const [files, setFiles] = useState<File[]>([]);
++  const runner = useJobRunner();
++
++  async function onSubmit() {
++    if (files.length < 2) return;
++    await runner.run(files, (ids) => ({ input_file_ids: ids }), "merge");
++  }
++
++  const totalMb = (files.reduce((s, f) => s + f.size, 0) / 1024 / 1024).toFixed(1);
++
++  return (
++    <Card className="grid gap-8 p-8">
++      <FileDropzone files={files} onChange={setFiles} multiple maxSizeMB={30} />
++
++      <div className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-foreground p-5 text-background md:flex-row md:items-center">
++        <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs uppercase tracking-wider">
++          <span>
++            <span className="text-primary">{files.length}</span> files
++          </span>
++          <span>
++            <span className="text-primary">{totalMb}</span> MB total
++          </span>
++          <span className="text-background/60">
++            {files.length < 2
++              ? "Pick at least 2 PDFs"
++              : files.length > 50
++              ? "Max 50 PDFs"
++              : "Order matches drop order"}
++          </span>
++        </div>
++        <Button
++          size="lg"
++          disabled={
++            files.length < 2 ||
++            files.length > 50 ||
++            runner.phase === "uploading" ||
++            runner.phase === "running"
++          }
++          onClick={onSubmit}
++        >
++          Merge now →
++        </Button>
++      </div>
++
++      <JobStatusPanel
++        phase={runner.phase}
++        error={runner.error}
++        onDownload={() => runner.download("merged.pdf")}
++        onReset={runner.reset}
++        downloadLabel="Download merged PDF"
++      />
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/merge/page.tsx b/apps/web/app/(tools)/merge/page.tsx
+index 930cfc4..de3e417 100644
+--- a/apps/web/app/(tools)/merge/page.tsx
++++ b/apps/web/app/(tools)/merge/page.tsx
+@@ -4,6 +4,7 @@ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+ import { notFound } from "next/navigation";
++import { MergeClient } from "./merge-client";
+ 
+ export const metadata: Metadata = {
+   title: "Merge PDF",
+@@ -54,6 +55,10 @@ export default function MergePage() {
+           <Button size="lg">Merge now →</Button>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <MergeClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/ocr/ocr-client.tsx b/apps/web/app/(tools)/ocr/ocr-client.tsx
+new file mode 100644
+index 0000000..3435449
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr/ocr-client.tsx
+@@ -0,0 +1,60 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const langs = [
++  { code: "eng", label: "English" },
++  { code: "rus", label: "Russian" },
++  { code: "uzb", label: "Uzbek (Latin)" },
++  { code: "uzb_cyrl", label: "Uzbek (Cyrillic)" },
++  { code: "kir", label: "Kyrgyz" },
++  { code: "eng+rus", label: "English + Russian" },
++  { code: "eng+uzb", label: "English + Uzbek" },
++];
++
++/**
++ * Add a searchable text layer to a scanned PDF. The lang code maps
++ * straight to Tesseract — multi-language hits use the `eng+uzb` syntax.
++ */
++export function OcrClient() {
++  const [lang, setLang] = useState("eng");
++  const [forceOcr, setForceOcr] = useState(false);
++
++  return (
++    <SimpleToolClient
++      op="ocr"
++      cta="Run OCR →"
++      resultFilename={(f) => `ocr-${f?.name ?? "result.pdf"}`}
++      downloadLabel="Download searchable PDF"
++      buildExtraBody={() => ({ lang, force_ocr: forceOcr })}
++      extraFields={
++        <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Language</span>
++            <select
++              value={lang}
++              onChange={(e) => setLang(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            >
++              {langs.map((l) => (
++                <option key={l.code} value={l.code}>
++                  {l.label}
++                </option>
++              ))}
++            </select>
++          </label>
++          <label className="flex items-end gap-2 pb-2 text-sm">
++            <input
++              type="checkbox"
++              checked={forceOcr}
++              onChange={(e) => setForceOcr(e.target.checked)}
++              className="size-4 accent-primary"
++            />
++            <span>Re-OCR pages that already have text</span>
++          </label>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr/page.tsx b/apps/web/app/(tools)/ocr/page.tsx
+index aad48a6..6931fee 100644
+--- a/apps/web/app/(tools)/ocr/page.tsx
++++ b/apps/web/app/(tools)/ocr/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { OcrClient } from "./ocr-client";
+ import { Eye, Sparkles, Languages } from "lucide-react";
+ 
+ export const metadata: Metadata = {
+@@ -73,6 +74,10 @@ export default function OcrPage() {
+           </div>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <OcrClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/pdf-to-word/page.tsx b/apps/web/app/(tools)/pdf-to-word/page.tsx
+index c580b98..4de94ff 100644
+--- a/apps/web/app/(tools)/pdf-to-word/page.tsx
++++ b/apps/web/app/(tools)/pdf-to-word/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { PdfToWordClient } from "./pdf-to-word-client";
+ import { FileText, ArrowRight, CheckCircle2 } from "lucide-react";
+ 
+ export const metadata: Metadata = {
+@@ -73,6 +74,10 @@ export default function PdfToWordPage() {
+           </div>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <PdfToWordClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx b/apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx
+new file mode 100644
+index 0000000..6b1eb51
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx
+@@ -0,0 +1,15 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** PDF → .docx via LibreOffice in the worker. */
++export function PdfToWordClient() {
++  return (
++    <SimpleToolClient
++      op="pdf-to-word"
++      cta="Convert to Word →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".docx"}
++      downloadLabel="Download .docx"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/protect/page.tsx b/apps/web/app/(tools)/protect/page.tsx
+index 45c9073..48faa68 100644
+--- a/apps/web/app/(tools)/protect/page.tsx
++++ b/apps/web/app/(tools)/protect/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { ProtectClient } from "./protect-client";
+ import { Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
+ 
+ export const metadata: Metadata = {
+@@ -76,6 +77,10 @@ export default function ProtectPage() {
+           </div>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <ProtectClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/protect/protect-client.tsx b/apps/web/app/(tools)/protect/protect-client.tsx
+new file mode 100644
+index 0000000..90b5314
+--- /dev/null
++++ b/apps/web/app/(tools)/protect/protect-client.tsx
+@@ -0,0 +1,100 @@
++"use client";
++
++import { useState } from "react";
++import { Eye, EyeOff } from "lucide-react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/**
++ * Add a password to a PDF. Body shape: { input_file_id, password }.
++ * Repeats the password locally so the user doesn't lock themselves
++ * out of their own file with a typo we never see.
++ */
++export function ProtectClient() {
++  const [password, setPassword] = useState("");
++  const [confirm, setConfirm] = useState("");
++  const [show, setShow] = useState(false);
++
++  const mismatch = password.length > 0 && confirm.length > 0 && password !== confirm;
++  const tooShort = password.length > 0 && password.length < 6;
++
++  return (
++    <SimpleToolClient
++      op="protect"
++      cta="Protect now →"
++      resultFilename={(f) => `protected-${f?.name ?? "result.pdf"}`}
++      downloadLabel="Download protected PDF"
++      buildExtraBody={() => ({ password })}
++      extraFields={
++        <div className="grid gap-4">
++          <PasswordRow
++            id="protect-pwd"
++            label="Password"
++            value={password}
++            show={show}
++            onChange={setPassword}
++            onToggle={() => setShow((v) => !v)}
++            invalid={tooShort}
++            invalidMsg="At least 6 characters"
++          />
++          <PasswordRow
++            id="protect-pwd-confirm"
++            label="Confirm password"
++            value={confirm}
++            show={show}
++            onChange={setConfirm}
++            onToggle={() => setShow((v) => !v)}
++            invalid={mismatch}
++            invalidMsg="Passwords don't match"
++          />
++        </div>
++      }
++    />
++  );
++}
++
++function PasswordRow({
++  id,
++  label,
++  value,
++  show,
++  onChange,
++  onToggle,
++  invalid,
++  invalidMsg,
++}: {
++  id: string;
++  label: string;
++  value: string;
++  show: boolean;
++  onChange: (v: string) => void;
++  onToggle: () => void;
++  invalid: boolean;
++  invalidMsg: string;
++}) {
++  return (
++    <label htmlFor={id} className="grid gap-1.5">
++      <span className="text-sm font-medium">{label}</span>
++      <div className="relative">
++        <input
++          id={id}
++          type={show ? "text" : "password"}
++          value={value}
++          onChange={(e) => onChange(e.target.value)}
++          className={`w-full rounded-lg border bg-card px-3 py-2 pr-10 text-sm focus:outline-none ${
++            invalid ? "border-destructive focus:border-destructive" : "focus:border-primary"
++          }`}
++          autoComplete="new-password"
++        />
++        <button
++          type="button"
++          onClick={onToggle}
++          aria-label={show ? "Hide password" : "Show password"}
++          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
++        >
++          {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
++        </button>
++      </div>
++      {invalid && <span className="text-xs text-destructive">{invalidMsg}</span>}
++    </label>
++  );
++}
+diff --git a/apps/web/app/(tools)/split/page.tsx b/apps/web/app/(tools)/split/page.tsx
+index 034dc79..ce9985a 100644
+--- a/apps/web/app/(tools)/split/page.tsx
++++ b/apps/web/app/(tools)/split/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { SplitClient } from "./split-client";
+ 
+ export const metadata: Metadata = {
+   title: "Split PDF",
+@@ -54,6 +55,10 @@ export default function SplitPage() {
+           <Button size="lg">Extract pages →</Button>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <SplitClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/split/split-client.tsx b/apps/web/app/(tools)/split/split-client.tsx
+new file mode 100644
+index 0000000..d8e4f51
+--- /dev/null
++++ b/apps/web/app/(tools)/split/split-client.tsx
+@@ -0,0 +1,96 @@
++"use client";
++
++import { useState } from "react";
++import { Download } from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { FileDropzone } from "@/components/tools/file-dropzone";
++import { JobStatusPanel } from "@/components/tools/job-status";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++import { downloadFile } from "@/lib/api";
++
++/**
++ * Split a PDF by page ranges. Backend returns `output_file_ids: uuid[]`
++ * — one per group — so we render a per-file download list instead of
++ * the single "download" button JobStatusPanel ships by default.
++ */
++export function SplitClient() {
++  const [files, setFiles] = useState<File[]>([]);
++  const [ranges, setRanges] = useState("1-3,4-5");
++  const runner = useJobRunner();
++  const file = files[0];
++
++  async function onSubmit() {
++    if (!file) return;
++    await runner.run(
++      files,
++      (ids) => ({ input_file_id: ids[0], split_ranges: ranges }),
++      "split",
++    );
++  }
++
++  const outputs =
++    (runner.result?.output_file_ids as string[] | undefined) ?? [];
++
++  return (
++    <Card className="grid gap-8 p-8">
++      <FileDropzone files={files} onChange={setFiles} maxSizeMB={30} />
++
++      <label className="grid gap-2">
++        <span className="text-sm font-medium">Page ranges</span>
++        <input
++          type="text"
++          value={ranges}
++          onChange={(e) => setRanges(e.target.value)}
++          placeholder="1-3,4-5,7"
++          className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++        />
++        <span className="text-xs text-muted-foreground">
++          Each group becomes a separate PDF. Example: <code>1-3,5,7-9</code> → 3 files.
++        </span>
++      </label>
++
++      <div className="flex justify-end">
++        <Button
++          size="lg"
++          disabled={!file || !ranges.trim() || runner.phase === "uploading" || runner.phase === "running"}
++          onClick={onSubmit}
++        >
++          Split now →
++        </Button>
++      </div>
++
++      {runner.phase !== "done" && (
++        <JobStatusPanel
++          phase={runner.phase}
++          error={runner.error}
++          onReset={runner.reset}
++          hideDownload
++        />
++      )}
++
++      {runner.phase === "done" && outputs.length > 0 && (
++        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
++          <p className="mb-3 text-sm font-medium">
++            {outputs.length} file{outputs.length === 1 ? "" : "s"} ready · expires in 5 minutes
++          </p>
++          <ul className="grid gap-2">
++            {outputs.map((id, i) => (
++              <li key={id} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
++                <span>Part {i + 1}</span>
++                <Button
++                  size="sm"
++                  variant="outline"
++                  onClick={() => downloadFile(id, `${file?.name ?? "split"}-part-${i + 1}.pdf`)}
++                >
++                  <Download className="mr-1.5 size-4" />
++                  Download
++                </Button>
++              </li>
++            ))}
++          </ul>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/unlock/page.tsx b/apps/web/app/(tools)/unlock/page.tsx
+index 6c6179f..df4e96c 100644
+--- a/apps/web/app/(tools)/unlock/page.tsx
++++ b/apps/web/app/(tools)/unlock/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { UnlockClient } from "./unlock-client";
+ import { Unlock, ShieldOff } from "lucide-react";
+ 
+ export const metadata: Metadata = {
+@@ -61,6 +62,10 @@ export default function UnlockPage() {
+           </div>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <UnlockClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/unlock/unlock-client.tsx b/apps/web/app/(tools)/unlock/unlock-client.tsx
+new file mode 100644
+index 0000000..e5e922b
+--- /dev/null
++++ b/apps/web/app/(tools)/unlock/unlock-client.tsx
+@@ -0,0 +1,47 @@
++"use client";
++
++import { useState } from "react";
++import { Eye, EyeOff } from "lucide-react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** Strip a known password from a protected PDF. */
++export function UnlockClient() {
++  const [password, setPassword] = useState("");
++  const [show, setShow] = useState(false);
++
++  return (
++    <SimpleToolClient
++      op="unlock"
++      cta="Unlock now →"
++      resultFilename={(f) => `unlocked-${f?.name ?? "result.pdf"}`}
++      downloadLabel="Download unlocked PDF"
++      buildExtraBody={() => ({ password })}
++      extraFields={
++        <label htmlFor="unlock-pwd" className="grid gap-1.5">
++          <span className="text-sm font-medium">Password</span>
++          <div className="relative">
++            <input
++              id="unlock-pwd"
++              type={show ? "text" : "password"}
++              value={password}
++              onChange={(e) => setPassword(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
++              autoComplete="current-password"
++            />
++            <button
++              type="button"
++              onClick={() => setShow((v) => !v)}
++              aria-label={show ? "Hide password" : "Show password"}
++              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
++            >
++              {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
++            </button>
++          </div>
++          <span className="text-xs text-muted-foreground">
++            Backend returns &quot;not encrypted&quot; if the file isn&apos;t protected.
++          </span>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/watermark/page.tsx b/apps/web/app/(tools)/watermark/page.tsx
+index d9d09cb..26cfde1 100644
+--- a/apps/web/app/(tools)/watermark/page.tsx
++++ b/apps/web/app/(tools)/watermark/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { WatermarkClient } from "./watermark-client";
+ import { Layers, Type, Image } from "lucide-react";
+ 
+ export const metadata: Metadata = {
+@@ -92,6 +93,10 @@ export default function WatermarkPage() {
+           </div>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <WatermarkClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/watermark/watermark-client.tsx b/apps/web/app/(tools)/watermark/watermark-client.tsx
+new file mode 100644
+index 0000000..5eb3b8e
+--- /dev/null
++++ b/apps/web/app/(tools)/watermark/watermark-client.tsx
+@@ -0,0 +1,96 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const positions = [
++  { code: "c", label: "Center" },
++  { code: "tl", label: "Top-left" },
++  { code: "tr", label: "Top-right" },
++  { code: "bl", label: "Bottom-left" },
++  { code: "br", label: "Bottom-right" },
++];
++
++/**
++ * Text watermark. Image-mode is a follow-up — wiring image_file_id
++ * requires a second upload field and a small UI toggle, which we'll
++ * fold in once the text variant has live traffic.
++ */
++export function WatermarkClient() {
++  const [text, setText] = useState("DRAFT");
++  const [position, setPosition] = useState("c");
++  const [opacity, setOpacity] = useState(0.4);
++  const [rotation, setRotation] = useState(-45);
++
++  return (
++    <SimpleToolClient
++      op="watermark"
++      cta="Add watermark →"
++      resultFilename={(f) => `watermarked-${f?.name ?? "result.pdf"}`}
++      downloadLabel="Download watermarked PDF"
++      buildExtraBody={() => ({
++        mode: "text",
++        text,
++        position,
++        opacity,
++        rotation,
++        pages: "all",
++      })}
++      extraFields={
++        <div className="grid gap-4 md:grid-cols-2">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Text</span>
++            <input
++              type="text"
++              value={text}
++              onChange={(e) => setText(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Position</span>
++            <select
++              value={position}
++              onChange={(e) => setPosition(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            >
++              {positions.map((p) => (
++                <option key={p.code} value={p.code}>
++                  {p.label}
++                </option>
++              ))}
++            </select>
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">
++              Opacity: <span className="text-muted-foreground">{opacity.toFixed(2)}</span>
++            </span>
++            <input
++              type="range"
++              min={0}
++              max={1}
++              step={0.05}
++              value={opacity}
++              onChange={(e) => setOpacity(parseFloat(e.target.value))}
++              className="w-full accent-primary"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">
++              Rotation: <span className="text-muted-foreground">{rotation}°</span>
++            </span>
++            <input
++              type="range"
++              min={-90}
++              max={90}
++              step={5}
++              value={rotation}
++              onChange={(e) => setRotation(parseInt(e.target.value, 10))}
++              className="w-full accent-primary"
++            />
++          </label>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/word-to-pdf/page.tsx b/apps/web/app/(tools)/word-to-pdf/page.tsx
+index f4230d0..58cad7a 100644
+--- a/apps/web/app/(tools)/word-to-pdf/page.tsx
++++ b/apps/web/app/(tools)/word-to-pdf/page.tsx
+@@ -4,6 +4,7 @@ import { Button } from "@converto/ui/components/button";
+ import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
++import { WordToPdfClient } from "./word-to-pdf-client";
+ import { FileText, ArrowRight, CheckCircle2 } from "lucide-react";
+ 
+ export const metadata: Metadata = {
+@@ -71,6 +72,10 @@ export default function WordToPdfPage() {
+           </div>
+         </div>
+       </Card>
++
++      <div className="mt-8">
++        <WordToPdfClient />
++      </div>
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx b/apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx
+new file mode 100644
+index 0000000..071ac6a
+--- /dev/null
++++ b/apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx
+@@ -0,0 +1,18 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** .doc/.docx → PDF via Gotenberg in the worker. */
++export function WordToPdfClient() {
++  return (
++    <SimpleToolClient
++      op="word-to-pdf"
++      cta="Convert to PDF →"
++      accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
++      resultFilename={(f) =>
++        (f?.name ?? "result").replace(/\.docx?$/i, "") + ".pdf"
++      }
++      downloadLabel="Download PDF"
++    />
++  );
++}
+diff --git a/apps/web/app/account/files/page.tsx b/apps/web/app/account/files/page.tsx
+new file mode 100644
+index 0000000..3eb045e
+--- /dev/null
++++ b/apps/web/app/account/files/page.tsx
+@@ -0,0 +1,130 @@
++"use client";
++
++import { useEffect, useState } from "react";
++import { Download, Trash2, FileText, RefreshCw } from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { api, downloadFile } from "@/lib/api";
++
++type FileRow = {
++  id: string;
++  file_name: string;
++  file_type: string;
++  file_size: number;
++  uploaded_at: string;
++};
++
++/**
++ * "My files" — backed by GET /file/list. Auth-only; the API returns
++ * 401 for guests, and the route's middleware kicks in for unauthorised
++ * sessions. Refresh button reruns the query so a freshly-finished
++ * conversion appears without a full page reload.
++ */
++export default function MyFilesPage() {
++  const [files, setFiles] = useState<FileRow[] | null>(null);
++  const [loading, setLoading] = useState(true);
++  const [error, setError] = useState<string | null>(null);
++
++  async function load() {
++    setLoading(true);
++    setError(null);
++    try {
++      const res = await api.get<FileRow[]>("/file/list");
++      setFiles(res.Data ?? []);
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Failed to load");
++    } finally {
++      setLoading(false);
++    }
++  }
++
++  useEffect(() => {
++    load();
++  }, []);
++
++  async function onDelete(id: string) {
++    if (!confirm("Delete this file?")) return;
++    try {
++      await api.delete(`/file/${id}`);
++      setFiles((curr) => (curr ?? []).filter((f) => f.id !== id));
++    } catch (e) {
++      alert(e instanceof Error ? e.message : "Delete failed");
++    }
++  }
++
++  return (
++    <section className="container py-12">
++      <div className="mb-8 flex items-center justify-between">
++        <div>
++          <h1 className="text-3xl font-bold tracking-tight">My files</h1>
++          <p className="mt-2 text-sm text-muted-foreground">
++            Everything you&apos;ve uploaded or generated. Auto-deleted after 5 minutes.
++          </p>
++        </div>
++        <Button variant="outline" size="sm" onClick={load} disabled={loading}>
++          <RefreshCw className={`mr-1.5 size-4 ${loading ? "animate-spin" : ""}`} />
++          Refresh
++        </Button>
++      </div>
++
++      <Card className="p-0">
++        {error && (
++          <div className="border-b border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
++            {error}
++          </div>
++        )}
++
++        {loading && !files && (
++          <div className="p-8 text-center text-sm text-muted-foreground">Loading…</div>
++        )}
++
++        {files && files.length === 0 && (
++          <div className="p-12 text-center">
++            <FileText className="mx-auto size-10 text-muted-foreground" />
++            <p className="mt-3 font-medium">No files yet</p>
++            <p className="mt-1 text-sm text-muted-foreground">
++              Upload a PDF in any tool and it&apos;ll show up here.
++            </p>
++          </div>
++        )}
++
++        {files && files.length > 0 && (
++          <ul className="divide-y">
++            {files.map((f) => (
++              <li key={f.id} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
++                <span className="flex min-w-0 flex-1 items-center gap-3">
++                  <FileText className="size-4 shrink-0 text-muted-foreground" />
++                  <span className="truncate font-medium">{f.file_name}</span>
++                </span>
++                <span className="shrink-0 text-xs text-muted-foreground">
++                  {(f.file_size / 1024 / 1024).toFixed(1)} MB
++                </span>
++                <span className="shrink-0 text-xs text-muted-foreground">
++                  {new Date(f.uploaded_at).toLocaleTimeString()}
++                </span>
++                <span className="flex shrink-0 gap-1">
++                  <Button
++                    variant="ghost"
++                    size="sm"
++                    onClick={() => downloadFile(f.id, f.file_name)}
++                    aria-label={`Download ${f.file_name}`}
++                  >
++                    <Download className="size-4" />
++                  </Button>
++                  <Button
++                    variant="ghost"
++                    size="sm"
++                    onClick={() => onDelete(f.id)}
++                    aria-label={`Delete ${f.file_name}`}
++                  >
++                    <Trash2 className="size-4 text-destructive" />
++                  </Button>
++                </span>
++              </li>
++            ))}
++          </ul>
++        )}
++      </Card>
++    </section>
++  );
++}
+diff --git a/apps/web/components/tools/file-dropzone.tsx b/apps/web/components/tools/file-dropzone.tsx
+new file mode 100644
+index 0000000..011015f
+--- /dev/null
++++ b/apps/web/components/tools/file-dropzone.tsx
+@@ -0,0 +1,131 @@
++"use client";
++
++import { useRef, useState, type DragEvent } from "react";
++import { Upload, X, FileText } from "lucide-react";
++
++export interface FileDropzoneProps {
++  /** Accept string for the underlying <input>. Defaults to PDFs only. */
++  accept?: string;
++  /** Allow more than one file at a time (merge / jpg-to-pdf flows). */
++  multiple?: boolean;
++  /** Soft cap shown in the helper text. Backend still enforces its own limit. */
++  maxSizeMB?: number;
++  /** Current files in the form's state. Dropzone is controlled. */
++  files: File[];
++  /** Called when the user adds / removes / replaces files. */
++  onChange: (files: File[]) => void;
++  /** Optional override for the prompt. */
++  label?: string;
++  /** Hide the file list (when caller renders a custom grid below). */
++  hideFileList?: boolean;
++}
++
++/**
++ * Drag-and-drop file picker. Shared by every tool — single-file forms
++ * (compress, rotate, OCR) and multi-file ones (merge, jpg-to-pdf) just
++ * toggle `multiple`. Validation runs against the soft cap in the UI so
++ * the user gets a useful message before the backend rejects with 401.
++ */
++export function FileDropzone({
++  accept = "application/pdf,.pdf",
++  multiple = false,
++  maxSizeMB = 30,
++  files,
++  onChange,
++  label,
++  hideFileList = false,
++}: FileDropzoneProps) {
++  const [dragging, setDragging] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const inputRef = useRef<HTMLInputElement>(null);
++
++  function addFiles(incoming: FileList | File[]) {
++    const arr = Array.from(incoming);
++    const oversized = arr.find((f) => f.size > maxSizeMB * 1024 * 1024);
++    if (oversized) {
++      setError(`${oversized.name} is over ${maxSizeMB} MB. Sign in for the higher tier.`);
++      return;
++    }
++    setError(null);
++    onChange(multiple ? [...files, ...arr] : arr.slice(0, 1));
++  }
++
++  function onDrop(e: DragEvent<HTMLDivElement>) {
++    e.preventDefault();
++    setDragging(false);
++    if (e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
++  }
++
++  function removeAt(i: number) {
++    const next = files.slice();
++    next.splice(i, 1);
++    onChange(next);
++  }
++
++  return (
++    <div className="space-y-3">
++      <div
++        role="button"
++        tabIndex={0}
++        onClick={() => inputRef.current?.click()}
++        onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && inputRef.current?.click()}
++        onDragOver={(e) => {
++          e.preventDefault();
++          setDragging(true);
++        }}
++        onDragLeave={() => setDragging(false)}
++        onDrop={onDrop}
++        className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
++          dragging
++            ? "border-primary bg-primary/5"
++            : "border-border bg-card hover:border-primary/40 hover:bg-primary/[0.02]"
++        }`}
++      >
++        <Upload className="mb-3 size-8 text-muted-foreground" />
++        <p className="text-base font-medium text-foreground">
++          {label ?? (multiple ? "Drop files here" : "Drop a file here")}
++        </p>
++        <p className="mt-1 text-sm text-muted-foreground">
++          or click to browse · up to {maxSizeMB} MB
++        </p>
++        <input
++          ref={inputRef}
++          type="file"
++          accept={accept}
++          multiple={multiple}
++          className="hidden"
++          onChange={(e) => e.target.files && addFiles(e.target.files)}
++        />
++      </div>
++
++      {error && <p className="text-sm text-destructive">{error}</p>}
++
++      {!hideFileList && files.length > 0 && (
++        <ul className="space-y-2">
++          {files.map((f, i) => (
++            <li
++              key={`${f.name}-${i}`}
++              className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm"
++            >
++              <span className="flex items-center gap-2 truncate">
++                <FileText className="size-4 shrink-0 text-muted-foreground" />
++                <span className="truncate">{f.name}</span>
++                <span className="ml-2 shrink-0 text-xs text-muted-foreground">
++                  {(f.size / 1024 / 1024).toFixed(1)} MB
++                </span>
++              </span>
++              <button
++                type="button"
++                onClick={() => removeAt(i)}
++                className="ml-3 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
++                aria-label={`Remove ${f.name}`}
++              >
++                <X className="size-4" />
++              </button>
++            </li>
++          ))}
++        </ul>
++      )}
++    </div>
++  );
++}
+diff --git a/apps/web/components/tools/job-status.tsx b/apps/web/components/tools/job-status.tsx
+new file mode 100644
+index 0000000..42b4cf8
+--- /dev/null
++++ b/apps/web/components/tools/job-status.tsx
+@@ -0,0 +1,76 @@
++"use client";
++
++import { Loader2, CheckCircle2, AlertCircle, Download } from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import type { Phase } from "./use-job-runner";
++
++export interface JobStatusProps {
++  phase: Phase;
++  error: string | null;
++  onDownload?: () => void;
++  onReset?: () => void;
++  /** Hide the download button — useful for tools that return multiple files. */
++  hideDownload?: boolean;
++  /** Custom label for the action — "Download merged PDF", "Download ZIP", ... */
++  downloadLabel?: string;
++}
++
++/**
++ * Visual companion to useJobRunner. Renders the right widget for the
++ * current phase so individual tool clients don't reinvent the spinner +
++ * error + download-button trio.
++ */
++export function JobStatusPanel({
++  phase,
++  error,
++  onDownload,
++  onReset,
++  hideDownload = false,
++  downloadLabel = "Download result",
++}: JobStatusProps) {
++  if (phase === "idle") return null;
++
++  if (phase === "uploading" || phase === "running") {
++    const text = phase === "uploading" ? "Uploading…" : "Processing…";
++    return (
++      <div className="mt-6 flex items-center gap-3 rounded-xl border bg-card p-4 text-sm">
++        <Loader2 className="size-4 animate-spin text-primary" />
++        <span>{text}</span>
++      </div>
++    );
++  }
++
++  if (phase === "failed") {
++    return (
++      <div className="mt-6 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
++        <AlertCircle className="mt-0.5 size-4 text-destructive" />
++        <div className="flex-1">
++          <p className="font-medium text-destructive">Job failed</p>
++          <p className="mt-1 text-muted-foreground">{error ?? "Unknown error"}</p>
++        </div>
++        {onReset && (
++          <Button variant="outline" size="sm" onClick={onReset}>
++            Try again
++          </Button>
++        )}
++      </div>
++    );
++  }
++
++  // done
++  return (
++    <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
++      <span className="flex items-center gap-2">
++        <CheckCircle2 className="size-4 text-primary" />
++        <span className="font-medium">Done.</span>
++        <span className="text-muted-foreground">File expires in 5 minutes — grab it now.</span>
++      </span>
++      {!hideDownload && onDownload && (
++        <Button size="sm" onClick={onDownload}>
++          <Download className="mr-1.5 size-4" />
++          {downloadLabel}
++        </Button>
++      )}
++    </div>
++  );
++}
+diff --git a/apps/web/components/tools/simple-tool-client.tsx b/apps/web/components/tools/simple-tool-client.tsx
+new file mode 100644
+index 0000000..265a3a4
+--- /dev/null
++++ b/apps/web/components/tools/simple-tool-client.tsx
+@@ -0,0 +1,100 @@
++"use client";
++
++import { useState } from "react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { FileDropzone } from "./file-dropzone";
++import { JobStatusPanel } from "./job-status";
++import { useJobRunner } from "./use-job-runner";
++
++export interface SimpleToolClientProps {
++  /** Backend op slug — segment after /api/pdf/ */
++  op: string;
++  /** Body shape: just `{ input_file_id }` for most conversions. */
++  bodyKey?: "input_file_id" | "file_id";
++  /** Allowed file types (default = PDF). Override for word/excel/jpg input. */
++  accept?: string;
++  /** Multi-file mode (jpg-to-pdf) */
++  multiple?: boolean;
++  /** Button label, e.g. "Convert", "Run OCR", "Detect blank pages". */
++  cta: string;
++  /** Filename for the downloaded result. */
++  resultFilename: (input: File | undefined) => string;
++  /** Download button label. */
++  downloadLabel?: string;
++  /** Extra fields beyond input_file_id — e.g. password, language. */
++  extraFields?: React.ReactNode;
++  /** Maps uploaded ids + extra state into the request body. */
++  buildExtraBody?: () => Record<string, unknown>;
++}
++
++/**
++ * Catch-all client for "single file in → single file out" tools where
++ * the only variable is the upload itself. compress / merge / split need
++ * their own components because they have richer forms; everything else
++ * (rotate, crop, watermark, ocr, jpg-to-pdf, pdf-to-word, etc.) is
++ * structurally identical and routes through this.
++ */
++export function SimpleToolClient({
++  op,
++  bodyKey = "input_file_id",
++  accept = "application/pdf,.pdf",
++  multiple = false,
++  cta,
++  resultFilename,
++  downloadLabel = "Download result",
++  extraFields,
++  buildExtraBody,
++}: SimpleToolClientProps) {
++  const [files, setFiles] = useState<File[]>([]);
++  const runner = useJobRunner();
++  const file = files[0];
++
++  async function onSubmit() {
++    if (!files.length) return;
++    await runner.run(
++      files,
++      (ids) => {
++        const base = multiple
++          ? { input_file_ids: ids }
++          : { [bodyKey]: ids[0] };
++        return { ...base, ...(buildExtraBody?.() ?? {}) };
++      },
++      op,
++    );
++  }
++
++  return (
++    <Card className="grid gap-8 p-8">
++      <FileDropzone
++        files={files}
++        onChange={setFiles}
++        accept={accept}
++        multiple={multiple}
++        maxSizeMB={30}
++      />
++
++      {extraFields}
++
++      <div className="flex justify-end">
++        <Button
++          size="lg"
++          disabled={
++            !files.length || runner.phase === "uploading" || runner.phase === "running"
++          }
++          onClick={onSubmit}
++        >
++          {cta}
++        </Button>
++      </div>
++
++      <JobStatusPanel
++        phase={runner.phase}
++        error={runner.error}
++        onDownload={() => runner.download(resultFilename(file))}
++        onReset={runner.reset}
++        downloadLabel={downloadLabel}
++      />
++    </Card>
++  );
++}
+diff --git a/apps/web/components/tools/use-job-runner.ts b/apps/web/components/tools/use-job-runner.ts
+new file mode 100644
+index 0000000..bbb920b
+--- /dev/null
++++ b/apps/web/components/tools/use-job-runner.ts
+@@ -0,0 +1,83 @@
++"use client";
++
++import { useState, useCallback } from "react";
++import { uploadFile, runJob, downloadFile, type JobRecord, type JobStatus } from "@/lib/api";
++
++export type Phase = "idle" | "uploading" | "running" | "done" | "failed";
++
++export interface UseJobRunnerResult {
++  phase: Phase;
++  status: JobStatus | null;
++  error: string | null;
++  result: JobRecord | null;
++  /** Upload files then enqueue the job. `buildBody` maps uploaded IDs → request body. */
++  run: (
++    files: File[],
++    buildBody: (uploadedIds: string[]) => unknown,
++    op: string,
++  ) => Promise<void>;
++  /** Trigger the browser download for the job's output file. */
++  download: (filename?: string) => Promise<void>;
++  reset: () => void;
++}
++
++/**
++ * Glue between FileDropzone, tool-specific form state and the backend's
++ * async PDF job pipeline. Every tool client component uses this hook so
++ * pending / processing / done / failed states render the same way and we
++ * keep the wiring in one place.
++ */
++export function useJobRunner(): UseJobRunnerResult {
++  const [phase, setPhase] = useState<Phase>("idle");
++  const [status, setStatus] = useState<JobStatus | null>(null);
++  const [error, setError] = useState<string | null>(null);
++  const [result, setResult] = useState<JobRecord | null>(null);
++
++  const reset = useCallback(() => {
++    setPhase("idle");
++    setStatus(null);
++    setError(null);
++    setResult(null);
++  }, []);
++
++  const run = useCallback(
++    async (
++      files: File[],
++      buildBody: (uploadedIds: string[]) => unknown,
++      op: string,
++    ): Promise<void> => {
++      setPhase("uploading");
++      setError(null);
++      setResult(null);
++      setStatus(null);
++      try {
++        const uploaded: string[] = [];
++        for (const f of files) {
++          const r = await uploadFile(f);
++          uploaded.push(r.id);
++        }
++        setPhase("running");
++        const job = await runJob(op, buildBody(uploaded), {
++          onStatus: setStatus,
++        });
++        setResult(job);
++        setPhase("done");
++      } catch (e) {
++        const msg = e instanceof Error ? e.message : "Unknown error";
++        setError(msg);
++        setPhase("failed");
++      }
++    },
++    [],
++  );
++
++  const download = useCallback(
++    async (filename = "result.pdf"): Promise<void> => {
++      if (!result?.output_file_id) return;
++      await downloadFile(result.output_file_id, filename);
++    },
++    [result],
++  );
++
++  return { phase, status, error, result, run, download, reset };
++}
+diff --git a/apps/web/lib/api.ts b/apps/web/lib/api.ts
+index 296d759..aefc5e7 100644
+--- a/apps/web/lib/api.ts
++++ b/apps/web/lib/api.ts
+@@ -142,3 +142,145 @@ export const api = {
+       } as RequestInit & { skipAuth?: boolean }),
+   },
+ };
++
++// ─── File + Job helpers (PDF tooling) ─────────────────────────────────────────
++
++export type FileUploadResult = {
++  id: string;
++  dedup?: boolean;
++};
++
++/**
++ * POST /file/upload via multipart. Auth optional — backend tiers caps at
++ * 30 MB guest / 50 MB signed-in. Throws on validation/limit errors so
++ * callers can surface them next to the dropzone.
++ */
++export async function uploadFile(file: File): Promise<FileUploadResult> {
++  const fd = new FormData();
++  fd.append("file", file);
++  const token = getAccessToken();
++  const headers: Record<string, string> = {};
++  if (token) headers["Authorization"] = `Bearer ${token}`;
++  const res = await fetch(`${API_BASE}/file/upload`, {
++    method: "POST",
++    headers,
++    body: fd,
++  });
++  const json: ApiResponse<FileUploadResult> = await res.json();
++  if (!res.ok) {
++    throw new Error(
++      typeof json.Data === "string" ? json.Data : `Upload failed (${res.status})`,
++    );
++  }
++  return json.Data;
++}
++
++/** Browser-friendly download URL for an output file. */
++export function fileDownloadUrl(fileId: string): string {
++  return `${API_BASE}/file/${fileId}/download`;
++}
++
++/**
++ * Force the browser to download a file with a chosen filename. Streams
++ * through fetch so we can attach the Bearer header — direct <a href> would
++ * skip auth on signed-in users' owned files.
++ */
++export async function downloadFile(fileId: string, filename = "result.pdf"): Promise<void> {
++  const token = getAccessToken();
++  const headers: Record<string, string> = {};
++  if (token) headers["Authorization"] = `Bearer ${token}`;
++  const res = await fetch(fileDownloadUrl(fileId), { headers });
++  if (!res.ok) throw new Error(`Download failed (${res.status})`);
++  const blob = await res.blob();
++  const url = URL.createObjectURL(blob);
++  const a = document.createElement("a");
++  a.href = url;
++  a.download = filename;
++  document.body.appendChild(a);
++  a.click();
++  a.remove();
++  URL.revokeObjectURL(url);
++}
++
++// ─── Generic job runner (POST → poll → done|failed) ─────────────────────────
++
++export type JobStatus = "pending" | "processing" | "done" | "failed";
++
++export interface JobRecord {
++  id: string;
++  status: JobStatus;
++  output_file_id?: string | null;
++  output_file_ids?: string[] | null;
++  zip_file_id?: string | null;
++  error?: string;
++  [k: string]: unknown;
++}
++
++export interface RunJobOptions {
++  /** Poll interval in ms. Default 1500. */
++  intervalMs?: number;
++  /** Give up after this many ms. Default 90_000. */
++  timeoutMs?: number;
++  /** Called on every status change so the UI can show pending/processing/done. */
++  onStatus?: (status: JobStatus) => void;
++}
++
++/**
++ * Standard async job flow:
++ *   1. POST /api/pdf/<op> with body → returns { id }
++ *   2. Poll GET /api/pdf/<op>/<id> until status flips to done | failed
++ *   3. Resolve with the final job record (callers pluck output_file_id etc.)
++ *
++ * Throws on the underlying fetch error, validation failure, or `failed`
++ * status — caller can show the message next to the form.
++ */
++export async function runJob<T extends JobRecord = JobRecord>(
++  op: string,
++  body: unknown,
++  options: RunJobOptions = {},
++): Promise<T> {
++  const { intervalMs = 1500, timeoutMs = 90_000, onStatus } = options;
++
++  const created = await api.post<JobRecord>(`/api/pdf/${op}`, body);
++  if (created.StatusCode >= 400) {
++    const data = created.Data as unknown;
++    let detail = created.Description ?? "Job rejected";
++    if (data && typeof data === "object" && "errors" in data) {
++      const errs = (data as { errors: Record<string, string> }).errors;
++      detail = Object.keys(errs)
++        .map((k) => errs[k])
++        .join("; ");
++    }
++    throw new Error(detail);
++  }
++  const jobId = (created.Data as JobRecord).id;
++  onStatus?.((created.Data as JobRecord).status ?? "pending");
++
++  const started = Date.now();
++  while (Date.now() - started < timeoutMs) {
++    await new Promise((r) => setTimeout(r, intervalMs));
++    const polled = await api.get<JobRecord>(`/api/pdf/${op}/${jobId}`);
++    const job = polled.Data as JobRecord;
++    onStatus?.(job.status);
++    if (job.status === "done") return job as T;
++    if (job.status === "failed") {
++      throw new Error(job.error || "Job failed");
++    }
++  }
++  throw new Error("Job timed out");
++}
++
++/**
++ * For the one PDF op that runs synchronously today: /api/pdf/inspect.
++ * Returns the full job in a single round-trip — no polling.
++ */
++export async function runJobSync<T extends JobRecord = JobRecord>(
++  op: string,
++  body: unknown,
++): Promise<T> {
++  const res = await api.post<T>(`/api/pdf/${op}`, body);
++  if (res.StatusCode >= 400) {
++    throw new Error(res.Description ?? "Inspection failed");
++  }
++  return res.Data;
++}
+diff --git a/apps/web/next.config.mjs b/apps/web/next.config.mjs
+index 69794c5..62769f1 100644
+--- a/apps/web/next.config.mjs
++++ b/apps/web/next.config.mjs
+@@ -1,8 +1,18 @@
++import path from "node:path";
++import { fileURLToPath } from "node:url";
++
++const __dirname = path.dirname(fileURLToPath(import.meta.url));
++
+ /** @type {import('next').NextConfig} */
+ const nextConfig = {
+   reactStrictMode: true,
+   // Transpile workspace packages — required for `@converto/*` to work in Next.
+   transpilePackages: ["@converto/ui", "@converto/utils", "@converto/types", "@converto/data"],
++  // Emit a self-contained Node server at .next/standalone for Docker.
++  // outputFileTracingRoot points at the monorepo root so Turbo's workspace
++  // packages get traced into the bundle instead of being missed as externals.
++  output: "standalone",
++  outputFileTracingRoot: path.join(__dirname, "../../"),
+   experimental: {
+     optimizePackageImports: ["lucide-react"],
+   },
+-- 
+2.34.1
+
