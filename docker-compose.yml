@@ -1,4 +1,13 @@
-version: '3.8'
+# All service-to-service traffic stays on the docker bridge network.
+# Only Caddy publishes ports to the host — everything else (postgres,
+# redis, gotenberg, api, worker, asynqmon, prometheus, grafana, web)
+# is reachable from inside the compose stack only. This used to leak:
+# docker-proxy on 0.0.0.0:5433 / 6380 / 8081 / 9090 / 3000 / 3001 /
+# 8080 bypassed the host UFW rules (the well-known Docker+UFW issue)
+# and let scanners brute-force the weak postgres/redis passwords. The
+# rest of this file's hardening (env_file-driven creds, no inline
+# `ports:` outside caddy) follows from that lesson — every credential
+# now comes from .env, the file the host never commits to git.
 
 services:
   postgres:
@@ -7,10 +16,10 @@ services:
     restart: always
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: authservice
-    ports:
-      - "5433:5432"
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       # Wrapper forces the postgres role's password to match POSTGRES_PASSWORD
@@ -30,15 +39,18 @@ services:
     image: redis:7
     container_name: my_redis
     restart: always
-    command: redis-server --requirepass 1234
+    # --requirepass via the entrypoint is the only way redis 7 honours a
+    # password on boot — env vars don't bind it. The healthcheck needs
+    # the same secret, so both come from one source ($REDIS_PASSWORD).
+    command: ["sh", "-c", "redis-server --requirepass \"$$REDIS_PASSWORD\""]
     environment:
-      REDIS_PASSWORD: 1234
-    ports:
-      - "6380:6379"
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    expose:
+      - "6379"
     volumes:
       - redis_data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "1234", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -47,8 +59,8 @@ services:
     image: gotenberg/gotenberg:7
     container_name: gotenberg
     restart: always
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     command:
       - gotenberg
       - --libreoffice-disable-routes=false
@@ -57,11 +69,13 @@ services:
     image: hibiken/asynqmon:latest
     container_name: asynqmon
     restart: always
-    ports:
-      - "8081:8080"
+    # Asynqmon has no auth of its own — keeping it off the host port
+    # plus inside the docker network is the access control.
+    expose:
+      - "8080"
     command:
       - "--redis-addr=redis:6379"
-      - "--redis-password=1234"
+      - "--redis-password=${REDIS_PASSWORD}"
     depends_on:
       - redis
 
@@ -69,8 +83,8 @@ services:
     image: prom/prometheus:latest
     container_name: convertpdfgo_prometheus
     restart: always
-    ports:
-      - "9090:9090"
+    expose:
+      - "9090"
     volumes:
       - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       # Rules are loaded via `rule_files: - alerts.yml` in prometheus.yml.
@@ -83,10 +97,12 @@ services:
     image: grafana/grafana:latest
     container_name: convertpdfgo_grafana
     restart: always
-    ports:
-      - "3001:3000"
+    expose:
+      - "3000"
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      # admin password sourced from .env so the default `admin/admin` is
+      # never burned into git history again.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-changeme}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana_data:/var/lib/grafana
@@ -105,8 +121,8 @@ services:
         TARGET: api
     container_name: convertpdfgo_api
     restart: unless-stopped
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     # OAuth/JWT/Brevo/cloud-export secrets come from .env (gitignored).
     # The inline `environment:` keys below override .env for infra
     # plumbing — postgres/redis hostnames are docker-network names and
@@ -121,11 +137,9 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
       POSTGRES_DB: authservice
       REDIS_HOST: redis
       REDIS_PORT: "6379"
-      REDIS_PASSWORD: 1234
       GOTENBERG_URL: http://gotenberg:3000
     volumes:
       - app_storage:/app/storage
@@ -153,11 +167,9 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: "5432"
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 1234
       POSTGRES_DB: authservice
       REDIS_HOST: redis
       REDIS_PORT: "6379"
-      REDIS_PASSWORD: 1234
       GOTENBERG_URL: http://gotenberg:3000
     volumes:
       - app_storage:/app/storage
@@ -184,6 +196,8 @@ services:
     build:
       context: /root/converto
       dockerfile: Dockerfile
+    expose:
+      - "3000"
     environment:
       NODE_ENV: production
       PORT: "3000"
@@ -197,7 +211,8 @@ services:
   caddy:
     # Edge: reverse-proxy + automatic Let's Encrypt SSL for convertpdfgo.com
     # and www. DNS must point at this host before Caddy can complete the
-    # HTTP-01 ACME challenge.
+    # HTTP-01 ACME challenge. The ONLY service in this file that publishes
+    # to the host — every other port lives on the docker bridge.
     image: caddy:2-alpine
     container_name: convertpdfgo_caddy
     restart: unless-stopped
