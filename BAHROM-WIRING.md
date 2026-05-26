@@ -1,107 +1,132 @@
-# Frontend ↔ Backend wiring — 10 ta tool
+# Frontend ↔ Backend wiring — barcha 35 ta tool + Cloud export
 
-Backend hozir `convertpdfgo.com`'da live. Sayt UI mavjud, lekin tool sahifalari hech qanday API chaqirmaydi. Bu patch fayl 10 ta tool'ni real API'ga ulaydi.
+Backend `convertpdfgo.com`'da live (HTTPS + OAuth + 35 PDF op). Frontend tool sahifalari oldin static mockup edi — bu patch hammasini funksional qiladi.
 
-**Patch fayl**: [`deploy/frontend-wiring.patch`](deploy/frontend-wiring.patch) — 1814 satr, 30 ta fayl.
+**Patch fayl**: [`deploy/frontend-wiring.patch`](deploy/frontend-wiring.patch) — 4459 satr, 2 commit, ~60 fayl.
 
-## Nima ulanadi
+## Nimalar ulanadi
 
-| Tool | Backend op | Pattern |
-|---|---|---|
-| Compress | `/api/pdf/compress` | single file + radio (low/medium/high) |
-| Merge | `/api/pdf/merge` | multi-file (2-50 PDF) |
-| Split | `/api/pdf/split` | single file + range (`"1-3,5,7-9"`) → multi output |
-| Protect | `/api/pdf/protect` | single file + parol + tasdiq |
-| Unlock | `/api/pdf/unlock` | single file + parol |
-| OCR | `/api/pdf/ocr` | single file + til (eng/rus/uzb/uzb_cyrl/kir/multi) |
-| Watermark | `/api/pdf/watermark` | single file + matn + position + opacity + burchak |
-| PDF→Word | `/api/pdf/pdf-to-word` | single file → `.docx` |
-| Word→PDF | `/api/pdf/word-to-pdf` | `.doc/.docx` → `.pdf` |
-| JPG→PDF | `/api/pdf/jpg-to-pdf` | multi-image (JPG/PNG) → 1 PDF |
+### 35 ta PDF tool — barchasi funksional
 
-Va `app/account/files/page.tsx` — **"My files"** sahifa (`GET /file/list`).
+**Asosiy oqim** (allaqachon mockup'i bor — widget MOCKUP TAGIDA qo'shiladi):
+| Tool | Pattern |
+|---|---|
+| Compress, Merge, Split | core flows |
+| Protect, Unlock | parol input |
+| OCR, Watermark | til/option tanlash |
+| PDF→Word/Excel/PPT/HTML/JPG, Word/Excel/PPT/HTML→PDF, JPG→PDF | konversiya |
+
+**Yangi tool sahifalari** (mockup yo'q — to'g'ridan-to'g'ri funksional):
+| Tool | Maxsus parametr |
+|---|---|
+| Rotate | burchak + sahifa range |
+| Crop | top/right/bottom/left + sahifa range |
+| Add page numbers | start, position, color, font size |
+| Header & Footer | matn, font, color, position |
+| QR Code | content, position, size |
+| N-up | 2/4/6/9 + orientation + border |
+| Inspect ⚡ SYNC | page count + metadata darhol |
+| Detect blank | bo'sh sahifalar ro'yxati |
+| Edit metadata | title/author/subject/keywords/creator |
+| Remove pages | "1,4-6" formati |
+| Extract pages | "1-3,5,7-9" formati |
+| Scan to PDF | multi-image + til |
+| Image to text (OCR) | rasm + til |
+| HTML to PDF | textarea (fayl emas) |
+| URL to PDF | URL + page size + landscape + wait_for |
+| Extract text | txt / json |
+
+### Fayl boshqaruvi
+- **`/account/files`** — yuklangan fayllar ro'yxati (`GET /file/list`)
+- **`POST /file/upload`** — har tool ichida, multipart
+- **`GET /file/<id>/download`** — har tool natijasi tugmasidan + My files'dan
+- **`DELETE /file/<id>`** — My files'dan
+
+### Cloud Export ☁️
+- **`/account/connections`** — Dropbox / Google Drive ulash / uzish
+- **Har natija oynasida** "Save to Dropbox" / "Save to Drive" tugmasi avtomatik chiqadi (agar ulangan bo'lsa)
+- Funksiya: `exportFileToCloud(fileId, "dropbox" | "gdrive")`
+
+### Auth (allaqachon ulangan, eslatma)
+- Google + GitHub OAuth
+- `/auth/callback` SPA sahifa (token query → localStorage)
+- Token refresh + logout
+- `/me`, `/me/auth-history`, profil yangilash
+
+---
 
 ## Patch'ni qo'llash
 
-Ikki yo'l bor — qaysi qulay bo'lsa.
-
-### A) `git am` bilan (tavsiya — commit history bilan)
+### A) `git am` (tavsiya)
 
 ```bash
 cd ~/path/to/converto
 git checkout -b feat/backend-wiring
 curl -sL https://raw.githubusercontent.com/infosec554/convertpdfgo/main/deploy/frontend-wiring.patch | git am
 git push origin feat/backend-wiring
-# Keyin GitHub'da PR oching va merge qiling
+# GitHub'da PR oching va main'ga merge qiling
+# Push qilingach GitHub Actions Contabo'ga deploy qiladi (~2 daqiqa)
 ```
 
-### B) `git apply` bilan (commit'siz)
+### B) `git apply` (bitta commit'siz)
 
 ```bash
 cd ~/path/to/converto
 git checkout -b feat/backend-wiring
-curl -sL https://raw.githubusercontent.com/infosec554/convertpdfgo/main/deploy/frontend-wiring.patch | git apply
+curl -sL https://raw.githubusercontent.com/infosec554/convertpdfgo/main/deploy/frontend-wiring.patch | git apply --3way
 git add -A
-git commit -m "feat: wire 10 tools to backend API"
+git commit -m "feat: wire 35 PDF tools + cloud export to backend"
 git push origin feat/backend-wiring
 ```
 
-### C) Qo'lda nusxa olish (eng oson)
+---
 
-Patch'ni download qil, ko'r, qo'lda paste qil. Yoki Telegram/Discord orqali zip yuboraman. Faqat ayting.
+## Arxitektura
 
-## Patch ichida nima bor
+```
+tool page (server component)
+    ↓
+<XxxClient /> (client component)
+    ↓
+useJobRunner() — idle → uploading → running → done|failed
+    ↓
+uploadFile() → POST /file/upload
+    ↓
+runJob() → POST /api/pdf/<op> → 202 + { id }
+    ↓
+poll GET /api/pdf/<op>/<id> har 1.5s
+    ↓
+JobStatusPanel:
+    ├── Download button
+    └── <SaveToCloud /> — Dropbox/Drive tugmalari
+```
 
-**Yangi (24 fayl):**
-- `apps/web/components/tools/file-dropzone.tsx` — drag-drop file picker
-- `apps/web/components/tools/use-job-runner.ts` — upload + poll hook
-- `apps/web/components/tools/job-status.tsx` — pending/processing/done UI
-- `apps/web/components/tools/simple-tool-client.tsx` — universal "1 fayl in → 1 fayl out" client
-- `apps/web/app/(tools)/<slug>/<slug>-client.tsx` × 10 — har tool'ning client komponenti
-- `apps/web/app/account/files/page.tsx` — "My files"
-- (CI/CD): `Dockerfile`, `.dockerignore`, `.github/workflows/deploy.yml`
+**Maxsus**: `Inspect` sync (polling yo'q), `HTML/URL to PDF` upload talab qilmaydi (body'dagi matn/URL).
 
-**O'zgartirilgan:**
-- `apps/web/lib/api.ts` — `uploadFile`, `downloadFile`, `runJob`, `runJobSync` qo'shildi
-- `apps/web/next.config.mjs` — `output: "standalone"` + `outputFileTracingRoot`
-- `apps/web/app/(tools)/<slug>/page.tsx` × 10 — har biriga `<XxxClient />` qo'shildi (statik mockup tegmadi)
+---
 
-## Sinab ko'rish
+## Foydalanish (sinab ko'rish)
 
 ```bash
 cd ~/path/to/converto
 pnpm install
 pnpm --filter web dev
-# Brauzerda: http://localhost:3000/compress
+# http://localhost:3000/compress
+# http://localhost:3000/rotate
+# http://localhost:3000/inspect
+# http://localhost:3000/account/files
+# http://localhost:3000/account/connections
 ```
 
-Yoki to'g'ridan-to'g'ri production'da: push qilsangiz, GitHub Actions Contabo'ga deploy qiladi, ~2 daqiqada `https://convertpdfgo.com/compress` da yangi widget paydo bo'ladi.
+---
 
-## Arxitektura
+## Hali to'g'rilanmagan
 
-```
-tool page (server component, marketing card)
-        ↓
-<XxxClient /> (client component)
-        ↓
-useJobRunner() — phase: idle → uploading → running → done|failed
-        ↓
-uploadFile() → POST /file/upload → { id }
-        ↓
-runJob() → POST /api/pdf/<op> → 202 + { id }
-        ↓
-poll GET /api/pdf/<op>/<id> har 1.5s → done|failed
-        ↓
-downloadFile() → GET /file/<output_id>/download → browser save
-```
+- **WebSocket** real-time progress (hozir polling)
+- **Admin paneli** (alohida iterasiya)
+- **Chat + Sign** AI/E-sign tool'lari (backend'da yo'q)
+- **Marketing mockup'lar** 25 ta yangi sahifa uchun — hozir faqat funksional widget (eski 10 ta tool'da mockup tegmasdan widget pastda)
 
-## Hali ulanmagan
+---
 
-- 25 ta boshqa PDF op (rotate, crop, header-footer, qr-code, inspect, ...): qisqasi `SimpleToolClient`'dan nusxa olib pattern'ni takrorlash — patch'ni o'qing, juda oson.
-- WebSocket (`/ws`) — polling o'rniga real-time progress. Bahrom xohlasa qo'shamiz.
-- Cloud Export (Save to Dropbox/GDrive) — tool natija oynasida tugma.
-- Admin paneli — alohida iterasiya.
-
-## Savol
-
-Patch'ni qo'llash bo'yicha biror narsa noaniq bo'lsa — yozing.
+Savol bo'lsa yozing.

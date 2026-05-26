@@ -1,7 +1,7 @@
 From 4c5e73751d837eb2d3458eb9f6293425e051c1b8 Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:00:27 +0500
-Subject: [PATCH] feat: wire backend API to all 10 tools + foundation
+Subject: [PATCH 1/2] feat: wire backend API to all 10 tools + foundation
 
 - lib/api.ts: uploadFile, downloadFile, runJob, runJobSync helpers
 - components/tools/: FileDropzone, JobStatusPanel, useJobRunner, SimpleToolClient
@@ -1809,6 +1809,2651 @@ index 69794c5..62769f1 100644
    experimental: {
      optimizePackageImports: ["lucide-react"],
    },
+-- 
+2.34.1
+
+
+From beb588accb0a9ec5d5da880df32c4b63e4eb6908 Mon Sep 17 00:00:00 2001
+From: Claude <claude@convertpdfgo.com>
+Date: Wed, 27 May 2026 01:15:25 +0500
+Subject: [PATCH 2/2] feat: wire remaining 25 PDF ops + cloud export
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+25 new tool pages:
+- Page ops: removepage, extract, rotate, crop, add-page-numbers,
+  header-footer, qr-code, nup, inspect (sync), detect-blank, metadata
+- Conversions: pdf-to-jpg, excel-to-pdf, ppt-to-pdf, pdf-to-excel,
+  pdf-to-ppt, pdf-to-html, html-to-pdf, url-to-pdf
+- OCR: scan-to-pdf, ocr-extract-text, image-to-text,
+  ocr-detect-lang, ocr-structured
+- Plain: extract-text
+
+Cloud export end-to-end:
+- lib/api.ts: getStorageProviders, connectStorageProviderUrl,
+  disconnectStorageProvider, exportFileToCloud
+- components/tools/save-to-cloud.tsx: 'Save to Dropbox/Drive' buttons
+- account/connections page: list + connect + disconnect
+- JobStatusPanel now renders SaveToCloud below the download CTA
+- SimpleToolClient passes output_file_id through
+
+Registry: 12 → 35 tools in packages/data/src/tools.ts.
+---
+ .../add-page-numbers-client.tsx               |  98 +++++++++++
+ .../web/app/(tools)/add-page-numbers/page.tsx |  21 +++
+ apps/web/app/(tools)/crop/crop-client.tsx     |  57 +++++++
+ apps/web/app/(tools)/crop/page.tsx            |  21 +++
+ .../detect-blank/detect-blank-client.tsx      |  15 ++
+ apps/web/app/(tools)/detect-blank/page.tsx    |  21 +++
+ .../excel-to-pdf/excel-to-pdf-client.tsx      |  15 ++
+ apps/web/app/(tools)/excel-to-pdf/page.tsx    |  21 +++
+ .../extract-text/extract-text-client.tsx      |  39 +++++
+ apps/web/app/(tools)/extract-text/page.tsx    |  21 +++
+ .../app/(tools)/extract/extract-client.tsx    |  33 ++++
+ apps/web/app/(tools)/extract/page.tsx         |  21 +++
+ .../header-footer/header-footer-client.tsx    |  86 ++++++++++
+ apps/web/app/(tools)/header-footer/page.tsx   |  21 +++
+ .../html-to-pdf/html-to-pdf-client.tsx        |  58 +++++++
+ apps/web/app/(tools)/html-to-pdf/page.tsx     |  21 +++
+ .../image-to-text/image-to-text-client.tsx    |  42 +++++
+ apps/web/app/(tools)/image-to-text/page.tsx   |  21 +++
+ .../app/(tools)/inspect/inspect-client.tsx    |  95 +++++++++++
+ apps/web/app/(tools)/inspect/page.tsx         |  21 +++
+ .../app/(tools)/metadata/metadata-client.tsx  |  90 ++++++++++
+ apps/web/app/(tools)/metadata/page.tsx        |  21 +++
+ apps/web/app/(tools)/nup/nup-client.tsx       |  64 ++++++++
+ apps/web/app/(tools)/nup/page.tsx             |  21 +++
+ .../ocr-detect-lang-client.tsx                |  15 ++
+ apps/web/app/(tools)/ocr-detect-lang/page.tsx |  21 +++
+ .../ocr-extract-text-client.tsx               |  43 +++++
+ .../web/app/(tools)/ocr-extract-text/page.tsx |  21 +++
+ .../ocr-structured/ocr-structured-client.tsx  |  41 +++++
+ apps/web/app/(tools)/ocr-structured/page.tsx  |  21 +++
+ apps/web/app/(tools)/pdf-to-excel/page.tsx    |  21 +++
+ .../pdf-to-excel/pdf-to-excel-client.tsx      |  14 ++
+ apps/web/app/(tools)/pdf-to-html/page.tsx     |  21 +++
+ .../pdf-to-html/pdf-to-html-client.tsx        |  14 ++
+ apps/web/app/(tools)/pdf-to-jpg/page.tsx      |  21 +++
+ .../(tools)/pdf-to-jpg/pdf-to-jpg-client.tsx  |  15 ++
+ apps/web/app/(tools)/pdf-to-ppt/page.tsx      |  21 +++
+ .../(tools)/pdf-to-ppt/pdf-to-ppt-client.tsx  |  14 ++
+ apps/web/app/(tools)/ppt-to-pdf/page.tsx      |  21 +++
+ .../(tools)/ppt-to-pdf/ppt-to-pdf-client.tsx  |  15 ++
+ apps/web/app/(tools)/qr-code/page.tsx         |  21 +++
+ .../app/(tools)/qr-code/qr-code-client.tsx    |  70 ++++++++
+ apps/web/app/(tools)/removepage/page.tsx      |  21 +++
+ .../(tools)/removepage/removepage-client.tsx  |  32 ++++
+ apps/web/app/(tools)/rotate/page.tsx          |  21 +++
+ apps/web/app/(tools)/rotate/rotate-client.tsx |  58 +++++++
+ apps/web/app/(tools)/scan-to-pdf/page.tsx     |  21 +++
+ .../scan-to-pdf/scan-to-pdf-client.tsx        |  44 +++++
+ apps/web/app/(tools)/url-to-pdf/page.tsx      |  21 +++
+ .../(tools)/url-to-pdf/url-to-pdf-client.tsx  |  93 +++++++++++
+ apps/web/app/account/connections/page.tsx     | 113 +++++++++++++
+ apps/web/components/tools/job-status.tsx      |  34 ++--
+ apps/web/components/tools/save-to-cloud.tsx   |  85 ++++++++++
+ .../components/tools/simple-tool-client.tsx   |   2 +
+ apps/web/lib/api.ts                           |  56 +++++++
+ packages/data/src/tools.ts                    | 155 ++++++++++++++++++
+ 56 files changed, 2118 insertions(+), 12 deletions(-)
+ create mode 100644 apps/web/app/(tools)/add-page-numbers/add-page-numbers-client.tsx
+ create mode 100644 apps/web/app/(tools)/add-page-numbers/page.tsx
+ create mode 100644 apps/web/app/(tools)/crop/crop-client.tsx
+ create mode 100644 apps/web/app/(tools)/crop/page.tsx
+ create mode 100644 apps/web/app/(tools)/detect-blank/detect-blank-client.tsx
+ create mode 100644 apps/web/app/(tools)/detect-blank/page.tsx
+ create mode 100644 apps/web/app/(tools)/excel-to-pdf/excel-to-pdf-client.tsx
+ create mode 100644 apps/web/app/(tools)/excel-to-pdf/page.tsx
+ create mode 100644 apps/web/app/(tools)/extract-text/extract-text-client.tsx
+ create mode 100644 apps/web/app/(tools)/extract-text/page.tsx
+ create mode 100644 apps/web/app/(tools)/extract/extract-client.tsx
+ create mode 100644 apps/web/app/(tools)/extract/page.tsx
+ create mode 100644 apps/web/app/(tools)/header-footer/header-footer-client.tsx
+ create mode 100644 apps/web/app/(tools)/header-footer/page.tsx
+ create mode 100644 apps/web/app/(tools)/html-to-pdf/html-to-pdf-client.tsx
+ create mode 100644 apps/web/app/(tools)/html-to-pdf/page.tsx
+ create mode 100644 apps/web/app/(tools)/image-to-text/image-to-text-client.tsx
+ create mode 100644 apps/web/app/(tools)/image-to-text/page.tsx
+ create mode 100644 apps/web/app/(tools)/inspect/inspect-client.tsx
+ create mode 100644 apps/web/app/(tools)/inspect/page.tsx
+ create mode 100644 apps/web/app/(tools)/metadata/metadata-client.tsx
+ create mode 100644 apps/web/app/(tools)/metadata/page.tsx
+ create mode 100644 apps/web/app/(tools)/nup/nup-client.tsx
+ create mode 100644 apps/web/app/(tools)/nup/page.tsx
+ create mode 100644 apps/web/app/(tools)/ocr-detect-lang/ocr-detect-lang-client.tsx
+ create mode 100644 apps/web/app/(tools)/ocr-detect-lang/page.tsx
+ create mode 100644 apps/web/app/(tools)/ocr-extract-text/ocr-extract-text-client.tsx
+ create mode 100644 apps/web/app/(tools)/ocr-extract-text/page.tsx
+ create mode 100644 apps/web/app/(tools)/ocr-structured/ocr-structured-client.tsx
+ create mode 100644 apps/web/app/(tools)/ocr-structured/page.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-excel/page.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-excel/pdf-to-excel-client.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-html/page.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-html/pdf-to-html-client.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-jpg/page.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-jpg/pdf-to-jpg-client.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-ppt/page.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-ppt/pdf-to-ppt-client.tsx
+ create mode 100644 apps/web/app/(tools)/ppt-to-pdf/page.tsx
+ create mode 100644 apps/web/app/(tools)/ppt-to-pdf/ppt-to-pdf-client.tsx
+ create mode 100644 apps/web/app/(tools)/qr-code/page.tsx
+ create mode 100644 apps/web/app/(tools)/qr-code/qr-code-client.tsx
+ create mode 100644 apps/web/app/(tools)/removepage/page.tsx
+ create mode 100644 apps/web/app/(tools)/removepage/removepage-client.tsx
+ create mode 100644 apps/web/app/(tools)/rotate/page.tsx
+ create mode 100644 apps/web/app/(tools)/rotate/rotate-client.tsx
+ create mode 100644 apps/web/app/(tools)/scan-to-pdf/page.tsx
+ create mode 100644 apps/web/app/(tools)/scan-to-pdf/scan-to-pdf-client.tsx
+ create mode 100644 apps/web/app/(tools)/url-to-pdf/page.tsx
+ create mode 100644 apps/web/app/(tools)/url-to-pdf/url-to-pdf-client.tsx
+ create mode 100644 apps/web/app/account/connections/page.tsx
+ create mode 100644 apps/web/components/tools/save-to-cloud.tsx
+
+diff --git a/apps/web/app/(tools)/add-page-numbers/add-page-numbers-client.tsx b/apps/web/app/(tools)/add-page-numbers/add-page-numbers-client.tsx
+new file mode 100644
+index 0000000..063f737
+--- /dev/null
++++ b/apps/web/app/(tools)/add-page-numbers/add-page-numbers-client.tsx
+@@ -0,0 +1,98 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const positions = [
++  "top-left",
++  "top-center",
++  "top-right",
++  "bottom-left",
++  "bottom-center",
++  "bottom-right",
++];
++
++export function AddPageNumbersClient() {
++  const [firstNumber, setFirstNumber] = useState(1);
++  const [pageRange, setPageRange] = useState("all");
++  const [position, setPosition] = useState("bottom-right");
++  const [color, setColor] = useState("black");
++  const [fontSize, setFontSize] = useState(12);
++
++  return (
++    <SimpleToolClient
++      op="add-page-numbers"
++      cta="Add page numbers →"
++      resultFilename={(f) => "numbered-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download numbered PDF"
++      buildExtraBody={() => ({
++        first_number: firstNumber,
++        page_range: pageRange.trim() || "all",
++        position,
++        color,
++        font_size: fontSize,
++      })}
++      extraFields={
++        <div className="grid gap-4 md:grid-cols-2">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Start at</span>
++            <input
++              type="number"
++              min={1}
++              value={firstNumber}
++              onChange={(e) => setFirstNumber(parseInt(e.target.value, 10) || 1)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Pages</span>
++            <input
++              type="text"
++              value={pageRange}
++              onChange={(e) => setPageRange(e.target.value)}
++              placeholder="all  ·  1-10"
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Position</span>
++            <select
++              value={position}
++              onChange={(e) => setPosition(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            >
++              {positions.map((p) => (
++                <option key={p} value={p}>
++                  {p}
++                </option>
++              ))}
++            </select>
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Colour</span>
++            <input
++              type="text"
++              value={color}
++              onChange={(e) => setColor(e.target.value)}
++              placeholder="black  ·  #ff0000"
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">
++              Font size: <span className="text-muted-foreground">{fontSize} px</span>
++            </span>
++            <input
++              type="range"
++              min={6}
++              max={24}
++              value={fontSize}
++              onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
++              className="w-full accent-primary"
++            />
++          </label>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/add-page-numbers/page.tsx b/apps/web/app/(tools)/add-page-numbers/page.tsx
+new file mode 100644
+index 0000000..8c8680d
+--- /dev/null
++++ b/apps/web/app/(tools)/add-page-numbers/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { AddPageNumbersClient } from "./add-page-numbers-client";
++
++export const metadata: Metadata = {
++  title: "Add\",
++  description: "Page\ Numbers Sequential\ numbering\ with\ full\ style\ control.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("add-page-numbers");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="17">
++      <AddPageNumbersClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/crop/crop-client.tsx b/apps/web/app/(tools)/crop/crop-client.tsx
+new file mode 100644
+index 0000000..59c3195
+--- /dev/null
++++ b/apps/web/app/(tools)/crop/crop-client.tsx
+@@ -0,0 +1,57 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** Margin-trim crop. All four inset values are in pixels. */
++export function CropClient() {
++  const [top, setTop] = useState(0);
++  const [right, setRight] = useState(0);
++  const [bottom, setBottom] = useState(0);
++  const [left, setLeft] = useState(0);
++  const [pages, setPages] = useState("all");
++  return (
++    <SimpleToolClient
++      op="crop"
++      cta="Crop pages →"
++      resultFilename={(f) => "cropped-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download cropped PDF"
++      buildExtraBody={() => ({ top, right, bottom, left, pages: pages.trim() || "all" })}
++      extraFields={
++        <div className="grid gap-4">
++          <div className="grid grid-cols-4 gap-2">
++            {[
++              { label: "Top", v: top, set: setTop },
++              { label: "Right", v: right, set: setRight },
++              { label: "Bottom", v: bottom, set: setBottom },
++              { label: "Left", v: left, set: setLeft },
++            ].map((c) => (
++              <label key={c.label} className="grid gap-1">
++                <span className="text-xs font-medium uppercase text-muted-foreground">
++                  {c.label}
++                </span>
++                <input
++                  type="number"
++                  min={0}
++                  value={c.v}
++                  onChange={(e) => c.set(parseInt(e.target.value, 10) || 0)}
++                  className="w-full rounded-lg border bg-card px-2 py-2 text-sm focus:border-primary focus:outline-none"
++                />
++              </label>
++            ))}
++          </div>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Pages</span>
++            <input
++              type="text"
++              value={pages}
++              onChange={(e) => setPages(e.target.value)}
++              placeholder="all  ·  1-3,5"
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/crop/page.tsx b/apps/web/app/(tools)/crop/page.tsx
+new file mode 100644
+index 0000000..d678e06
+--- /dev/null
++++ b/apps/web/app/(tools)/crop/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { CropClient } from "./crop-client";
++
++export const metadata: Metadata = {
++  title: "Crop\",
++  description: "PDF Trim\ margins\ or\ focus\ a\ region\ across\ every\ page.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("crop");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="16">
++      <CropClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/detect-blank/detect-blank-client.tsx b/apps/web/app/(tools)/detect-blank/detect-blank-client.tsx
+new file mode 100644
+index 0000000..98ccbc4
+--- /dev/null
++++ b/apps/web/app/(tools)/detect-blank/detect-blank-client.tsx
+@@ -0,0 +1,15 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** Returns blank page numbers in the job record — show alongside results. */
++export function DetectBlankClient() {
++  return (
++    <SimpleToolClient
++      op="detect-blank"
++      cta="Detect blank pages →"
++      resultFilename={(f) => "blank-report-" + (f?.name ?? "result.json")}
++      downloadLabel="Download report"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/detect-blank/page.tsx b/apps/web/app/(tools)/detect-blank/page.tsx
+new file mode 100644
+index 0000000..f144cd0
+--- /dev/null
++++ b/apps/web/app/(tools)/detect-blank/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { DetectBlankClient } from "./detect-blank-client";
++
++export const metadata: Metadata = {
++  title: "Detect\",
++  description: "Blank\ Pages Find\ every\ empty\ page\ so\ you\ can\ prune\ them.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("detect-blank");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="22">
++      <DetectBlankClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/excel-to-pdf/excel-to-pdf-client.tsx b/apps/web/app/(tools)/excel-to-pdf/excel-to-pdf-client.tsx
+new file mode 100644
+index 0000000..291aa41
+--- /dev/null
++++ b/apps/web/app/(tools)/excel-to-pdf/excel-to-pdf-client.tsx
+@@ -0,0 +1,15 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++export function ExcelToPdfClient() {
++  return (
++    <SimpleToolClient
++      op="excel-to-pdf"
++      cta="Convert to PDF →"
++      accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.xlsx?$/i, "") + ".pdf"}
++      downloadLabel="Download PDF"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/excel-to-pdf/page.tsx b/apps/web/app/(tools)/excel-to-pdf/page.tsx
+new file mode 100644
+index 0000000..32f43ff
+--- /dev/null
++++ b/apps/web/app/(tools)/excel-to-pdf/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { ExcelToPdfClient } from "./excel-to-pdf-client";
++
++export const metadata: Metadata = {
++  title: "Excel\",
++  description: "to\ PDF Workbooks\ to\ clean\ PDFs.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("excel-to-pdf");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="25">
++      <ExcelToPdfClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/extract-text/extract-text-client.tsx b/apps/web/app/(tools)/extract-text/extract-text-client.tsx
+new file mode 100644
+index 0000000..270845b
+--- /dev/null
++++ b/apps/web/app/(tools)/extract-text/extract-text-client.tsx
+@@ -0,0 +1,39 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** Plain-text extraction from PDFs that already have a text layer. */
++export function ExtractTextClient() {
++  const [format, setFormat] = useState<"txt" | "json">("txt");
++  return (
++    <SimpleToolClient
++      op="extract-text"
++      cta="Extract text →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + "." + format}
++      downloadLabel={"Download ." + format}
++      buildExtraBody={() => ({ format })}
++      extraFields={
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Format</span>
++          <div className="flex gap-2">
++            {(["txt", "json"] as const).map((f) => (
++              <button
++                key={f}
++                type="button"
++                onClick={() => setFormat(f)}
++                className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${
++                  format === f
++                    ? "border-primary bg-primary/5 font-medium"
++                    : "border-border bg-card"
++                }`}
++              >
++                .{f}
++              </button>
++            ))}
++          </div>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/extract-text/page.tsx b/apps/web/app/(tools)/extract-text/page.tsx
+new file mode 100644
+index 0000000..002700d
+--- /dev/null
++++ b/apps/web/app/(tools)/extract-text/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { ExtractTextClient } from "./extract-text-client";
++
++export const metadata: Metadata = {
++  title: "Extract\",
++  description: "Text Plain\ text\ out\ of\ a\ PDF\ with\ a\ text\ layer.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("extract-text");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="37">
++      <ExtractTextClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/extract/extract-client.tsx b/apps/web/app/(tools)/extract/extract-client.tsx
+new file mode 100644
+index 0000000..b3f0d6f
+--- /dev/null
++++ b/apps/web/app/(tools)/extract/extract-client.tsx
+@@ -0,0 +1,33 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** Extract a subset of pages into a new PDF. */
++export function ExtractClient() {
++  const [pageRanges, setPageRanges] = useState("1-3");
++  return (
++    <SimpleToolClient
++      op="extract"
++      cta="Extract pages →"
++      resultFilename={(f) => "extracted-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download extracted PDF"
++      buildExtraBody={() => ({ page_ranges: pageRanges })}
++      extraFields={
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Page ranges</span>
++          <input
++            type="text"
++            value={pageRanges}
++            onChange={(e) => setPageRanges(e.target.value)}
++            placeholder="1-3,5,7-9"
++            className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          />
++          <span className="text-xs text-muted-foreground">
++            Output keeps only the listed pages, in order.
++          </span>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/extract/page.tsx b/apps/web/app/(tools)/extract/page.tsx
+new file mode 100644
+index 0000000..24f7431
+--- /dev/null
++++ b/apps/web/app/(tools)/extract/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { ExtractClient } from "./extract-client";
++
++export const metadata: Metadata = {
++  title: "Extract\",
++  description: "Pages Keep\ only\ the\ pages\ you\ want,\ in\ their\ own\ PDF.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("extract");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="14">
++      <ExtractClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/header-footer/header-footer-client.tsx b/apps/web/app/(tools)/header-footer/header-footer-client.tsx
+new file mode 100644
+index 0000000..749b602
+--- /dev/null
++++ b/apps/web/app/(tools)/header-footer/header-footer-client.tsx
+@@ -0,0 +1,86 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++export function HeaderFooterClient() {
++  const [header, setHeader] = useState("");
++  const [footer, setFooter] = useState("");
++  const [fontSize, setFontSize] = useState(12);
++  const [color, setColor] = useState("black");
++  const [position, setPosition] = useState<"left" | "center" | "right">("center");
++  return (
++    <SimpleToolClient
++      op="header-footer"
++      cta="Apply header/footer →"
++      resultFilename={(f) => "hf-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download PDF"
++      buildExtraBody={() => ({
++        header_text: header,
++        footer_text: footer,
++        font_size: fontSize,
++        font_color: color,
++        position,
++      })}
++      extraFields={
++        <div className="grid gap-4">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Header text</span>
++            <input
++              type="text"
++              value={header}
++              onChange={(e) => setHeader(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Footer text</span>
++            <input
++              type="text"
++              value={footer}
++              onChange={(e) => setFooter(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <div className="grid gap-4 md:grid-cols-3">
++            <label className="grid gap-1.5">
++              <span className="text-sm font-medium">
++                Font size: <span className="text-muted-foreground">{fontSize} px</span>
++              </span>
++              <input
++                type="range"
++                min={6}
++                max={24}
++                value={fontSize}
++                onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
++                className="w-full accent-primary"
++              />
++            </label>
++            <label className="grid gap-1.5">
++              <span className="text-sm font-medium">Colour</span>
++              <input
++                type="text"
++                value={color}
++                onChange={(e) => setColor(e.target.value)}
++                placeholder="black"
++                className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++              />
++            </label>
++            <label className="grid gap-1.5">
++              <span className="text-sm font-medium">Position</span>
++              <select
++                value={position}
++                onChange={(e) => setPosition(e.target.value as "left" | "center" | "right")}
++                className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++              >
++                <option value="left">Left</option>
++                <option value="center">Center</option>
++                <option value="right">Right</option>
++              </select>
++            </label>
++          </div>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/header-footer/page.tsx b/apps/web/app/(tools)/header-footer/page.tsx
+new file mode 100644
+index 0000000..a2f7e37
+--- /dev/null
++++ b/apps/web/app/(tools)/header-footer/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { HeaderFooterClient } from "./header-footer-client";
++
++export const metadata: Metadata = {
++  title: "Header\",
++  description: "&\ Footer Drop\ a\ header\ or\ footer\ on\ every\ page.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("header-footer");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="18">
++      <HeaderFooterClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/html-to-pdf/html-to-pdf-client.tsx b/apps/web/app/(tools)/html-to-pdf/html-to-pdf-client.tsx
+new file mode 100644
+index 0000000..0598ff8
+--- /dev/null
++++ b/apps/web/app/(tools)/html-to-pdf/html-to-pdf-client.tsx
+@@ -0,0 +1,58 @@
++"use client";
++
++import { useState } from "react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { JobStatusPanel } from "@/components/tools/job-status";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++/**
++ * HTML → PDF via Gotenberg/Chromium. No file upload here — the request
++ * body carries the HTML directly, so we skip FileDropzone and call the
++ * backend straight from text input.
++ */
++export function HtmlToPdfClient() {
++  const [html, setHtml] = useState(
++    "<!doctype html>\n<html>\n  <body>\n    <h1>Hello PDF</h1>\n    <p>Edit this and click convert.</p>\n  </body>\n</html>",
++  );
++  const runner = useJobRunner();
++
++  async function onSubmit() {
++    if (!html.trim()) return;
++    // Reuse the runner's state without uploading a file: we call run()
++    // with an empty file list and override buildBody to ignore the
++    // (empty) uploaded IDs.
++    await runner.run([], () => ({ html_content: html }), "html-to-pdf");
++  }
++
++  return (
++    <Card className="grid gap-6 p-8">
++      <label className="grid gap-1.5">
++        <span className="text-sm font-medium">HTML source</span>
++        <textarea
++          value={html}
++          onChange={(e) => setHtml(e.target.value)}
++          spellCheck={false}
++          className="min-h-[260px] w-full rounded-lg border bg-card p-3 font-mono text-xs focus:border-primary focus:outline-none"
++        />
++      </label>
++      <div className="flex justify-end">
++        <Button
++          size="lg"
++          disabled={!html.trim() || runner.phase === "uploading" || runner.phase === "running"}
++          onClick={onSubmit}
++        >
++          Render PDF →
++        </Button>
++      </div>
++      <JobStatusPanel
++        phase={runner.phase}
++        error={runner.error}
++        onDownload={() => runner.download("rendered.pdf")}
++        onReset={runner.reset}
++        downloadLabel="Download PDF"
++      />
++    </Card>
++  );
++}
++
+diff --git a/apps/web/app/(tools)/html-to-pdf/page.tsx b/apps/web/app/(tools)/html-to-pdf/page.tsx
+new file mode 100644
+index 0000000..bc40c3c
+--- /dev/null
++++ b/apps/web/app/(tools)/html-to-pdf/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { HtmlToPdfClient } from "./html-to-pdf-client";
++
++export const metadata: Metadata = {
++  title: "HTML\",
++  description: "to\ PDF Paste\ HTML,\ get\ a\ clean\ PDF.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("html-to-pdf");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="29">
++      <HtmlToPdfClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/image-to-text/image-to-text-client.tsx b/apps/web/app/(tools)/image-to-text/image-to-text-client.tsx
+new file mode 100644
+index 0000000..8c7eeb7
+--- /dev/null
++++ b/apps/web/app/(tools)/image-to-text/image-to-text-client.tsx
+@@ -0,0 +1,42 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const langs = [
++  { code: "eng", label: "English" },
++  { code: "rus", label: "Russian" },
++  { code: "uzb", label: "Uzbek (Latin)" },
++  { code: "uzb_cyrl", label: "Uzbek (Cyrillic)" },
++];
++
++/** Single-image OCR — JPG/PNG → .txt. */
++export function ImageToTextClient() {
++  const [lang, setLang] = useState("eng");
++  return (
++    <SimpleToolClient
++      op="image-to-text"
++      cta="Extract text →"
++      accept="image/jpeg,image/png,.jpg,.jpeg,.png"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.\w+$/, "") + ".txt"}
++      downloadLabel="Download .txt"
++      buildExtraBody={() => ({ lang })}
++      extraFields={
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Language</span>
++          <select
++            value={lang}
++            onChange={(e) => setLang(e.target.value)}
++            className="rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          >
++            {langs.map((l) => (
++              <option key={l.code} value={l.code}>
++                {l.label}
++              </option>
++            ))}
++          </select>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/image-to-text/page.tsx b/apps/web/app/(tools)/image-to-text/page.tsx
+new file mode 100644
+index 0000000..5587e79
+--- /dev/null
++++ b/apps/web/app/(tools)/image-to-text/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { ImageToTextClient } from "./image-to-text-client";
++
++export const metadata: Metadata = {
++  title: "Image\",
++  description: "to\ Text Read\ text\ from\ any\ photo\ or\ screenshot.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("image-to-text");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="34">
++      <ImageToTextClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/inspect/inspect-client.tsx b/apps/web/app/(tools)/inspect/inspect-client.tsx
+new file mode 100644
+index 0000000..2ad9e89
+--- /dev/null
++++ b/apps/web/app/(tools)/inspect/inspect-client.tsx
+@@ -0,0 +1,95 @@
++"use client";
++
++import { useState } from "react";
++import { Loader2, AlertCircle } from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { FileDropzone } from "@/components/tools/file-dropzone";
++import { uploadFile, runJobSync } from "@/lib/api";
++
++interface InspectResult {
++  page_count: number;
++  title: string;
++  author: string;
++  subject: string;
++  keywords: string;
++  status: string;
++}
++
++/**
++ * Inspect is the one synchronous PDF op — POST returns the metadata in
++ * a single round-trip, no polling. Rendered separately from
++ * SimpleToolClient because there's no output file to download, just a
++ * structured result to display.
++ */
++export function InspectClient() {
++  const [files, setFiles] = useState<File[]>([]);
++  const [phase, setPhase] = useState<"idle" | "running" | "done" | "failed">("idle");
++  const [result, setResult] = useState<InspectResult | null>(null);
++  const [error, setError] = useState<string | null>(null);
++  const file = files[0];
++
++  async function onSubmit() {
++    if (!file) return;
++    setPhase("running");
++    setError(null);
++    setResult(null);
++    try {
++      const up = await uploadFile(file);
++      const res = await runJobSync<InspectResult>("inspect", { file_id: up.id });
++      setResult(res);
++      setPhase("done");
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Inspection failed");
++      setPhase("failed");
++    }
++  }
++
++  return (
++    <Card className="grid gap-6 p-8">
++      <FileDropzone files={files} onChange={setFiles} maxSizeMB={30} />
++
++      <div className="flex justify-end">
++        <Button size="lg" disabled={!file || phase === "running"} onClick={onSubmit}>
++          Inspect →
++        </Button>
++      </div>
++
++      {phase === "running" && (
++        <div className="flex items-center gap-3 rounded-xl border bg-card p-4 text-sm">
++          <Loader2 className="size-4 animate-spin text-primary" />
++          <span>Reading metadata…</span>
++        </div>
++      )}
++
++      {phase === "failed" && (
++        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div>
++            <p className="font-medium text-destructive">Couldn&apos;t read the PDF</p>
++            <p className="mt-1 text-muted-foreground">{error}</p>
++          </div>
++        </div>
++      )}
++
++      {phase === "done" && result && (
++        <dl className="grid grid-cols-2 gap-3 rounded-xl border bg-card p-4 text-sm md:grid-cols-3">
++          <Row label="Pages" value={result.page_count.toString()} />
++          <Row label="Title" value={result.title || "—"} />
++          <Row label="Author" value={result.author || "—"} />
++          <Row label="Subject" value={result.subject || "—"} />
++          <Row label="Keywords" value={result.keywords || "—"} />
++        </dl>
++      )}
++    </Card>
++  );
++}
++
++function Row({ label, value }: { label: string; value: string }) {
++  return (
++    <div>
++      <dt className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{label}</dt>
++      <dd className="mt-0.5 font-medium">{value}</dd>
++    </div>
++  );
++}
+diff --git a/apps/web/app/(tools)/inspect/page.tsx b/apps/web/app/(tools)/inspect/page.tsx
+new file mode 100644
+index 0000000..6a047f0
+--- /dev/null
++++ b/apps/web/app/(tools)/inspect/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { InspectClient } from "./inspect-client";
++
++export const metadata: Metadata = {
++  title: "Inspect\",
++  description: "PDF Instant\ page\ count\ +\ metadata.\ No\ polling.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("inspect");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="21">
++      <InspectClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/metadata/metadata-client.tsx b/apps/web/app/(tools)/metadata/metadata-client.tsx
+new file mode 100644
+index 0000000..6c30c27
+--- /dev/null
++++ b/apps/web/app/(tools)/metadata/metadata-client.tsx
+@@ -0,0 +1,90 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/**
++ * Update PDF document properties. Only sends fields the user actually
++ * filled — the backend rejects an empty body with "no metadata fields
++ * provided", so we keep the form lenient and the request lean.
++ */
++export function MetadataClient() {
++  const [title, setTitle] = useState("");
++  const [author, setAuthor] = useState("");
++  const [subject, setSubject] = useState("");
++  const [keywords, setKeywords] = useState("");
++  const [creator, setCreator] = useState("");
++
++  return (
++    <SimpleToolClient
++      op="metadata"
++      cta="Update metadata →"
++      resultFilename={(f) => "meta-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download PDF"
++      buildExtraBody={() => {
++        const body: Record<string, unknown> = {};
++        if (title) body.title = title;
++        if (author) body.author = author;
++        if (subject) body.subject = subject;
++        if (creator) body.creator = creator;
++        if (keywords) {
++          body.keywords = keywords
++            .split(",")
++            .map((s) => s.trim())
++            .filter(Boolean);
++        }
++        return body;
++      }}
++      extraFields={
++        <div className="grid gap-4 md:grid-cols-2">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Title</span>
++            <input
++              type="text"
++              value={title}
++              onChange={(e) => setTitle(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Author</span>
++            <input
++              type="text"
++              value={author}
++              onChange={(e) => setAuthor(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Subject</span>
++            <input
++              type="text"
++              value={subject}
++              onChange={(e) => setSubject(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Creator</span>
++            <input
++              type="text"
++              value={creator}
++              onChange={(e) => setCreator(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <label className="grid gap-1.5 md:col-span-2">
++            <span className="text-sm font-medium">Keywords (comma-separated)</span>
++            <input
++              type="text"
++              value={keywords}
++              onChange={(e) => setKeywords(e.target.value)}
++              placeholder="invoice, 2026, report"
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/metadata/page.tsx b/apps/web/app/(tools)/metadata/page.tsx
+new file mode 100644
+index 0000000..1cc1ec2
+--- /dev/null
++++ b/apps/web/app/(tools)/metadata/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { MetadataClient } from "./metadata-client";
++
++export const metadata: Metadata = {
++  title: "Edit\",
++  description: "Metadata Rewrite\ title,\ author,\ subject,\ keywords,\ creator.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("metadata");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="23">
++      <MetadataClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/nup/nup-client.tsx b/apps/web/app/(tools)/nup/nup-client.tsx
+new file mode 100644
+index 0000000..4a938f4
+--- /dev/null
++++ b/apps/web/app/(tools)/nup/nup-client.tsx
+@@ -0,0 +1,64 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const counts = [2, 4, 6, 9] as const;
++
++export function NupClient() {
++  const [n, setN] = useState<(typeof counts)[number]>(4);
++  const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
++  const [border, setBorder] = useState(true);
++  return (
++    <SimpleToolClient
++      op="nup"
++      cta={`Make ${n}-up PDF →`}
++      resultFilename={(f) => `${n}up-${f?.name ?? "result.pdf"}`}
++      downloadLabel={`Download ${n}-up PDF`}
++      buildExtraBody={() => ({ n, orientation, border })}
++      extraFields={
++        <div className="grid gap-4 md:grid-cols-3">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Pages per sheet</span>
++            <div className="flex gap-2">
++              {counts.map((c) => (
++                <button
++                  key={c}
++                  type="button"
++                  onClick={() => setN(c)}
++                  className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${
++                    n === c
++                      ? "border-primary bg-primary/5 font-medium"
++                      : "border-border bg-card"
++                  }`}
++                >
++                  {c}
++                </button>
++              ))}
++            </div>
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Orientation</span>
++            <select
++              value={orientation}
++              onChange={(e) => setOrientation(e.target.value as "portrait" | "landscape")}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            >
++              <option value="portrait">Portrait</option>
++              <option value="landscape">Landscape</option>
++            </select>
++          </label>
++          <label className="flex items-end gap-2 pb-2 text-sm">
++            <input
++              type="checkbox"
++              checked={border}
++              onChange={(e) => setBorder(e.target.checked)}
++              className="size-4 accent-primary"
++            />
++            <span>Draw borders between pages</span>
++          </label>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/nup/page.tsx b/apps/web/app/(tools)/nup/page.tsx
+new file mode 100644
+index 0000000..fe43587
+--- /dev/null
++++ b/apps/web/app/(tools)/nup/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { NupClient } from "./nup-client";
++
++export const metadata: Metadata = {
++  title: "N-up\",
++  description: "Layout Fit\ 2,\ 4,\ 6,\ or\ 9\ pages\ onto\ a\ single\ sheet.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("nup");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="20">
++      <NupClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr-detect-lang/ocr-detect-lang-client.tsx b/apps/web/app/(tools)/ocr-detect-lang/ocr-detect-lang-client.tsx
+new file mode 100644
+index 0000000..1fc88b4
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr-detect-lang/ocr-detect-lang-client.tsx
+@@ -0,0 +1,15 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** Returns `{ detected_lang, confidence }` — readable on the job record. */
++export function OcrDetectLangClient() {
++  return (
++    <SimpleToolClient
++      op="ocr-detect-lang"
++      cta="Detect language →"
++      resultFilename={(f) => "lang-" + (f?.name ?? "result.json")}
++      downloadLabel="Download report"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr-detect-lang/page.tsx b/apps/web/app/(tools)/ocr-detect-lang/page.tsx
+new file mode 100644
+index 0000000..f87a478
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr-detect-lang/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { OcrDetectLangClient } from "./ocr-detect-lang-client";
++
++export const metadata: Metadata = {
++  title: "Detect\",
++  description: "Language What\ language\ is\ this\ document\ in?",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("ocr-detect-lang");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="35">
++      <OcrDetectLangClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr-extract-text/ocr-extract-text-client.tsx b/apps/web/app/(tools)/ocr-extract-text/ocr-extract-text-client.tsx
+new file mode 100644
+index 0000000..8b813f1
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr-extract-text/ocr-extract-text-client.tsx
+@@ -0,0 +1,43 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const langs = [
++  { code: "eng", label: "English" },
++  { code: "rus", label: "Russian" },
++  { code: "uzb", label: "Uzbek (Latin)" },
++  { code: "uzb_cyrl", label: "Uzbek (Cyrillic)" },
++  { code: "kir", label: "Kyrgyz" },
++  { code: "eng+rus", label: "English + Russian" },
++];
++
++/** OCR a scanned PDF and return just the plain text. */
++export function OcrExtractTextClient() {
++  const [lang, setLang] = useState("eng");
++  return (
++    <SimpleToolClient
++      op="ocr-extract-text"
++      cta="Extract text →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".txt"}
++      downloadLabel="Download .txt"
++      buildExtraBody={() => ({ lang })}
++      extraFields={
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Language</span>
++          <select
++            value={lang}
++            onChange={(e) => setLang(e.target.value)}
++            className="rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          >
++            {langs.map((l) => (
++              <option key={l.code} value={l.code}>
++                {l.label}
++              </option>
++            ))}
++          </select>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr-extract-text/page.tsx b/apps/web/app/(tools)/ocr-extract-text/page.tsx
+new file mode 100644
+index 0000000..f9b3451
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr-extract-text/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { OcrExtractTextClient } from "./ocr-extract-text-client";
++
++export const metadata: Metadata = {
++  title: "Extract\",
++  description: "Text\ (OCR) Pull\ words\ out\ of\ a\ scanned\ PDF.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("ocr-extract-text");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="33">
++      <OcrExtractTextClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr-structured/ocr-structured-client.tsx b/apps/web/app/(tools)/ocr-structured/ocr-structured-client.tsx
+new file mode 100644
+index 0000000..7dc7ced
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr-structured/ocr-structured-client.tsx
+@@ -0,0 +1,41 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const langs = [
++  { code: "eng", label: "English" },
++  { code: "rus", label: "Russian" },
++  { code: "uzb", label: "Uzbek (Latin)" },
++  { code: "uzb_cyrl", label: "Uzbek (Cyrillic)" },
++];
++
++/** OCR with layout/structure info — useful for downstream parsing. */
++export function OcrStructuredClient() {
++  const [lang, setLang] = useState("eng");
++  return (
++    <SimpleToolClient
++      op="ocr-structured"
++      cta="Run structured OCR →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".hocr"}
++      downloadLabel="Download HOCR"
++      buildExtraBody={() => ({ lang })}
++      extraFields={
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Language</span>
++          <select
++            value={lang}
++            onChange={(e) => setLang(e.target.value)}
++            className="rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          >
++            {langs.map((l) => (
++              <option key={l.code} value={l.code}>
++                {l.label}
++              </option>
++            ))}
++          </select>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr-structured/page.tsx b/apps/web/app/(tools)/ocr-structured/page.tsx
+new file mode 100644
+index 0000000..499b32a
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr-structured/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { OcrStructuredClient } from "./ocr-structured-client";
++
++export const metadata: Metadata = {
++  title: "Structured\",
++  description: "OCR OCR\ with\ layout\ info\ for\ downstream\ parsing.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("ocr-structured");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="36">
++      <OcrStructuredClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-excel/page.tsx b/apps/web/app/(tools)/pdf-to-excel/page.tsx
+new file mode 100644
+index 0000000..5121198
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-excel/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { PdfToExcelClient } from "./pdf-to-excel-client";
++
++export const metadata: Metadata = {
++  title: "PDF\",
++  description: "to\ Excel Layout-aware\ text\ into\ a\ workbook.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("pdf-to-excel");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="27">
++      <PdfToExcelClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-excel/pdf-to-excel-client.tsx b/apps/web/app/(tools)/pdf-to-excel/pdf-to-excel-client.tsx
+new file mode 100644
+index 0000000..f72be2c
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-excel/pdf-to-excel-client.tsx
+@@ -0,0 +1,14 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++export function PdfToExcelClient() {
++  return (
++    <SimpleToolClient
++      op="pdf-to-excel"
++      cta="Convert to Excel →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".xlsx"}
++      downloadLabel="Download .xlsx"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-html/page.tsx b/apps/web/app/(tools)/pdf-to-html/page.tsx
+new file mode 100644
+index 0000000..57873ba
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-html/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { PdfToHtmlClient } from "./pdf-to-html-client";
++
++export const metadata: Metadata = {
++  title: "PDF\",
++  description: "to\ HTML Browser-ready\ HTML\ out\ of\ any\ PDF.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("pdf-to-html");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="30">
++      <PdfToHtmlClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-html/pdf-to-html-client.tsx b/apps/web/app/(tools)/pdf-to-html/pdf-to-html-client.tsx
+new file mode 100644
+index 0000000..0db72a4
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-html/pdf-to-html-client.tsx
+@@ -0,0 +1,14 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++export function PdfToHtmlClient() {
++  return (
++    <SimpleToolClient
++      op="pdf-to-html"
++      cta="Convert to HTML →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".html"}
++      downloadLabel="Download .html"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-jpg/page.tsx b/apps/web/app/(tools)/pdf-to-jpg/page.tsx
+new file mode 100644
+index 0000000..870e2c4
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-jpg/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { PdfToJpgClient } from "./pdf-to-jpg-client";
++
++export const metadata: Metadata = {
++  title: "PDF\",
++  description: "to\ JPG Every\ page\ as\ its\ own\ JPG,\ packaged\ in\ a\ ZIP.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("pdf-to-jpg");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="24">
++      <PdfToJpgClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-jpg/pdf-to-jpg-client.tsx b/apps/web/app/(tools)/pdf-to-jpg/pdf-to-jpg-client.tsx
+new file mode 100644
+index 0000000..68fa6e0
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-jpg/pdf-to-jpg-client.tsx
+@@ -0,0 +1,15 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++/** Every page → one JPG, plus a ZIP of all of them. */
++export function PdfToJpgClient() {
++  return (
++    <SimpleToolClient
++      op="pdf-to-jpg"
++      cta="Convert to JPG →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".zip"}
++      downloadLabel="Download ZIP"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-ppt/page.tsx b/apps/web/app/(tools)/pdf-to-ppt/page.tsx
+new file mode 100644
+index 0000000..ee9ec41
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-ppt/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { PdfToPptClient } from "./pdf-to-ppt-client";
++
++export const metadata: Metadata = {
++  title: "PDF\",
++  description: "to\ PowerPoint Page-per-slide\ deck\ you\ can\ keep\ editing.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("pdf-to-ppt");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="28">
++      <PdfToPptClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-ppt/pdf-to-ppt-client.tsx b/apps/web/app/(tools)/pdf-to-ppt/pdf-to-ppt-client.tsx
+new file mode 100644
+index 0000000..2f17e84
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-ppt/pdf-to-ppt-client.tsx
+@@ -0,0 +1,14 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++export function PdfToPptClient() {
++  return (
++    <SimpleToolClient
++      op="pdf-to-ppt"
++      cta="Convert to PowerPoint →"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".pptx"}
++      downloadLabel="Download .pptx"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/ppt-to-pdf/page.tsx b/apps/web/app/(tools)/ppt-to-pdf/page.tsx
+new file mode 100644
+index 0000000..c1485f5
+--- /dev/null
++++ b/apps/web/app/(tools)/ppt-to-pdf/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { PptToPdfClient } from "./ppt-to-pdf-client";
++
++export const metadata: Metadata = {
++  title: "PowerPoint\",
++  description: "to\ PDF Slides\ to\ PDF,\ one\ slide\ per\ page.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("ppt-to-pdf");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="26">
++      <PptToPdfClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/ppt-to-pdf/ppt-to-pdf-client.tsx b/apps/web/app/(tools)/ppt-to-pdf/ppt-to-pdf-client.tsx
+new file mode 100644
+index 0000000..63ba2e6
+--- /dev/null
++++ b/apps/web/app/(tools)/ppt-to-pdf/ppt-to-pdf-client.tsx
+@@ -0,0 +1,15 @@
++"use client";
++
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++export function PptToPdfClient() {
++  return (
++    <SimpleToolClient
++      op="ppt-to-pdf"
++      cta="Convert to PDF →"
++      accept=".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
++      resultFilename={(f) => (f?.name ?? "result").replace(/\.pptx?$/i, "") + ".pdf"}
++      downloadLabel="Download PDF"
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/qr-code/page.tsx b/apps/web/app/(tools)/qr-code/page.tsx
+new file mode 100644
+index 0000000..e4f17ca
+--- /dev/null
++++ b/apps/web/app/(tools)/qr-code/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { QrCodeClient } from "./qr-code-client";
++
++export const metadata: Metadata = {
++  title: "Add\",
++  description: "QR\ Code Embed\ a\ QR\ code\ anywhere\ on\ the\ page.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("qr-code");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="19">
++      <QrCodeClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/qr-code/qr-code-client.tsx b/apps/web/app/(tools)/qr-code/qr-code-client.tsx
+new file mode 100644
+index 0000000..9a34cec
+--- /dev/null
++++ b/apps/web/app/(tools)/qr-code/qr-code-client.tsx
+@@ -0,0 +1,70 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const positions = [
++  { code: "top-left", label: "Top-left" },
++  { code: "top-right", label: "Top-right" },
++  { code: "bottom-left", label: "Bottom-left" },
++  { code: "bottom-right", label: "Bottom-right" },
++];
++
++/** Drop a QR code onto every page. Content is free-form (URL, vCard, …). */
++export function QrCodeClient() {
++  const [content, setContent] = useState("https://convertpdfgo.com");
++  const [position, setPosition] = useState("top-right");
++  const [size, setSize] = useState(80);
++  return (
++    <SimpleToolClient
++      op="qr-code"
++      cta="Add QR code →"
++      resultFilename={(f) => "qr-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download PDF"
++      buildExtraBody={() => ({ qr_content: content, position, size })}
++      extraFields={
++        <div className="grid gap-4">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">QR content</span>
++            <input
++              type="text"
++              value={content}
++              onChange={(e) => setContent(e.target.value)}
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++          <div className="grid gap-4 md:grid-cols-2">
++            <label className="grid gap-1.5">
++              <span className="text-sm font-medium">Position</span>
++              <select
++                value={position}
++                onChange={(e) => setPosition(e.target.value)}
++                className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++              >
++                {positions.map((p) => (
++                  <option key={p.code} value={p.code}>
++                    {p.label}
++                  </option>
++                ))}
++              </select>
++            </label>
++            <label className="grid gap-1.5">
++              <span className="text-sm font-medium">
++                Size: <span className="text-muted-foreground">{size} px</span>
++              </span>
++              <input
++                type="range"
++                min={40}
++                max={200}
++                step={5}
++                value={size}
++                onChange={(e) => setSize(parseInt(e.target.value, 10))}
++                className="w-full accent-primary"
++              />
++            </label>
++          </div>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/removepage/page.tsx b/apps/web/app/(tools)/removepage/page.tsx
+new file mode 100644
+index 0000000..ba27d2f
+--- /dev/null
++++ b/apps/web/app/(tools)/removepage/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { RemovePageClient } from "./removepage-client";
++
++export const metadata: Metadata = {
++  title: "Remove\",
++  description: "Pages Drop\ specific\ pages\ from\ a\ PDF\ in\ seconds.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("removepage");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="13">
++      <RemovePageClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/removepage/removepage-client.tsx b/apps/web/app/(tools)/removepage/removepage-client.tsx
+new file mode 100644
+index 0000000..426324c
+--- /dev/null
++++ b/apps/web/app/(tools)/removepage/removepage-client.tsx
+@@ -0,0 +1,32 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++export function RemovePageClient() {
++  const [pages, setPages] = useState("");
++  return (
++    <SimpleToolClient
++      op="removepage"
++      cta="Remove pages →"
++      resultFilename={(f) => "trimmed-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download trimmed PDF"
++      buildExtraBody={() => ({ pages_to_remove: pages })}
++      extraFields={
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Pages to remove</span>
++          <input
++            type="text"
++            value={pages}
++            onChange={(e) => setPages(e.target.value)}
++            placeholder="1,4-6"
++            className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          />
++          <span className="text-xs text-muted-foreground">
++            Comma-separated single pages or ranges. Example: <code>1,4-6,12</code>.
++          </span>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/rotate/page.tsx b/apps/web/app/(tools)/rotate/page.tsx
+new file mode 100644
+index 0000000..1228a5c
+--- /dev/null
++++ b/apps/web/app/(tools)/rotate/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { RotateClient } from "./rotate-client";
++
++export const metadata: Metadata = {
++  title: "Rotate\",
++  description: "PDF Spin\ pages\ by\ 90°,\ 180°,\ or\ 270°.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("rotate");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="15">
++      <RotateClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/rotate/rotate-client.tsx b/apps/web/app/(tools)/rotate/rotate-client.tsx
+new file mode 100644
+index 0000000..184867b
+--- /dev/null
++++ b/apps/web/app/(tools)/rotate/rotate-client.tsx
+@@ -0,0 +1,58 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const angles = [90, 180, 270] as const;
++
++/**
++ * Rotate every page or a custom range. `pages` defaults to "all" which
++ * the backend honours; otherwise free-text "1-3,5" gets passed through
++ * as-is.
++ */
++export function RotateClient() {
++  const [angle, setAngle] = useState<(typeof angles)[number]>(90);
++  const [pages, setPages] = useState("all");
++  return (
++    <SimpleToolClient
++      op="rotate"
++      cta="Rotate now →"
++      resultFilename={(f) => "rotated-" + (f?.name ?? "result.pdf")}
++      downloadLabel="Download rotated PDF"
++      buildExtraBody={() => ({ angle, pages: pages.trim() || "all" })}
++      extraFields={
++        <div className="grid gap-4 md:grid-cols-2">
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Angle</span>
++            <div className="flex gap-2">
++              {angles.map((a) => (
++                <button
++                  key={a}
++                  type="button"
++                  onClick={() => setAngle(a)}
++                  className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors ${
++                    angle === a
++                      ? "border-primary bg-primary/5 font-medium"
++                      : "border-border bg-card"
++                  }`}
++                >
++                  {a}°
++                </button>
++              ))}
++            </div>
++          </label>
++          <label className="grid gap-1.5">
++            <span className="text-sm font-medium">Pages</span>
++            <input
++              type="text"
++              value={pages}
++              onChange={(e) => setPages(e.target.value)}
++              placeholder="all  ·  1-3,5"
++              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++            />
++          </label>
++        </div>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/scan-to-pdf/page.tsx b/apps/web/app/(tools)/scan-to-pdf/page.tsx
+new file mode 100644
+index 0000000..0fe032f
+--- /dev/null
++++ b/apps/web/app/(tools)/scan-to-pdf/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { ScanToPdfClient } from "./scan-to-pdf-client";
++
++export const metadata: Metadata = {
++  title: "Scan\",
++  description: "to\ PDF Photos\ of\ paper\ →\ one\ searchable\ PDF.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("scan-to-pdf");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="32">
++      <ScanToPdfClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/scan-to-pdf/scan-to-pdf-client.tsx b/apps/web/app/(tools)/scan-to-pdf/scan-to-pdf-client.tsx
+new file mode 100644
+index 0000000..f03ce7e
+--- /dev/null
++++ b/apps/web/app/(tools)/scan-to-pdf/scan-to-pdf-client.tsx
+@@ -0,0 +1,44 @@
++"use client";
++
++import { useState } from "react";
++import { SimpleToolClient } from "@/components/tools/simple-tool-client";
++
++const langs = [
++  { code: "eng", label: "English" },
++  { code: "rus", label: "Russian" },
++  { code: "uzb", label: "Uzbek (Latin)" },
++  { code: "uzb_cyrl", label: "Uzbek (Cyrillic)" },
++  { code: "kir", label: "Kyrgyz" },
++];
++
++/** Photos of paper → searchable PDF. */
++export function ScanToPdfClient() {
++  const [lang, setLang] = useState("eng");
++  return (
++    <SimpleToolClient
++      op="scan-to-pdf"
++      cta="Build searchable PDF →"
++      accept="image/jpeg,image/png,.jpg,.jpeg,.png"
++      multiple
++      resultFilename={() => "scanned.pdf"}
++      downloadLabel="Download searchable PDF"
++      buildExtraBody={() => ({ lang })}
++      extraFields={
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Language</span>
++          <select
++            value={lang}
++            onChange={(e) => setLang(e.target.value)}
++            className="rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          >
++            {langs.map((l) => (
++              <option key={l.code} value={l.code}>
++                {l.label}
++              </option>
++            ))}
++          </select>
++        </label>
++      }
++    />
++  );
++}
+diff --git a/apps/web/app/(tools)/url-to-pdf/page.tsx b/apps/web/app/(tools)/url-to-pdf/page.tsx
+new file mode 100644
+index 0000000..bcf750b
+--- /dev/null
++++ b/apps/web/app/(tools)/url-to-pdf/page.tsx
+@@ -0,0 +1,21 @@
++import type { Metadata } from "next";
++import { notFound } from "next/navigation";
++import { ToolPageShell } from "@/components/tools/tool-page-shell";
++import { getToolBySlug } from "@converto/data";
++import { UrlToPdfClient } from "./url-to-pdf-client";
++
++export const metadata: Metadata = {
++  title: "URL\",
++  description: "to\ PDF Snapshot\ any\ public\ page\ as\ a\ PDF.",
++};
++
++export default function Page() {
++  const tool = getToolBySlug("url-to-pdf");
++  if (!tool) notFound();
++
++  return (
++    <ToolPageShell tool={tool} index="31">
++      <UrlToPdfClient />
++    </ToolPageShell>
++  );
++}
+diff --git a/apps/web/app/(tools)/url-to-pdf/url-to-pdf-client.tsx b/apps/web/app/(tools)/url-to-pdf/url-to-pdf-client.tsx
+new file mode 100644
+index 0000000..113e454
+--- /dev/null
++++ b/apps/web/app/(tools)/url-to-pdf/url-to-pdf-client.tsx
+@@ -0,0 +1,93 @@
++"use client";
++
++import { useState } from "react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { JobStatusPanel } from "@/components/tools/job-status";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++const pageSizes = ["A4", "A3", "A5", "Letter", "Legal", "B4", "B5"];
++
++/** Snapshot any public URL as a PDF. */
++export function UrlToPdfClient() {
++  const [url, setUrl] = useState("https://convertpdfgo.com");
++  const [pageSize, setPageSize] = useState("A4");
++  const [landscape, setLandscape] = useState(false);
++  const [waitFor, setWaitFor] = useState("1s");
++  const runner = useJobRunner();
++
++  async function onSubmit() {
++    if (!url.trim()) return;
++    await runner.run(
++      [],
++      () => ({ url, page_size: pageSize, landscape, wait_for: waitFor }),
++      "url-to-pdf",
++    );
++  }
++
++  return (
++    <Card className="grid gap-6 p-8">
++      <label className="grid gap-1.5">
++        <span className="text-sm font-medium">URL</span>
++        <input
++          type="url"
++          value={url}
++          onChange={(e) => setUrl(e.target.value)}
++          placeholder="https://example.com"
++          className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++        />
++      </label>
++      <div className="grid gap-4 md:grid-cols-3">
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Page size</span>
++          <select
++            value={pageSize}
++            onChange={(e) => setPageSize(e.target.value)}
++            className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          >
++            {pageSizes.map((s) => (
++              <option key={s} value={s}>
++                {s}
++              </option>
++            ))}
++          </select>
++        </label>
++        <label className="flex items-end gap-2 pb-2 text-sm">
++          <input
++            type="checkbox"
++            checked={landscape}
++            onChange={(e) => setLandscape(e.target.checked)}
++            className="size-4 accent-primary"
++          />
++          <span>Landscape orientation</span>
++        </label>
++        <label className="grid gap-1.5">
++          <span className="text-sm font-medium">Wait for</span>
++          <input
++            type="text"
++            value={waitFor}
++            onChange={(e) => setWaitFor(e.target.value)}
++            placeholder="1s · 2s · selector"
++            className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++          />
++        </label>
++      </div>
++      <div className="flex justify-end">
++        <Button
++          size="lg"
++          disabled={!url.trim() || runner.phase === "uploading" || runner.phase === "running"}
++          onClick={onSubmit}
++        >
++          Capture page →
++        </Button>
++      </div>
++      <JobStatusPanel
++        phase={runner.phase}
++        error={runner.error}
++        onDownload={() => runner.download("page.pdf")}
++        onReset={runner.reset}
++        downloadLabel="Download PDF"
++      />
++    </Card>
++  );
++}
+diff --git a/apps/web/app/account/connections/page.tsx b/apps/web/app/account/connections/page.tsx
+new file mode 100644
+index 0000000..e6ed193
+--- /dev/null
++++ b/apps/web/app/account/connections/page.tsx
+@@ -0,0 +1,113 @@
++"use client";
++
++import { useEffect, useState } from "react";
++import { Cloud, Check, Link2Off, ExternalLink } from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import {
++  connectStorageProviderUrl,
++  disconnectStorageProvider,
++  getStorageProviders,
++  type StorageProvider,
++} from "@/lib/api";
++
++/**
++ * Manage cloud storage connections. `configured: false` providers (e.g.
++ * OneDrive when the backend wasn't started with the env) get hidden
++ * entirely — they'd be unreachable from the OAuth start endpoint
++ * anyway, and showing greyed-out cards is just noise.
++ */
++export default function ConnectionsPage() {
++  const [providers, setProviders] = useState<StorageProvider[] | null>(null);
++  const [busy, setBusy] = useState<string | null>(null);
++  const [error, setError] = useState<string | null>(null);
++
++  async function load() {
++    setError(null);
++    try {
++      setProviders(await getStorageProviders());
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Failed to load providers");
++    }
++  }
++
++  useEffect(() => {
++    load();
++  }, []);
++
++  async function onDisconnect(name: StorageProvider["name"]) {
++    if (!confirm("Disconnect this provider?")) return;
++    setBusy(name);
++    try {
++      await disconnectStorageProvider(name);
++      await load();
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Disconnect failed");
++    } finally {
++      setBusy(null);
++    }
++  }
++
++  return (
++    <section className="container py-12">
++      <div className="mb-8">
++        <h1 className="text-3xl font-bold tracking-tight">Cloud connections</h1>
++        <p className="mt-2 text-sm text-muted-foreground">
++          Once you connect a provider, every tool gets a one-click &quot;Save to&quot; button
++          next to the download.
++        </p>
++      </div>
++
++      {error && (
++        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
++          {error}
++        </div>
++      )}
++
++      <div className="grid gap-4 md:grid-cols-2">
++        {providers
++          ?.filter((p) => p.configured)
++          .map((p) => (
++            <Card key={p.name} className="flex items-center justify-between gap-4 p-5">
++              <div className="flex items-center gap-3">
++                <span className="grid size-10 place-items-center rounded-xl bg-primary/10">
++                  <Cloud className="size-5 text-primary" />
++                </span>
++                <div>
++                  <p className="font-semibold">{p.display_name}</p>
++                  <p className="text-xs text-muted-foreground">
++                    {p.connected ? "Connected" : "Not connected"}
++                  </p>
++                </div>
++              </div>
++              {p.connected ? (
++                <Button
++                  size="sm"
++                  variant="outline"
++                  disabled={busy === p.name}
++                  onClick={() => onDisconnect(p.name)}
++                >
++                  <Link2Off className="mr-1.5 size-4" />
++                  Disconnect
++                </Button>
++              ) : (
++                <Button asChild size="sm">
++                  <a href={connectStorageProviderUrl(p.name)}>
++                    <Check className="mr-1.5 size-4" />
++                    Connect
++                    <ExternalLink className="ml-1.5 size-3.5 opacity-60" />
++                  </a>
++                </Button>
++              )}
++            </Card>
++          ))}
++
++        {providers && providers.filter((p) => p.configured).length === 0 && (
++          <Card className="col-span-full p-8 text-center text-sm text-muted-foreground">
++            No cloud providers configured on the server yet.
++          </Card>
++        )}
++      </div>
++    </section>
++  );
++}
+diff --git a/apps/web/components/tools/job-status.tsx b/apps/web/components/tools/job-status.tsx
+index 42b4cf8..58d12d4 100644
+--- a/apps/web/components/tools/job-status.tsx
++++ b/apps/web/components/tools/job-status.tsx
+@@ -3,6 +3,7 @@
+ import { Loader2, CheckCircle2, AlertCircle, Download } from "lucide-react";
+ import { Button } from "@converto/ui/components/button";
+ import type { Phase } from "./use-job-runner";
++import { SaveToCloud } from "./save-to-cloud";
+ 
+ export interface JobStatusProps {
+   phase: Phase;
+@@ -13,6 +14,10 @@ export interface JobStatusProps {
+   hideDownload?: boolean;
+   /** Custom label for the action — "Download merged PDF", "Download ZIP", ... */
+   downloadLabel?: string;
++  /** Output file id — drives the Save-to-cloud buttons. */
++  outputFileId?: string | null;
++  /** Filename used when the user picks "Save to Dropbox / Drive". */
++  filename?: string;
+ }
+ 
+ /**
+@@ -27,6 +32,8 @@ export function JobStatusPanel({
+   onReset,
+   hideDownload = false,
+   downloadLabel = "Download result",
++  outputFileId,
++  filename,
+ }: JobStatusProps) {
+   if (phase === "idle") return null;
+ 
+@@ -59,18 +66,21 @@ export function JobStatusPanel({
+ 
+   // done
+   return (
+-    <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
+-      <span className="flex items-center gap-2">
+-        <CheckCircle2 className="size-4 text-primary" />
+-        <span className="font-medium">Done.</span>
+-        <span className="text-muted-foreground">File expires in 5 minutes — grab it now.</span>
+-      </span>
+-      {!hideDownload && onDownload && (
+-        <Button size="sm" onClick={onDownload}>
+-          <Download className="mr-1.5 size-4" />
+-          {downloadLabel}
+-        </Button>
+-      )}
++    <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm">
++      <div className="flex items-center justify-between gap-3">
++        <span className="flex items-center gap-2">
++          <CheckCircle2 className="size-4 text-primary" />
++          <span className="font-medium">Done.</span>
++          <span className="text-muted-foreground">File expires in 5 minutes — grab it now.</span>
++        </span>
++        {!hideDownload && onDownload && (
++          <Button size="sm" onClick={onDownload}>
++            <Download className="mr-1.5 size-4" />
++            {downloadLabel}
++          </Button>
++        )}
++      </div>
++      {outputFileId && <SaveToCloud fileId={outputFileId} filename={filename} />}
+     </div>
+   );
+ }
+diff --git a/apps/web/components/tools/save-to-cloud.tsx b/apps/web/components/tools/save-to-cloud.tsx
+new file mode 100644
+index 0000000..5f65861
+--- /dev/null
++++ b/apps/web/components/tools/save-to-cloud.tsx
+@@ -0,0 +1,85 @@
++"use client";
++
++import { useEffect, useState } from "react";
++import { Cloud, Check, AlertCircle } from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import {
++  exportFileToCloud,
++  getStorageProviders,
++  type StorageProvider,
++} from "@/lib/api";
++
++export interface SaveToCloudProps {
++  fileId: string;
++  filename?: string;
++}
++
++/**
++ * "Save to Dropbox / Drive" buttons rendered next to the download CTA.
++ * Only renders providers the user has connected — disabled ones are
++ * managed from /account/connections. Silent if the user is a guest (the
++ * `/api/storage/providers` call returns providers with connected=false
++ * for everyone unauthenticated).
++ */
++export function SaveToCloud({ fileId, filename }: SaveToCloudProps) {
++  const [providers, setProviders] = useState<StorageProvider[] | null>(null);
++  const [busy, setBusy] = useState<string | null>(null);
++  const [done, setDone] = useState<string | null>(null);
++  const [error, setError] = useState<string | null>(null);
++
++  useEffect(() => {
++    let cancelled = false;
++    getStorageProviders()
++      .then((p) => !cancelled && setProviders(p))
++      .catch(() => !cancelled && setProviders([]));
++    return () => {
++      cancelled = true;
++    };
++  }, []);
++
++  if (!providers) return null;
++  const connected = providers.filter((p) => p.connected);
++  if (!connected.length) return null;
++
++  async function onSave(p: StorageProvider) {
++    setBusy(p.name);
++    setError(null);
++    setDone(null);
++    try {
++      const path = filename ? "/" + filename : undefined;
++      await exportFileToCloud(fileId, p.name, path);
++      setDone(p.display_name);
++    } catch (e) {
++      setError(e instanceof Error ? e.message : "Export failed");
++    } finally {
++      setBusy(null);
++    }
++  }
++
++  return (
++    <div className="mt-3 flex flex-wrap items-center gap-2">
++      {connected.map((p) => (
++        <Button
++          key={p.name}
++          size="sm"
++          variant="outline"
++          disabled={busy === p.name}
++          onClick={() => onSave(p)}
++        >
++          <Cloud className="mr-1.5 size-4" />
++          {busy === p.name ? "Saving…" : `Save to ${p.display_name}`}
++        </Button>
++      ))}
++      {done && (
++        <span className="flex items-center gap-1 text-xs text-primary">
++          <Check className="size-3" /> Sent to {done}
++        </span>
++      )}
++      {error && (
++        <span className="flex items-center gap-1 text-xs text-destructive">
++          <AlertCircle className="size-3" /> {error}
++        </span>
++      )}
++    </div>
++  );
++}
+diff --git a/apps/web/components/tools/simple-tool-client.tsx b/apps/web/components/tools/simple-tool-client.tsx
+index 265a3a4..b4a6cf4 100644
+--- a/apps/web/components/tools/simple-tool-client.tsx
++++ b/apps/web/components/tools/simple-tool-client.tsx
+@@ -94,6 +94,8 @@ export function SimpleToolClient({
+         onDownload={() => runner.download(resultFilename(file))}
+         onReset={runner.reset}
+         downloadLabel={downloadLabel}
++        outputFileId={runner.result?.output_file_id ?? null}
++        filename={resultFilename(file)}
+       />
+     </Card>
+   );
+diff --git a/apps/web/lib/api.ts b/apps/web/lib/api.ts
+index aefc5e7..14066bb 100644
+--- a/apps/web/lib/api.ts
++++ b/apps/web/lib/api.ts
+@@ -284,3 +284,59 @@ export async function runJobSync<T extends JobRecord = JobRecord>(
+   }
+   return res.Data;
+ }
++
++// ─── Cloud storage export ("Save to Dropbox / Drive / OneDrive") ────────────
++
++export interface StorageProvider {
++  name: "dropbox" | "gdrive" | "onedrive";
++  display_name: string;
++  /** True if the backend was launched with this provider's client ID/secret. */
++  configured: boolean;
++  /** True if the current user has finished the provider's OAuth flow. */
++  connected: boolean;
++}
++
++export interface ExportResult {
++  provider: string;
++  path: string;
++  size: number;
++}
++
++/** List every storage provider the backend offers, with per-user state. */
++export async function getStorageProviders(): Promise<StorageProvider[]> {
++  const res = await api.get<StorageProvider[]>("/api/storage/providers");
++  return res.Data ?? [];
++}
++
++/**
++ * Send the user to the provider's OAuth consent screen. The backend
++ * redirects them back to /oauth/<provider>/callback once approved,
++ * stores the token, and bounces them to /account/connections.
++ */
++export function connectStorageProviderUrl(provider: StorageProvider["name"]): string {
++  return `${API_BASE}/api/storage/${provider}/connect`;
++}
++
++/** Disconnect the user from a provider (revokes the stored token). */
++export async function disconnectStorageProvider(
++  provider: StorageProvider["name"],
++): Promise<void> {
++  await api.delete(`/api/storage/${provider}`);
++}
++
++/**
++ * Push an already-generated output file to one of the user's connected
++ * cloud providers. `path` is optional — backend writes to the provider's
++ * root with an auto-generated name when omitted.
++ */
++export async function exportFileToCloud(
++  fileId: string,
++  provider: StorageProvider["name"],
++  path?: string,
++): Promise<ExportResult> {
++  const res = await api.post<ExportResult>(`/file/${fileId}/export`, { provider, path });
++  if (res.StatusCode >= 400) {
++    throw new Error(res.Description ?? "Export failed");
++  }
++  return res.Data;
++}
+diff --git a/packages/data/src/tools.ts b/packages/data/src/tools.ts
+index eaa8ae5..c0a7b04 100644
+--- a/packages/data/src/tools.ts
++++ b/packages/data/src/tools.ts
+@@ -79,6 +79,161 @@ export const tools: Tool[] = [
+     description: "Add (your own) watermark to any page.",
+     category: "edit",
+   },
++  // ── Page operations ──────────────────────────────────────────────────────
++  {
++    slug: "removepage",
++    name: "Remove Pages",
++    description: "Drop specific pages from a PDF — drag a range, hit go.",
++    category: "organize",
++  },
++  {
++    slug: "extract",
++    name: "Extract Pages",
++    description: "Keep only the pages you want, in their own PDF.",
++    category: "organize",
++  },
++  {
++    slug: "rotate",
++    name: "Rotate PDF",
++    description: "Spin a page or every page by 90°, 180°, 270°.",
++    category: "edit",
++  },
++  {
++    slug: "crop",
++    name: "Crop PDF",
++    description: "Trim margins or focus a region across every page.",
++    category: "edit",
++  },
++  {
++    slug: "add-page-numbers",
++    name: "Add Page Numbers",
++    description: "Sequential numbering with full control over style and position.",
++    category: "edit",
++  },
++  {
++    slug: "header-footer",
++    name: "Header & Footer",
++    description: "Drop a header or footer on every page in seconds.",
++    category: "edit",
++  },
++  {
++    slug: "qr-code",
++    name: "Add QR Code",
++    description: "Embed a QR code anywhere on the page — links, vCards, anything.",
++    category: "edit",
++  },
++  {
++    slug: "nup",
++    name: "N-up Layout",
++    description: "Fit 2, 4, 6, or 9 pages onto a single sheet.",
++    category: "edit",
++  },
++  // ── Analysis ─────────────────────────────────────────────────────────────
++  {
++    slug: "inspect",
++    name: "Inspect PDF",
++    description: "Page count, author, title, keywords — instant metadata.",
++    category: "edit",
++  },
++  {
++    slug: "detect-blank",
++    name: "Detect Blank Pages",
++    description: "Find every empty page so you can prune them before printing.",
++    category: "edit",
++  },
++  {
++    slug: "metadata",
++    name: "Edit Metadata",
++    description: "Rewrite title, author, subject, keywords, creator.",
++    category: "edit",
++  },
++  // ── Image conversions ────────────────────────────────────────────────────
++  {
++    slug: "pdf-to-jpg",
++    name: "PDF to JPG",
++    description: "Every page as its own JPG — plus a ZIP of all of them.",
++    category: "convert",
++  },
++  // ── Office conversions ───────────────────────────────────────────────────
++  {
++    slug: "excel-to-pdf",
++    name: "Excel to PDF",
++    description: "Workbooks to clean PDFs — one sheet per page.",
++    category: "convert",
++  },
++  {
++    slug: "ppt-to-pdf",
++    name: "PowerPoint to PDF",
++    description: "Slides to PDF, one slide per page.",
++    category: "convert",
++  },
++  {
++    slug: "pdf-to-excel",
++    name: "PDF to Excel",
++    description: "Layout-aware text extraction into a workbook.",
++    category: "convert",
++  },
++  {
++    slug: "pdf-to-ppt",
++    name: "PDF to PowerPoint",
++    description: "Page-per-slide deck you can keep editing.",
++    category: "convert",
++  },
++  {
++    slug: "html-to-pdf",
++    name: "HTML to PDF",
++    description: "Paste HTML, get a clean PDF rendered by Chromium.",
++    category: "convert",
++  },
++  {
++    slug: "pdf-to-html",
++    name: "PDF to HTML",
++    description: "Browser-ready HTML out of any PDF.",
++    category: "convert",
++  },
++  {
++    slug: "url-to-pdf",
++    name: "URL to PDF",
++    description: "Snapshot any public web page as a PDF.",
++    category: "convert",
++  },
++  // ── OCR family ───────────────────────────────────────────────────────────
++  {
++    slug: "scan-to-pdf",
++    name: "Scan to PDF",
++    description: "Photos of paper documents → one searchable PDF.",
++    category: "ai",
++  },
++  {
++    slug: "ocr-extract-text",
++    name: "Extract Text (OCR)",
++    description: "Pull every word out of a scanned PDF, into plain text.",
++    category: "ai",
++  },
++  {
++    slug: "image-to-text",
++    name: "Image to Text",
++    description: "Read text from any photo or screenshot.",
++    category: "ai",
++  },
++  {
++    slug: "ocr-detect-lang",
++    name: "Detect Language",
++    description: "What language is this document in? Tesseract will tell you.",
++    category: "ai",
++  },
++  {
++    slug: "ocr-structured",
++    name: "Structured OCR",
++    description: "OCR with layout info — headings, columns, tables intact.",
++    category: "ai",
++  },
++  {
++    slug: "extract-text",
++    name: "Extract Text",
++    description: "Plain text out of a PDF that already has a text layer.",
++    category: "edit",
++  },
+ ];
+ 
+ export function getToolBySlug(slug: string): Tool | undefined {
 -- 
 2.34.1
 
