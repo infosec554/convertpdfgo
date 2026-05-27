@@ -47,11 +47,10 @@ func NewContactService(stg storage.IStorage, log logger.ILogger, mailer MailerSe
 
 func (s *contactService) Submit(ctx context.Context, req models.ContactSubmitRequest, userID *string) (string, error) {
 	m := &models.ContactMessage{
-		UserID:  userID,
-		Name:    strings.TrimSpace(req.Name),
-		Email:   strings.TrimSpace(strings.ToLower(req.Email)),
-		Subject: strings.TrimSpace(req.Subject),
-		Body:    req.Body,
+		UserID: userID,
+		Name:   strings.TrimSpace(req.Name),
+		Email:  strings.TrimSpace(strings.ToLower(req.Email)),
+		Body:   req.Message,
 	}
 	if err := s.stg.Submit(ctx, m); err != nil {
 		return "", err

@@ -31,15 +31,15 @@ type ContactReply struct {
 
 // --- Request / filter shapes --------------------------------------------
 
-// ContactSubmitRequest is the body for POST /api/contact. Email is
-// required so the admin reply has somewhere to land — even when the
-// caller is logged in (we don't infer it from JWT silently; let the
-// user confirm where the reply goes).
+// ContactSubmitRequest is the body for POST /api/contact. Mirrors
+// the public contact form (apps/web/app/(marketing)/contact): three
+// fields, no subject. Email is required even when the caller is
+// logged in — the user confirms where the reply lands rather than
+// us silently lifting it from the JWT.
 type ContactSubmitRequest struct {
 	Name    string `json:"name"    binding:"required,min=2,max=255"`
 	Email   string `json:"email"   binding:"required,email"`
-	Subject string `json:"subject" binding:"max=255"`
-	Body    string `json:"body"    binding:"required,min=5,max=8000"`
+	Message string `json:"message" binding:"required,min=5,max=8000"`
 }
 
 // ContactListFilter — admin dashboard query for GET /admin/contacts.

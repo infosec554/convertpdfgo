@@ -46,7 +46,6 @@ func (h Handler) SubmitContact(c *gin.Context) {
 	h.publishAdminEvent(ctx, notify.TypeContactNew, notify.ContactNew{
 		ContactID: id,
 		Email:     req.Email,
-		Subject:   req.Subject,
 	})
 	handleResponse(c, h.log, "received", http.StatusCreated, gin.H{"id": id})
 }
