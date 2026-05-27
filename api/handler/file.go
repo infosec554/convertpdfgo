@@ -299,6 +299,169 @@ func resolveContentType(fileType, fileName string) string {
 	return "application/octet-stream"
 }
 
+// ImportFile pulls a file from an external URL (Dropbox Chooser direct
+// link, Google Drive download URL, plain https) and registers it in our
+// files table as if the user had uploaded it locally. The frontend's
+// "Dropbox" / "Google Drive" buttons hit this endpoint with the URL the
+// provider's picker handed back, so the rest of the pipeline doesn't
+// have to know where the file came from.
+//
+// Body: { provider: "dropbox"|"gdrive"|"url", url: "...", name?: "..." }
+//
+// Auth: OptionalAuth — guests can import too (same tier caps as upload).
+// Size: caps mirror /file/upload (30 MB guest, 50 MB signed-in).
+//
+// @Router  /file/import [POST]
+// @Tags    file
+func (h Handler) ImportFile(c *gin.Context) {
+	var req struct {
+		Provider string `json:"provider"`
+		URL      string `json:"url" binding:"required"`
+		Name     string `json:"name"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
+		return
+	}
+	// Allow only https URLs — http would let an attacker downgrade and
+	// localhost would let them reach internal services (SSRF).
+	if !strings.HasPrefix(req.URL, "https://") {
+		handleResponse(c, h.log, "https url required", http.StatusBadRequest, "url must be https")
+		return
+	}
+
+	var ptrUserID *string
+	if uid, exists := c.Get("user_id"); exists {
+		if strID, ok := uid.(string); ok && strID != "" {
+			ptrUserID = &strID
+		}
+	}
+	const (
+		guestMaxSize      = 30 * 1024 * 1024
+		registeredMaxSize = 50 * 1024 * 1024
+	)
+	maxSize := int64(guestMaxSize)
+	if ptrUserID != nil {
+		maxSize = int64(registeredMaxSize)
+	}
+
+	// Fetch with a generous timeout — Dropbox direct links can be slow
+	// on first hit while their CDN warms up.
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	defer cancel()
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, req.URL, nil)
+	if err != nil {
+		handleResponse(c, h.log, "build request failed", http.StatusBadRequest, err.Error())
+		return
+	}
+	resp, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		handleResponse(c, h.log, "fetch from "+req.Provider+" failed", http.StatusBadGateway, err.Error())
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		handleResponse(c, h.log, "cloud download non-OK", http.StatusBadGateway,
+			fmt.Sprintf("upstream returned HTTP %d", resp.StatusCode))
+		return
+	}
+
+	// Pick a filename: prefer the caller's hint, then the Content-
+	// Disposition header from the provider, then the URL path's last
+	// segment.
+	fileName := req.Name
+	if fileName == "" {
+		if cd := resp.Header.Get("Content-Disposition"); cd != "" {
+			if _, params, err := mime.ParseMediaType(cd); err == nil {
+				fileName = params["filename"]
+			}
+		}
+	}
+	if fileName == "" {
+		// last URL path segment, sans query
+		bare := req.URL
+		if i := strings.IndexByte(bare, '?'); i > 0 {
+			bare = bare[:i]
+		}
+		if i := strings.LastIndexByte(bare, '/'); i >= 0 && i < len(bare)-1 {
+			fileName = bare[i+1:]
+		}
+	}
+	if fileName == "" {
+		fileName = "imported"
+	}
+
+	fileID := uuid.NewString()
+	ext := filepath.Ext(fileName)
+	savePath := fmt.Sprintf("uploads/%s%s", fileID, ext)
+	if err := os.MkdirAll("uploads", 0o755); err != nil {
+		handleResponse(c, h.log, "prepare uploads dir failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	dst, err := os.Create(savePath)
+	if err != nil {
+		handleResponse(c, h.log, "create file failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+	hash := sha256.New()
+	// Cap how much we copy at maxSize+1 so an oversized payload trips
+	// the limit instead of filling the disk.
+	limited := &io.LimitedReader{R: resp.Body, N: maxSize + 1}
+	written, err := io.Copy(io.MultiWriter(dst, hash), limited)
+	dst.Close()
+	if err != nil {
+		os.Remove(savePath)
+		handleResponse(c, h.log, "download stream failed", http.StatusBadGateway, err.Error())
+		return
+	}
+	if written > maxSize {
+		os.Remove(savePath)
+		handleResponse(c, h.log,
+			fmt.Sprintf("file too large (%d > %d bytes); sign in for the higher tier", written, maxSize),
+			http.StatusRequestEntityTooLarge, nil)
+		return
+	}
+
+	sha := hex.EncodeToString(hash.Sum(nil))
+
+	// Use mime detection so Content-Type stays sensible on download.
+	fileType := resp.Header.Get("Content-Type")
+	if fileType == "" || strings.HasPrefix(fileType, "application/octet-stream") {
+		if mt := mime.TypeByExtension(ext); mt != "" {
+			fileType = mt
+		} else {
+			fileType = "application/octet-stream"
+		}
+	}
+
+	ctxDB, cancelDB := context.WithTimeout(context.Background(), timeouts.DB)
+	defer cancelDB()
+
+	savedID, err := h.services.File().Upload(ctxDB, models.File{
+		ID:         fileID,
+		UserID:     ptrUserID,
+		FileName:   fileName,
+		FilePath:   savePath,
+		FileType:   fileType,
+		FileSize:   written,
+		UploadedAt: time.Now(),
+		SHA256:     &sha,
+	})
+	if err != nil {
+		os.Remove(savePath)
+		handleResponse(c, h.log, "save failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	h.log.Info("file imported", logger.String("provider", req.Provider),
+		logger.String("id", savedID), logger.Any("size", written))
+	handleResponse(c, h.log, "file imported", http.StatusCreated, gin.H{
+		"id": savedID,
+	})
+}
+
 // DeleteFile godoc
 // @Router       /file/{id} [DELETE]
 // @Summary      Delete file by ID (guest-owned: open; user-owned: owner or admin)

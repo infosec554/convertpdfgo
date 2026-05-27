@@ -37,6 +37,11 @@ func registerFileRoutes(r *gin.Engine, h handler.Handler) {
 	// re-attaching their "private" upload to the guest pool. Cap-tier
 	// logic (20 MB guest / 30 MB member) is in the handler.
 	r.POST("/file/upload", h.OptionalAuthMiddleware, h.UploadFile)
+	// /file/import is the cloud-picker counterpart of /file/upload —
+	// the frontend Dropbox Chooser / Google Picker hands us a URL, the
+	// backend downloads it and registers a row exactly as if the user
+	// had uploaded it locally.
+	r.POST("/file/import", h.OptionalAuthMiddleware, h.ImportFile)
 	r.GET("/file/:id/download", h.OptionalAuthMiddleware, h.DownloadFile)
 	r.GET("/file/:id", h.OptionalAuthMiddleware, h.GetFile)
 	r.DELETE("/file/:id", h.OptionalAuthMiddleware, h.DeleteFile)
@@ -59,6 +64,11 @@ func registerFileRoutes(r *gin.Engine, h handler.Handler) {
 	// carry our JWT — OptionalAuth + an explicit 401 inside the
 	// handler when user_id ends up empty is the right shape.
 	r.GET("/api/storage/providers", h.OptionalAuthMiddleware, h.ListStorageProviders)
+	// Public picker config — frontend Dropbox Chooser / Google Picker
+	// need the public app keys to boot their SDKs. None of these are
+	// secrets; the matching secrets stay server-side and only get used
+	// during OAuth token exchange.
+	r.GET("/api/cloud-picker/config", h.GetCloudPickerConfig)
 	r.GET("/api/storage/:provider/connect", h.AuthorizerMiddleware, h.ConnectStorageProvider)
 	r.DELETE("/api/storage/:provider", h.AuthorizerMiddleware, h.DisconnectStorageProvider)
 	r.GET("/oauth/:provider/callback", h.OptionalAuthMiddleware, h.FinishStorageProviderOAuth)
