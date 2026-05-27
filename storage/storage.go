@@ -72,6 +72,39 @@ type IStorage interface {
 
 	// User → admin contact inbox + admin reply thread.
 	Contact() IContactStorage
+
+	// PDF Chat AI — RAG-based chat with uploaded PDFs (migration 0017).
+	Chat() IChatStorage
+}
+
+// IChatStorage backs the chat_sessions / chat_messages / pdf_chunks /
+// chat_suggestions tables created by migration 0017. All vector ops go
+// through pgvector — postgres must run an image that ships the extension.
+type IChatStorage interface {
+	// Sessions
+	CreateSession(ctx context.Context, s *models.ChatSession) error
+	GetSession(ctx context.Context, id string) (*models.ChatSession, error)
+	UpdateSessionIndexing(ctx context.Context, id, status, errMsg, title, summary string, pageCount, chunkCount int) error
+	ListSessions(ctx context.Context, userID *string, limit int) ([]models.ChatSession, error)
+	DeleteSession(ctx context.Context, id string) error
+
+	// Messages
+	AppendMessage(ctx context.Context, m *models.ChatMessage) error
+	ListMessages(ctx context.Context, sessionID string, limit int) ([]models.ChatMessage, error)
+
+	// Suggested questions (rendered in the sidebar prompts)
+	SaveSuggestions(ctx context.Context, sessionID string, qs []string) error
+	GetSuggestions(ctx context.Context, sessionID string) ([]string, error)
+
+	// PDF chunks + vector search
+	SaveChunks(ctx context.Context, sessionID string, chunks []models.PDFChunk, embeddings [][]float32) error
+	SearchChunks(ctx context.Context, sessionID string, queryEmbedding []float32, limit int) ([]models.PDFChunkWithScore, error)
+
+	// SetSessionFileID swaps the session's underlying file_id — used
+	// when the indexer converts a non-PDF upload (Word/Excel/PPT) to a
+	// PDF and wants future PDF-viewer requests to fetch the converted
+	// version, not the original Office doc.
+	SetSessionFileID(ctx context.Context, sessionID, fileID string) error
 }
 
 // IContactStorage holds the contact_messages + contact_replies

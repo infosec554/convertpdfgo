@@ -69,6 +69,7 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	registerFileRoutes(r, h)
 	registerPDFRoutes(r, h)
 	registerContactRoutes(r, h)
+	registerChatRoutes(r, h)
 	registerAdminRoutes(r, h)
 
 	// WebSocket endpoints. Auth lives in the handler (token via query

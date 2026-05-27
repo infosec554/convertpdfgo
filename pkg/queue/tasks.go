@@ -47,6 +47,11 @@ const (
 	TaskNUp         = "pdf:nup"
 	TaskURLToPDF    = "pdf:url_to_pdf"
 	TaskMetadata    = "pdf:metadata"
+
+	// PDF Chat AI — async indexing pipeline (extract → chunk → embed →
+	// save → summarise). Payload is SimpleJobPayload with JobID =
+	// session_id; the chat service knows how to find the file from there.
+	TaskChatIndex = "chat:index_pdf"
 )
 
 // MergePayload carries data needed to process a merge job in the worker.

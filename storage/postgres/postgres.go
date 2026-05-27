@@ -306,6 +306,10 @@ func (s *Store) Contact() storage.IContactStorage {
 	return NewContactRepo(s.pool, s.log)
 }
 
+func (s *Store) Chat() storage.IChatStorage {
+	return NewChatRepo(s.pool, s.log)
+}
+
 func (s *Store) PDFToHTML() storage.IPDFToHTMLStorage {
 	return NewPDFToHTMLRepo(s.pool, s.log)
 }

@@ -75,6 +75,9 @@ type IServiceManager interface {
 
 	// Contact inbox — public submit + admin reply.
 	Contact() ContactService
+
+	// PDF Chat AI — RAG-backed chat over uploaded PDFs.
+	Chat() ChatService
 }
 
 type service struct {
@@ -132,6 +135,7 @@ type service struct {
 	storageExportService StorageExportService
 	inviteService        InviteService
 	contactService       ContactService
+	chatService          ChatService
 }
 
 func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client, cfg config.Config) IServiceManager {
@@ -191,7 +195,12 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		storageExportService: NewStorageExportService(storage, log, cfg),
 		inviteService:        NewInviteService(storage, redis, log, NewMailerService(mailerCore), cfg),
 		contactService:       NewContactService(storage, log, NewMailerService(mailerCore), cfg),
+		chatService:          NewChatService(storage, log, gotClient),
 	}
+}
+
+func (s *service) Chat() ChatService {
+	return s.chatService
 }
 
 func (s *service) User() UserService {

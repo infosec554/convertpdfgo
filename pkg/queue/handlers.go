@@ -71,6 +71,14 @@ func (h *Handlers) Register(mux *asynq.ServeMux) {
 
 	// Unlock needs the password from the task payload — handled separately.
 	mux.HandleFunc(TaskUnlock, h.handleUnlock)
+
+	// PDF Chat AI indexing — extract → chunk → embed → save. Slow
+	// (~10-30s for a 50-page PDF) but otherwise structurally identical
+	// to the convert tasks, so runByID gives us the right metrics and
+	// notifications for free.
+	mux.HandleFunc(TaskChatIndex, h.runByID("chat_index", func(ctx context.Context, id string) error {
+		return h.services.Chat().Process(ctx, id)
+	}))
 }
 
 // runByID returns a handler that decodes a SimpleJobPayload and invokes fn(ctx, jobID).
