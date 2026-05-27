@@ -2,7 +2,7 @@
 
 Backend `convertpdfgo.com`'da live. Quyidagi patch frontend'ga **35 ta PDF tool + cloud export + My files**'ni ulaydi va 10 ta tool sahifasidagi **dublikat upload zonasini olib tashlaydi**.
 
-Patch fayl: <https://gist.github.com/infosec554/226ffa333b155e4930f233be05d80f74> · 3 commit · ~70 fayl
+Patch fayl: <https://gist.github.com/infosec554/226ffa333b155e4930f233be05d80f74> · 4 commit · ~72 fayl
 
 ---
 
@@ -28,10 +28,11 @@ GitHub'da PR och → `main`'ga merge → GitHub Actions ~2 daqiqada Contabo'ga d
 
 ## Patch'da nima bor
 
-**3 commit:**
+**4 commit:**
 1. `feat: wire backend API to all 10 tools + foundation` — `useJobRunner`, `SimpleToolClient`, `useFileApi`, dropzone, status panel
 2. `feat: wire remaining 25 PDF ops + cloud export` — qolgan tool client'lari, `/account/files`, `/account/connections`, `SaveToCloud`
-3. `feat(tools): merge 10 mockups into single functional cards` — **eng yangi**: `compress, merge, split, word-to-pdf, jpg-to-pdf, pdf-to-word, protect, unlock, ocr, watermark` — bitta `<slug>-card.tsx`, dublikat upload yo'q, optional Discard tugmasi
+3. `feat(tools): merge 10 mockups into single functional cards` — `compress, merge, split, word-to-pdf, jpg-to-pdf, pdf-to-word, protect, unlock, ocr, watermark` — bitta `<slug>-card.tsx`, dublikat upload yo'q, optional Discard tugmasi
+4. `feat(contact): wire form to POST /api/contact` — **eng yangi**: `/contact` sahifasidagi static form jonli, `{name, email, message}` backend'ga yuboradi, sending/done/failed fazalar bilan
 
 **35 ta tool — barchasi funksional:**
 | Guruh | Tool'lar |

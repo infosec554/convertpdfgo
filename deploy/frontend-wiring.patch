@@ -1,7 +1,7 @@
 From 4c5e73751d837eb2d3458eb9f6293425e051c1b8 Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:00:27 +0500
-Subject: [PATCH 1/3] feat: wire backend API to all 10 tools + foundation
+Subject: [PATCH 1/4] feat: wire backend API to all 10 tools + foundation
 
 - lib/api.ts: uploadFile, downloadFile, runJob, runJobSync helpers
 - components/tools/: FileDropzone, JobStatusPanel, useJobRunner, SimpleToolClient
@@ -1816,7 +1816,7 @@ index 69794c5..62769f1 100644
 From dd7895e8d500d6553007f5a85020a43ef43bf8da Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:15:25 +0500
-Subject: [PATCH 2/3] feat: wire remaining 25 PDF ops + cloud export
+Subject: [PATCH 2/4] feat: wire remaining 25 PDF ops + cloud export
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -4465,7 +4465,7 @@ index eaa8ae5..c0a7b04 100644
 From d1c0829a271774094fd2b991b2dda4f64f5af54e Mon Sep 17 00:00:00 2001
 From: infosec554 <zarifjorayev1999@gmail.com>
 Date: Wed, 27 May 2026 15:05:57 +0500
-Subject: [PATCH 3/3] feat(tools): merge 10 mockups into single functional
+Subject: [PATCH 3/4] feat(tools): merge 10 mockups into single functional
  cards
 
 Removes the duplicate upload widget on tools that had a Bahrom static
@@ -8160,6 +8160,235 @@ index 071ac6a..0000000
 -    />
 -  );
 -}
+-- 
+2.34.1
+
+
+From 519315d104df24fa745f8ebbd416faee78ec65d8 Mon Sep 17 00:00:00 2001
+From: infosec554 <zarifjorayev1999@gmail.com>
+Date: Wed, 27 May 2026 16:36:14 +0500
+Subject: [PATCH 4/4] feat(contact): wire form to POST /api/contact
+
+The marketing contact page was a static mockup. Hook it up to the
+backend's new {name, email, message} shape with sending/done/failed
+phases and validation messages so feedback actually reaches admins.
+---
+ .../app/(marketing)/contact/contact-form.tsx  | 153 ++++++++++++++++++
+ apps/web/app/(marketing)/contact/page.tsx     |  36 +----
+ 2 files changed, 155 insertions(+), 34 deletions(-)
+ create mode 100644 apps/web/app/(marketing)/contact/contact-form.tsx
+
+diff --git a/apps/web/app/(marketing)/contact/contact-form.tsx b/apps/web/app/(marketing)/contact/contact-form.tsx
+new file mode 100644
+index 0000000..cdaa804
+--- /dev/null
++++ b/apps/web/app/(marketing)/contact/contact-form.tsx
+@@ -0,0 +1,153 @@
++"use client";
++
++import { useState } from "react";
++import {
++  Loader2,
++  CheckCircle2,
++  AlertCircle,
++  Send,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { api } from "@/lib/api";
++
++type Phase = "idle" | "sending" | "done" | "failed";
++
++export function ContactForm() {
++  const [name, setName] = useState("");
++  const [email, setEmail] = useState("");
++  const [message, setMessage] = useState("");
++  const [phase, setPhase] = useState<Phase>("idle");
++  const [error, setError] = useState<string | null>(null);
++
++  const tooShortMessage = message.length > 0 && message.length < 5;
++  const canSubmit =
++    name.trim().length >= 2 &&
++    /\S+@\S+\.\S+/.test(email) &&
++    message.trim().length >= 5;
++
++  async function onSubmit(e: React.FormEvent) {
++    e.preventDefault();
++    if (!canSubmit) return;
++    setPhase("sending");
++    setError(null);
++    try {
++      await api.post("/api/contact", {
++        name: name.trim(),
++        email: email.trim(),
++        message: message.trim(),
++      });
++      setPhase("done");
++      setName("");
++      setEmail("");
++      setMessage("");
++    } catch (err) {
++      setError(err instanceof Error ? err.message : "Failed to send message");
++      setPhase("failed");
++    }
++  }
++
++  if (phase === "done") {
++    return (
++      <Card className="mt-10 flex flex-col items-center gap-4 p-10 text-center">
++        <div className="grid h-14 w-14 place-items-center rounded-full bg-primary/10">
++          <CheckCircle2 className="size-7 text-primary" />
++        </div>
++        <div>
++          <p className="text-lg font-bold text-foreground">Message sent</p>
++          <p className="mt-1 text-sm text-muted-foreground">
++            Thanks — we'll get back to you within 1–2 business days.
++          </p>
++        </div>
++        <Button variant="outline" size="sm" onClick={() => setPhase("idle")}>
++          Send another
++        </Button>
++      </Card>
++    );
++  }
++
++  return (
++    <Card className="mt-10 p-8">
++      <form className="flex flex-col gap-5" onSubmit={onSubmit}>
++        <div className="grid gap-5 sm:grid-cols-2">
++          <div>
++            <label htmlFor="contact-name" className="block text-sm font-semibold text-foreground">
++              Name
++            </label>
++            <input
++              id="contact-name"
++              type="text"
++              value={name}
++              onChange={(e) => setName(e.target.value)}
++              placeholder="Your name"
++              maxLength={255}
++              required
++              className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
++            />
++          </div>
++          <div>
++            <label htmlFor="contact-email" className="block text-sm font-semibold text-foreground">
++              Email
++            </label>
++            <input
++              id="contact-email"
++              type="email"
++              value={email}
++              onChange={(e) => setEmail(e.target.value)}
++              placeholder="you@example.com"
++              required
++              className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
++            />
++          </div>
++        </div>
++        <div>
++          <label htmlFor="contact-message" className="block text-sm font-semibold text-foreground">
++            Message
++          </label>
++          <textarea
++            id="contact-message"
++            rows={5}
++            value={message}
++            onChange={(e) => setMessage(e.target.value)}
++            placeholder="Tell us what's on your mind…"
++            minLength={5}
++            maxLength={8000}
++            required
++            className={`mt-2 w-full rounded-lg border bg-background px-4 py-2.5 text-sm outline-none ${
++              tooShortMessage
++                ? "border-destructive focus:border-destructive"
++                : "border-border focus:border-primary focus:ring-1 focus:ring-primary"
++            }`}
++          />
++          <p className="mt-1 text-xs text-muted-foreground">
++            {message.length}/8000 · at least 5 characters
++          </p>
++        </div>
++
++        {phase === "failed" && (
++          <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++            <AlertCircle className="mt-0.5 size-4 text-destructive" />
++            <div className="flex-1">
++              <p className="font-medium text-destructive">Couldn't send</p>
++              <p className="text-muted-foreground">{error}</p>
++            </div>
++          </div>
++        )}
++
++        <Button size="lg" type="submit" disabled={!canSubmit || phase === "sending"}>
++          {phase === "sending" ? (
++            <>
++              <Loader2 className="mr-2 size-4 animate-spin" />
++              Sending…
++            </>
++          ) : (
++            <>
++              <Send className="mr-2 size-4" />
++              Send message →
++            </>
++          )}
++        </Button>
++      </form>
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(marketing)/contact/page.tsx b/apps/web/app/(marketing)/contact/page.tsx
+index a7a7233..2d4e38e 100644
+--- a/apps/web/app/(marketing)/contact/page.tsx
++++ b/apps/web/app/(marketing)/contact/page.tsx
+@@ -1,6 +1,5 @@
+ import type { Metadata } from "next";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
++import { ContactForm } from "./contact-form";
+ 
+ export const metadata: Metadata = { title: "Contact" };
+ 
+@@ -12,38 +11,7 @@ export default function ContactPage() {
+         <p className="mt-4 text-muted-foreground">
+           Have a question, found a bug, or want to share feedback? We'd love to hear from you.
+         </p>
+-
+-        <Card className="mt-10 p-8">
+-          <form className="flex flex-col gap-5">
+-            <div className="grid gap-5 sm:grid-cols-2">
+-              <div>
+-                <label className="block text-sm font-semibold text-foreground">Name</label>
+-                <input
+-                  type="text"
+-                  placeholder="Your name"
+-                  className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+-                />
+-              </div>
+-              <div>
+-                <label className="block text-sm font-semibold text-foreground">Email</label>
+-                <input
+-                  type="email"
+-                  placeholder="you@example.com"
+-                  className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+-                />
+-              </div>
+-            </div>
+-            <div>
+-              <label className="block text-sm font-semibold text-foreground">Message</label>
+-              <textarea
+-                rows={5}
+-                placeholder="Tell us what's on your mind…"
+-                className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+-              />
+-            </div>
+-            <Button size="lg">Send message →</Button>
+-          </form>
+-        </Card>
++        <ContactForm />
+       </div>
+     </div>
+   );
 -- 
 2.34.1
 
