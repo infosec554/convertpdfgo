@@ -1,7 +1,7 @@
 From 4c5e73751d837eb2d3458eb9f6293425e051c1b8 Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:00:27 +0500
-Subject: [PATCH 1/4] feat: wire backend API to all 10 tools + foundation
+Subject: [PATCH 1/5] feat: wire backend API to all 10 tools + foundation
 
 - lib/api.ts: uploadFile, downloadFile, runJob, runJobSync helpers
 - components/tools/: FileDropzone, JobStatusPanel, useJobRunner, SimpleToolClient
@@ -1816,7 +1816,7 @@ index 69794c5..62769f1 100644
 From dd7895e8d500d6553007f5a85020a43ef43bf8da Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:15:25 +0500
-Subject: [PATCH 2/4] feat: wire remaining 25 PDF ops + cloud export
+Subject: [PATCH 2/5] feat: wire remaining 25 PDF ops + cloud export
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -4465,7 +4465,7 @@ index eaa8ae5..c0a7b04 100644
 From d1c0829a271774094fd2b991b2dda4f64f5af54e Mon Sep 17 00:00:00 2001
 From: infosec554 <zarifjorayev1999@gmail.com>
 Date: Wed, 27 May 2026 15:05:57 +0500
-Subject: [PATCH 3/4] feat(tools): merge 10 mockups into single functional
+Subject: [PATCH 3/5] feat(tools): merge 10 mockups into single functional
  cards
 
 Removes the duplicate upload widget on tools that had a Bahrom static
@@ -8167,7 +8167,7 @@ index 071ac6a..0000000
 From 519315d104df24fa745f8ebbd416faee78ec65d8 Mon Sep 17 00:00:00 2001
 From: infosec554 <zarifjorayev1999@gmail.com>
 Date: Wed, 27 May 2026 16:36:14 +0500
-Subject: [PATCH 4/4] feat(contact): wire form to POST /api/contact
+Subject: [PATCH 4/5] feat(contact): wire form to POST /api/contact
 
 The marketing contact page was a static mockup. Hook it up to the
 backend's new {name, email, message} shape with sending/done/failed
@@ -8389,6 +8389,188 @@ index a7a7233..2d4e38e 100644
        </div>
      </div>
    );
+-- 
+2.34.1
+
+
+From 197367a3e890a0185e310d87bb160bdef0fcc47d Mon Sep 17 00:00:00 2001
+From: infosec554 <zarifjorayev1999@gmail.com>
+Date: Wed, 27 May 2026 17:12:47 +0500
+Subject: [PATCH 5/5] feat(stats): wire landing-page stats bar to
+ /api/stats/public
+
+The hero stats card claimed '2.4M+ files processed daily' with a
+'Live' badge but the numbers were hardcoded. Stat 1 now fetches
+total_files_processed from the backend (formatted via K+/M+ as it
+grows). Tool count comes from tools.length (37), language count
+from locales (20) so neither can drift from reality.
+---
+ apps/web/components/marketing/stats-bar.tsx | 78 ++++++++++++++-------
+ apps/web/lib/api.ts                         | 15 ++++
+ 2 files changed, 67 insertions(+), 26 deletions(-)
+
+diff --git a/apps/web/components/marketing/stats-bar.tsx b/apps/web/components/marketing/stats-bar.tsx
+index ccf5715..8634b79 100644
+--- a/apps/web/components/marketing/stats-bar.tsx
++++ b/apps/web/components/marketing/stats-bar.tsx
+@@ -1,18 +1,16 @@
+ "use client";
+ 
+-import { TrendingUp, Wrench, Globe, ShieldOff } from "lucide-react";
++import { useEffect, useState } from "react";
++import { Wrench, Globe, ShieldOff } from "lucide-react";
++import { tools } from "@converto/data";
+ import { AnimateIn } from "@/components/ui/animate-in";
+ import { useT } from "@/lib/i18n/context";
++import { locales } from "@/lib/i18n/locales";
++import { getPublicStats } from "@/lib/api";
+ import { cn } from "@converto/ui/lib/utils";
+ 
+ const statsMeta = [
+-  {
+-    icon: null,
+-    live: true,
+-    accentValue: true,
+-    trendIcon: TrendingUp,
+-    trendColor: "text-emerald-500",
+-  },
++  { icon: null, live: true, accentValue: true },
+   {
+     icon: Wrench,
+     iconBg: "bg-blue-50",
+@@ -36,14 +34,56 @@ const statsMeta = [
+   },
+ ];
+ 
++function formatCount(n: number): { value: string; suffix: string } {
++  if (n >= 1_000_000) return { value: (n / 1_000_000).toFixed(1).replace(/\.0$/, ""), suffix: "M+" };
++  if (n >= 1_000) return { value: (n / 1_000).toFixed(1).replace(/\.0$/, ""), suffix: "K+" };
++  return { value: String(n), suffix: "" };
++}
++
++const TOOL_COUNT = tools.length;
++const LOCALE_COUNT = Object.keys(locales).length;
++
+ export function StatsBar() {
+   const t = useT();
++  const [processed, setProcessed] = useState<number | null>(null);
++
++  useEffect(() => {
++    let alive = true;
++    getPublicStats()
++      .then((s) => {
++        if (alive) setProcessed(s.total_files_processed);
++      })
++      .catch(() => {
++        if (alive) setProcessed(0);
++      });
++    return () => {
++      alive = false;
++    };
++  }, []);
++
++  const processedDisplay =
++    processed === null ? { value: "—", suffix: "" } : formatCount(processed);
+ 
+   const stats = [
+-    { value: "2.4M", suffix: "+", label: t.stats.filesDaily, sub: t.stats.filesWeek },
+-    { value: "37",   suffix: "",  label: t.stats.toolsFree,  sub: t.stats.toolsQuarter },
+-    { value: "32",   suffix: "",  label: t.stats.languages,  sub: t.stats.languagesSub },
+-    { value: "0",    suffix: "",  label: t.stats.watermarks, sub: t.stats.watermarksSub },
++    {
++      value: processedDisplay.value,
++      suffix: processedDisplay.suffix,
++      label: t.stats.filesDaily,
++      sub: t.stats.filesWeek,
++    },
++    {
++      value: String(TOOL_COUNT),
++      suffix: "",
++      label: t.stats.toolsFree,
++      sub: t.stats.toolsQuarter,
++    },
++    {
++      value: String(LOCALE_COUNT),
++      suffix: "",
++      label: t.stats.languages,
++      sub: t.stats.languagesSub,
++    },
++    { value: "0", suffix: "", label: t.stats.watermarks, sub: t.stats.watermarksSub },
+   ];
+ 
+   return (
+@@ -53,7 +93,6 @@ export function StatsBar() {
+           {stats.map((stat, i) => {
+             const meta = statsMeta[i]!;
+             const Icon = "icon" in meta ? meta.icon : null;
+-            const TrendIcon = "trendIcon" in meta ? meta.trendIcon : null;
+ 
+             return (
+               <AnimateIn
+@@ -62,7 +101,6 @@ export function StatsBar() {
+                 delay={i * 80}
+                 className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+               >
+-                {/* Top row: icon / live badge  +  trend pill */}
+                 <div className="flex items-start justify-between">
+                   {Icon ? (
+                     <span
+@@ -84,18 +122,8 @@ export function StatsBar() {
+                       </span>
+                     </span>
+                   )}
+-
+-                  {TrendIcon && (
+-                    <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5">
+-                      <TrendIcon className={cn("size-3", "trendColor" in meta && meta.trendColor)} />
+-                      <span className="font-mono text-[10px] font-semibold text-emerald-600">
+-                        {t.stats.filesWeek.replace("↗ ", "")}
+-                      </span>
+-                    </span>
+-                  )}
+                 </div>
+ 
+-                {/* Value */}
+                 <div className="flex items-baseline gap-0.5">
+                   <span
+                     className={cn(
+@@ -112,13 +140,11 @@ export function StatsBar() {
+                   )}
+                 </div>
+ 
+-                {/* Label + sub */}
+                 <div className="mt-auto">
+                   <p className="font-semibold leading-tight text-foreground">{stat.label}</p>
+                   <p className="mt-0.5 text-xs text-muted-foreground">{stat.sub}</p>
+                 </div>
+ 
+-                {/* Subtle bottom accent on hover */}
+                 <span className="absolute bottom-0 left-0 h-0.5 w-0 bg-primary transition-all duration-300 group-hover:w-full" />
+               </AnimateIn>
+             );
+diff --git a/apps/web/lib/api.ts b/apps/web/lib/api.ts
+index 14066bb..57ffd64 100644
+--- a/apps/web/lib/api.ts
++++ b/apps/web/lib/api.ts
+@@ -340,3 +340,18 @@ export async function exportFileToCloud(
+   }
+   return res.Data;
+ }
++
++// ─── Public landing-page counters ───────────────────────────────────────────
++
++export interface PublicCounts {
++  total_users: number;
++  total_files_uploaded: number;
++  total_files_processed: number;
++}
++
++export async function getPublicStats(): Promise<PublicCounts> {
++  const res = await api.get<PublicCounts>("/api/stats/public");
++  return (
++    res.Data ?? { total_users: 0, total_files_uploaded: 0, total_files_processed: 0 }
++  );
++}
 -- 
 2.34.1
 

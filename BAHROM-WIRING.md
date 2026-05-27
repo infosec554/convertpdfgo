@@ -2,7 +2,7 @@
 
 Backend `convertpdfgo.com`'da live. Quyidagi patch frontend'ga **35 ta PDF tool + cloud export + My files**'ni ulaydi va 10 ta tool sahifasidagi **dublikat upload zonasini olib tashlaydi**.
 
-Patch fayl: <https://gist.github.com/infosec554/226ffa333b155e4930f233be05d80f74> · 4 commit · ~72 fayl
+Patch fayl: <https://gist.github.com/infosec554/226ffa333b155e4930f233be05d80f74> · 5 commit · ~74 fayl
 
 ---
 
@@ -28,11 +28,12 @@ GitHub'da PR och → `main`'ga merge → GitHub Actions ~2 daqiqada Contabo'ga d
 
 ## Patch'da nima bor
 
-**4 commit:**
+**5 commit:**
 1. `feat: wire backend API to all 10 tools + foundation` — `useJobRunner`, `SimpleToolClient`, `useFileApi`, dropzone, status panel
 2. `feat: wire remaining 25 PDF ops + cloud export` — qolgan tool client'lari, `/account/files`, `/account/connections`, `SaveToCloud`
-3. `feat(tools): merge 10 mockups into single functional cards` — `compress, merge, split, word-to-pdf, jpg-to-pdf, pdf-to-word, protect, unlock, ocr, watermark` — bitta `<slug>-card.tsx`, dublikat upload yo'q, optional Discard tugmasi
-4. `feat(contact): wire form to POST /api/contact` — **eng yangi**: `/contact` sahifasidagi static form jonli, `{name, email, message}` backend'ga yuboradi, sending/done/failed fazalar bilan
+3. `feat(tools): merge 10 mockups into single functional cards` — `compress, merge, split, word-to-pdf, jpg-to-pdf, pdf-to-word, protect, unlock, ocr, watermark` — bitta `<slug>-card.tsx`, dublikat upload yo'q
+4. `feat(contact): wire form to POST /api/contact` — `/contact` sahifasidagi static form jonli, `{name, email, message}` backend'ga yuboradi
+5. `feat(stats): wire landing-page stats bar to /api/stats/public` — **eng yangi**: homepage'dagi `2.4M+` / `37` / `32` static raqamlar olib tashlandi. Stat 1 (LIVE) — backend'dan real `total_files_processed`, stat 2 — `tools.length`, stat 3 — `locales` soni. Kelajakda drift bo'lmaydi.
 
 **35 ta tool — barchasi funksional:**
 | Guruh | Tool'lar |
