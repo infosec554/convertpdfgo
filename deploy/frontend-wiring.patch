@@ -1,7 +1,7 @@
 From 4c5e73751d837eb2d3458eb9f6293425e051c1b8 Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:00:27 +0500
-Subject: [PATCH 1/2] feat: wire backend API to all 10 tools + foundation
+Subject: [PATCH 1/3] feat: wire backend API to all 10 tools + foundation
 
 - lib/api.ts: uploadFile, downloadFile, runJob, runJobSync helpers
 - components/tools/: FileDropzone, JobStatusPanel, useJobRunner, SimpleToolClient
@@ -1816,7 +1816,7 @@ index 69794c5..62769f1 100644
 From dd7895e8d500d6553007f5a85020a43ef43bf8da Mon Sep 17 00:00:00 2001
 From: Claude <claude@convertpdfgo.com>
 Date: Wed, 27 May 2026 01:15:25 +0500
-Subject: [PATCH 2/2] feat: wire remaining 25 PDF ops + cloud export
+Subject: [PATCH 2/3] feat: wire remaining 25 PDF ops + cloud export
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -4458,6 +4458,3708 @@ index eaa8ae5..c0a7b04 100644
  ];
  
  export function getToolBySlug(slug: string): Tool | undefined {
+-- 
+2.34.1
+
+
+From d1c0829a271774094fd2b991b2dda4f64f5af54e Mon Sep 17 00:00:00 2001
+From: infosec554 <zarifjorayev1999@gmail.com>
+Date: Wed, 27 May 2026 15:05:57 +0500
+Subject: [PATCH 3/3] feat(tools): merge 10 mockups into single functional
+ cards
+
+Removes the duplicate upload widget on tools that had a Bahrom static
+mockup plus a separate *-client.tsx below. Each tool now lives in
+one <slug>-card.tsx that uses the existing layout, wires the buttons
+to useJobRunner, and adds an optional Discard control on done.
+---
+ .../app/(tools)/compress/compress-card.tsx    | 230 ++++++++++++++
+ .../app/(tools)/compress/compress-client.tsx  |  82 -----
+ apps/web/app/(tools)/compress/page.tsx        |  70 +----
+ .../(tools)/jpg-to-pdf/jpg-to-pdf-card.tsx    | 207 +++++++++++++
+ .../(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx  |  17 --
+ apps/web/app/(tools)/jpg-to-pdf/page.tsx      |  56 +---
+ apps/web/app/(tools)/merge/merge-card.tsx     | 176 +++++++++++
+ apps/web/app/(tools)/merge/merge-client.tsx   |  70 -----
+ apps/web/app/(tools)/merge/page.tsx           |  49 +--
+ apps/web/app/(tools)/ocr/ocr-card.tsx         | 196 ++++++++++++
+ apps/web/app/(tools)/ocr/ocr-client.tsx       |  60 ----
+ apps/web/app/(tools)/ocr/page.tsx             |  66 +---
+ apps/web/app/(tools)/pdf-to-word/page.tsx     |  66 +---
+ .../(tools)/pdf-to-word/pdf-to-word-card.tsx  | 205 +++++++++++++
+ .../pdf-to-word/pdf-to-word-client.tsx        |  15 -
+ apps/web/app/(tools)/protect/page.tsx         |  69 +----
+ apps/web/app/(tools)/protect/protect-card.tsx | 219 ++++++++++++++
+ .../app/(tools)/protect/protect-client.tsx    | 100 -------
+ apps/web/app/(tools)/split/page.tsx           |  47 +--
+ apps/web/app/(tools)/split/split-card.tsx     | 201 +++++++++++++
+ apps/web/app/(tools)/split/split-client.tsx   |  96 ------
+ apps/web/app/(tools)/unlock/page.tsx          |  54 +---
+ apps/web/app/(tools)/unlock/unlock-card.tsx   | 183 ++++++++++++
+ apps/web/app/(tools)/unlock/unlock-client.tsx |  47 ---
+ apps/web/app/(tools)/watermark/page.tsx       |  85 +-----
+ .../app/(tools)/watermark/watermark-card.tsx  | 281 ++++++++++++++++++
+ .../(tools)/watermark/watermark-client.tsx    |  96 ------
+ apps/web/app/(tools)/word-to-pdf/page.tsx     |  64 +---
+ .../(tools)/word-to-pdf/word-to-pdf-card.tsx  | 181 +++++++++++
+ .../word-to-pdf/word-to-pdf-client.tsx        |  18 --
+ 30 files changed, 2100 insertions(+), 1206 deletions(-)
+ create mode 100644 apps/web/app/(tools)/compress/compress-card.tsx
+ delete mode 100644 apps/web/app/(tools)/compress/compress-client.tsx
+ create mode 100644 apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-card.tsx
+ delete mode 100644 apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx
+ create mode 100644 apps/web/app/(tools)/merge/merge-card.tsx
+ delete mode 100644 apps/web/app/(tools)/merge/merge-client.tsx
+ create mode 100644 apps/web/app/(tools)/ocr/ocr-card.tsx
+ delete mode 100644 apps/web/app/(tools)/ocr/ocr-client.tsx
+ create mode 100644 apps/web/app/(tools)/pdf-to-word/pdf-to-word-card.tsx
+ delete mode 100644 apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx
+ create mode 100644 apps/web/app/(tools)/protect/protect-card.tsx
+ delete mode 100644 apps/web/app/(tools)/protect/protect-client.tsx
+ create mode 100644 apps/web/app/(tools)/split/split-card.tsx
+ delete mode 100644 apps/web/app/(tools)/split/split-client.tsx
+ create mode 100644 apps/web/app/(tools)/unlock/unlock-card.tsx
+ delete mode 100644 apps/web/app/(tools)/unlock/unlock-client.tsx
+ create mode 100644 apps/web/app/(tools)/watermark/watermark-card.tsx
+ delete mode 100644 apps/web/app/(tools)/watermark/watermark-client.tsx
+ create mode 100644 apps/web/app/(tools)/word-to-pdf/word-to-pdf-card.tsx
+ delete mode 100644 apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx
+
+diff --git a/apps/web/app/(tools)/compress/compress-card.tsx b/apps/web/app/(tools)/compress/compress-card.tsx
+new file mode 100644
+index 0000000..bbd3cee
+--- /dev/null
++++ b/apps/web/app/(tools)/compress/compress-card.tsx
+@@ -0,0 +1,230 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  ArrowRight,
++  Upload,
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++import { fileDownloadUrl, type JobRecord } from "@/lib/api";
++
++const presets = [
++  { key: "low", name: "Light", desc: "~30% smaller", pct: 30 },
++  { key: "medium", name: "Recommended", desc: "~75% smaller", pct: 75 },
++  { key: "high", name: "Extreme", desc: "~92% smaller", pct: 92 },
++] as const;
++type Preset = (typeof presets)[number]["key"];
++
++export function CompressCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const [preset, setPreset] = useState<Preset>("medium");
++  const [outSize, setOutSize] = useState<number | null>(null);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  const active = presets.find((p) => p.key === preset)!;
++  const origMb = file ? file.size / 1024 / 1024 : 24.6;
++  const outMb = outSize !== null ? outSize / 1024 / 1024 : origMb * (1 - active.pct / 100);
++  const reductionPct =
++    file && outSize !== null
++      ? Math.max(0, Math.round((1 - outSize / file.size) * 100))
++      : active.pct;
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      setOutSize(null);
++      runner.reset();
++    }
++  }
++  function discard() {
++    setFile(null);
++    setOutSize(null);
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onCompress() {
++    if (!file) return;
++    setOutSize(null);
++    await runner.run(
++      [file],
++      (ids) => ({ input_file_id: ids[0], compression: preset }),
++      "compress",
++    );
++  }
++
++  // After the job lands, fetch the output's size so we can show the real ratio.
++  async function fetchOutputSize(job: JobRecord) {
++    if (!job.output_file_id) return;
++    try {
++      const r = await fetch(fileDownloadUrl(job.output_file_id), { method: "HEAD" });
++      const len = r.headers.get("content-length");
++      if (len) setOutSize(parseInt(len, 10));
++    } catch {
++      /* swallow — the cosmetic ratio just won't update */
++    }
++  }
++  if (runner.phase === "done" && runner.result && outSize === null) {
++    fetchOutputSize(runner.result);
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++
++  return (
++    <Card className="grid gap-8 p-8 md:grid-cols-2">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf"
++        hidden
++        onChange={onFileChange}
++      />
++
++      {/* LEFT — quality presets + file picker */}
++      <div>
++        <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
++          → output quality
++        </p>
++        <div className="mt-2 flex items-baseline gap-1">
++          <span className="font-serif text-6xl text-primary">{reductionPct}</span>
++          <span className="font-serif text-2xl text-primary">%</span>
++        </div>
++        <p className="mt-1 text-sm text-muted-foreground">
++          Selected: <span className="font-medium text-foreground">{active.name}</span>
++        </p>
++
++        <div className="mt-6 h-1 w-full overflow-hidden rounded-full bg-secondary">
++          <div
++            className="h-full rounded-full bg-primary transition-all"
++            style={{ width: `${Math.min(100, reductionPct)}%` }}
++          />
++        </div>
++
++        <div className="mt-6 grid grid-cols-3 gap-3">
++          {presets.map((p) => (
++            <Button
++              key={p.key}
++              variant={preset === p.key ? "default" : "outline"}
++              size="sm"
++              onClick={() => setPreset(p.key)}
++              className="flex h-auto flex-col gap-0.5 rounded-xl py-3"
++            >
++              <span className="text-sm font-semibold">{p.name}</span>
++              <span className="text-[11px] opacity-70">{p.desc}</span>
++            </Button>
++          ))}
++        </div>
++
++        {!file ? (
++          <button
++            type="button"
++            onClick={pickFile}
++            className="mt-6 flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-6 text-center transition-colors hover:border-primary/40"
++          >
++            <Upload className="size-5 text-muted-foreground" />
++            <span className="text-sm font-medium">Drop a PDF or click to browse</span>
++            <span className="text-xs text-muted-foreground">up to 30 MB</span>
++          </button>
++        ) : (
++          <div className="mt-6 flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
++            <span className="truncate font-medium">{file.name}</span>
++            <button
++              type="button"
++              onClick={discard}
++              className="ml-3 shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
++              aria-label="Remove file"
++            >
++              <Trash2 className="size-4" />
++            </button>
++          </div>
++        )}
++      </div>
++
++      {/* RIGHT — before/after panel + CTA */}
++      <div className="flex flex-col gap-6">
++        <div className="grid grid-cols-3 items-center gap-6 rounded-2xl bg-foreground p-6 text-background">
++          <div>
++            <p className="font-mono text-xs uppercase text-background/60">→ original</p>
++            <p className="mt-2 font-serif text-4xl">
++              {origMb.toFixed(1)}
++              <span className="text-base">MB</span>
++            </p>
++          </div>
++          <div className="text-center">
++            <span className="grid h-9 w-9 place-items-center rounded-full border border-background/30">
++              <ArrowRight className="size-4" />
++            </span>
++            <p className="mt-2 font-serif text-lg text-primary">−{reductionPct}%</p>
++            <p className="font-mono text-[10px] uppercase text-background/60">reduction</p>
++          </div>
++          <div>
++            <p className="font-mono text-xs uppercase text-background/60">→ after</p>
++            <p className="mt-2 font-serif text-4xl text-primary">
++              {outMb.toFixed(1)}
++              <span className="text-base">MB</span>
++            </p>
++          </div>
++        </div>
++
++        <Button size="lg" className="w-full" disabled={!file || busy} onClick={onCompress}>
++          {busy ? (
++            <>
++              <Loader2 className="mr-2 size-4 animate-spin" />
++              {runner.phase === "uploading" ? "Uploading…" : "Compressing…"}
++            </>
++          ) : (
++            <>Compress now →</>
++          )}
++        </Button>
++
++        {runner.phase === "done" && (
++          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
++            <span className="flex items-center gap-2">
++              <CheckCircle2 className="size-4 text-primary" />
++              Done · auto-deletes in 5 min
++            </span>
++            <div className="flex gap-2">
++              <Button variant="outline" size="sm" onClick={discard}>
++                <Trash2 className="mr-1.5 size-4" />
++                Discard
++              </Button>
++              <Button
++                size="sm"
++                onClick={() =>
++                  runner.download(`compressed-${file?.name ?? "result.pdf"}`)
++                }
++              >
++                <Download className="mr-1.5 size-4" />
++                Download
++              </Button>
++            </div>
++          </div>
++        )}
++
++        {runner.phase === "failed" && (
++          <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++            <AlertCircle className="mt-0.5 size-4 text-destructive" />
++            <div className="flex-1">
++              <p className="font-medium text-destructive">Couldn&apos;t compress</p>
++              <p className="text-muted-foreground">{runner.error}</p>
++            </div>
++            <Button variant="outline" size="sm" onClick={runner.reset}>
++              Try again
++            </Button>
++          </div>
++        )}
++      </div>
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/compress/compress-client.tsx b/apps/web/app/(tools)/compress/compress-client.tsx
+deleted file mode 100644
+index b4d54e2..0000000
+--- a/apps/web/app/(tools)/compress/compress-client.tsx
++++ /dev/null
+@@ -1,82 +0,0 @@
+-"use client";
+-
+-import { useState } from "react";
+-import { ArrowRight } from "lucide-react";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+-import { FileDropzone } from "@/components/tools/file-dropzone";
+-import { JobStatusPanel } from "@/components/tools/job-status";
+-import { useJobRunner } from "@/components/tools/use-job-runner";
+-
+-const presets = [
+-  { key: "low", name: "Light", desc: "~30% smaller" },
+-  { key: "medium", name: "Recommended", desc: "~75% smaller" },
+-  { key: "high", name: "Extreme", desc: "~92% smaller" },
+-] as const;
+-
+-type Preset = (typeof presets)[number]["key"];
+-
+-/**
+- * Client-side runner for /api/pdf/compress. Lives next to the static
+- * marketing card in page.tsx so the design stays untouched — this widget
+- * sits below it once the page lands.
+- */
+-export function CompressClient() {
+-  const [files, setFiles] = useState<File[]>([]);
+-  const [preset, setPreset] = useState<Preset>("medium");
+-  const runner = useJobRunner();
+-  const file = files[0];
+-
+-  async function onSubmit() {
+-    if (!file) return;
+-    await runner.run(files, (ids) => ({ input_file_id: ids[0], compression: preset }), "compress");
+-  }
+-
+-  return (
+-    <Card className="grid gap-8 p-8">
+-      <FileDropzone files={files} onChange={setFiles} maxSizeMB={30} />
+-
+-      <div className="grid gap-4 sm:grid-cols-3">
+-        {presets.map((p) => (
+-          <button
+-            key={p.key}
+-            type="button"
+-            onClick={() => setPreset(p.key)}
+-            className={`flex flex-col items-start gap-1 rounded-xl border p-4 text-left transition-colors ${
+-              preset === p.key
+-                ? "border-primary bg-primary/5"
+-                : "border-border bg-card hover:border-primary/40"
+-            }`}
+-          >
+-            <span className="text-sm font-semibold">{p.name}</span>
+-            <span className="text-xs text-muted-foreground">{p.desc}</span>
+-          </button>
+-        ))}
+-      </div>
+-
+-      <div className="flex items-center justify-between rounded-2xl bg-foreground p-5 text-background">
+-        <div className="font-mono text-xs uppercase tracking-wider">
+-          {file ? (
+-            <>
+-              <span className="text-primary">{file.name}</span>{" "}
+-              · {(file.size / 1024 / 1024).toFixed(1)} MB
+-            </>
+-          ) : (
+-            <>Pick a PDF to begin</>
+-          )}
+-        </div>
+-        <Button size="lg" disabled={!file || runner.phase === "uploading" || runner.phase === "running"} onClick={onSubmit}>
+-          Compress now <ArrowRight className="ml-1.5 size-4" />
+-        </Button>
+-      </div>
+-
+-      <JobStatusPanel
+-        phase={runner.phase}
+-        error={runner.error}
+-        onDownload={() => runner.download(`compressed-${file?.name ?? "result.pdf"}`)}
+-        onReset={runner.reset}
+-        downloadLabel="Download compressed PDF"
+-      />
+-    </Card>
+-  );
+-}
+diff --git a/apps/web/app/(tools)/compress/page.tsx b/apps/web/app/(tools)/compress/page.tsx
+index 89480dd..7672cb5 100644
+--- a/apps/web/app/(tools)/compress/page.tsx
++++ b/apps/web/app/(tools)/compress/page.tsx
+@@ -1,87 +1,21 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { ArrowRight } from "lucide-react";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { CompressClient } from "./compress-client";
++import { CompressCard } from "./compress-card";
+ 
+ export const metadata: Metadata = {
+   title: "Compress PDF",
+   description: "Smaller PDFs, same quality. Live preview of file size as you adjust.",
+ };
+ 
+-const presets = [
+-  { name: "Light", desc: "~30% smaller" },
+-  { name: "Recommended", desc: "~75% smaller", active: true },
+-  { name: "Extreme", desc: "~92% smaller" },
+-];
+-
+ export default function CompressPage() {
+   const tool = getToolBySlug("compress");
+   if (!tool) notFound();
+ 
+   return (
+     <ToolPageShell tool={tool} index="03" variant="live quality">
+-      <Card className="grid gap-8 p-8 md:grid-cols-2">
+-        <div>
+-          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+-            → output quality
+-          </p>
+-          <div className="mt-2 flex items-baseline gap-1">
+-            <span className="font-serif text-6xl text-primary">62</span>
+-            <span className="font-serif text-2xl text-primary">%</span>
+-          </div>
+-          <p className="mt-1 text-sm text-muted-foreground">
+-            Selected: <span className="font-medium text-foreground">Recommended</span>
+-          </p>
+-
+-          <div className="mt-6 h-1 w-full overflow-hidden rounded-full bg-secondary">
+-            <div className="h-full w-[62%] rounded-full bg-primary" />
+-          </div>
+-
+-          <div className="mt-6 grid grid-cols-3 gap-3">
+-            {presets.map((p) => (
+-              <Button
+-                key={p.name}
+-                variant={p.active ? "default" : "outline"}
+-                size="sm"
+-                className="flex h-auto flex-col gap-0.5 rounded-xl py-3"
+-              >
+-                <span className="text-sm font-semibold">{p.name}</span>
+-                <span className="text-[11px] opacity-70">{p.desc}</span>
+-              </Button>
+-            ))}
+-          </div>
+-        </div>
+-
+-        <div className="grid grid-cols-3 items-center gap-6 rounded-2xl bg-foreground p-6 text-background">
+-          <div>
+-            <p className="font-mono text-xs uppercase text-background/60">→ original</p>
+-            <p className="mt-2 font-serif text-4xl">
+-              24.6<span className="text-base">MB</span>
+-            </p>
+-          </div>
+-          <div className="text-center">
+-            <span className="grid h-9 w-9 place-items-center rounded-full border border-background/30">
+-              <ArrowRight className="size-4" />
+-            </span>
+-            <p className="mt-2 font-serif text-lg text-primary">−81%</p>
+-            <p className="font-mono text-[10px] uppercase text-background/60">reduction</p>
+-          </div>
+-          <div>
+-            <p className="font-mono text-xs uppercase text-background/60">→ after</p>
+-            <p className="mt-2 font-serif text-4xl text-primary">
+-              4.7<span className="text-base">MB</span>
+-            </p>
+-          </div>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <CompressClient />
+-      </div>
++      <CompressCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-card.tsx b/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-card.tsx
+new file mode 100644
+index 0000000..8888ff6
+--- /dev/null
++++ b/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-card.tsx
+@@ -0,0 +1,207 @@
++"use client";
++
++import { useRef, useState } from "react";
++// eslint-disable-next-line @next/next/no-img-element
++import {
++  Image as ImageIcon,
++  ArrowRight,
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++  Plus,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++export function JpgToPdfCard() {
++  const [files, setFiles] = useState<File[]>([]);
++  const [previews, setPreviews] = useState<string[]>([]);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const picked = Array.from(e.target.files ?? []);
++    if (!picked.length) return;
++    setFiles((prev) => {
++      const next = [...prev, ...picked].slice(0, 50);
++      setPreviews(next.map((f) => URL.createObjectURL(f)));
++      return next;
++    });
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  function removeAt(i: number) {
++    setFiles((prev) => {
++      const next = prev.filter((_, idx) => idx !== i);
++      setPreviews(next.map((f) => URL.createObjectURL(f)));
++      return next;
++    });
++    runner.reset();
++  }
++  function discardAll() {
++    setFiles([]);
++    setPreviews([]);
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onConvert() {
++    if (!files.length) return;
++    await runner.run(files, (ids) => ({ input_file_ids: ids }), "jpg-to-pdf");
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
++        multiple
++        hidden
++        onChange={onFileChange}
++      />
++
++      <button
++        type="button"
++        onClick={pickFile}
++        className="flex w-full flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40"
++      >
++        <div className="grid h-14 w-14 place-items-center rounded-xl bg-emerald-50">
++          <ImageIcon className="size-7 text-emerald-600" />
++        </div>
++        <div>
++          <p className="font-bold text-foreground">Drop your images here</p>
++          <p className="mt-1 text-sm text-muted-foreground">
++            JPG, PNG, WEBP — up to 50 images at once
++          </p>
++        </div>
++        <span className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
++          Select images
++        </span>
++      </button>
++
++      <div className="mt-8 grid grid-cols-4 gap-3 md:grid-cols-6">
++        {files.map((f, i) => (
++          <div
++            key={`${f.name}-${i}`}
++            className="group relative aspect-square overflow-hidden rounded-lg border bg-secondary"
++          >
++            {previews[i] ? (
++              // eslint-disable-next-line @next/next/no-img-element
++              <img
++                src={previews[i]}
++                alt={f.name}
++                className="size-full object-cover"
++              />
++            ) : (
++              <div className="absolute inset-0 flex items-center justify-center">
++                <ImageIcon className="size-6 text-muted-foreground/40" />
++              </div>
++            )}
++            <button
++              type="button"
++              onClick={() => removeAt(i)}
++              className="absolute right-1 top-1 hidden h-6 w-6 place-items-center rounded-full bg-destructive text-background group-hover:grid"
++              aria-label={`Remove ${f.name}`}
++            >
++              <Trash2 className="size-3" />
++            </button>
++            <span className="absolute bottom-1 right-1 rounded bg-foreground/70 px-1.5 py-0.5 font-mono text-[10px] text-background">
++              {i + 1}
++            </span>
++          </div>
++        ))}
++        {/* placeholder mockup tiles when empty */}
++        {files.length === 0 &&
++          Array.from({ length: 4 }).map((_, i) => (
++            <div
++              key={`ph-${i}`}
++              className="relative aspect-square overflow-hidden rounded-lg border bg-secondary opacity-40"
++            >
++              <div className="absolute inset-0 flex items-center justify-center">
++                <ImageIcon className="size-6 text-muted-foreground/40" />
++              </div>
++              <span className="absolute bottom-1 right-1 rounded bg-foreground/70 px-1.5 py-0.5 font-mono text-[10px] text-background">
++                {i + 1}
++              </span>
++            </div>
++          ))}
++        <button
++          type="button"
++          onClick={pickFile}
++          className="grid aspect-square place-items-center rounded-lg border-2 border-dashed text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
++        >
++          <span className="flex flex-col items-center gap-1">
++            <Plus className="size-5" />
++            Add
++          </span>
++        </button>
++      </div>
++
++      <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl bg-foreground p-5 text-background md:flex-row md:items-center">
++        <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs uppercase tracking-wider">
++          <span>
++            <span className="text-primary">{files.length}</span> images
++          </span>
++          <span className="flex items-center gap-2">
++            <ArrowRight className="size-3" />
++            <span className="text-primary">1</span> PDF
++          </span>
++        </div>
++        <Button
++          size="lg"
++          disabled={!files.length || files.length > 50 || busy}
++          onClick={onConvert}
++        >
++          {busy ? (
++            <>
++              <Loader2 className="mr-2 size-4 animate-spin" />
++              {runner.phase === "uploading" ? "Uploading…" : "Building…"}
++            </>
++          ) : (
++            <>Create PDF →</>
++          )}
++        </Button>
++      </div>
++
++      {runner.phase === "done" && (
++        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
++          <span className="flex items-center gap-2">
++            <CheckCircle2 className="size-4 text-primary" />
++            Done · auto-deletes in 5 min
++          </span>
++          <div className="flex gap-2">
++            <Button variant="outline" size="sm" onClick={discardAll}>
++              <Trash2 className="mr-1.5 size-4" />
++              Discard
++            </Button>
++            <Button size="sm" onClick={() => runner.download("images.pdf")}>
++              <Download className="mr-1.5 size-4" />
++              Download PDF
++            </Button>
++          </div>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-6 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">Build failed</p>
++            <p className="text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button variant="outline" size="sm" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx b/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx
+deleted file mode 100644
+index 07952ad..0000000
+--- a/apps/web/app/(tools)/jpg-to-pdf/jpg-to-pdf-client.tsx
++++ /dev/null
+@@ -1,17 +0,0 @@
+-"use client";
+-
+-import { SimpleToolClient } from "@/components/tools/simple-tool-client";
+-
+-/** One PDF assembled from a stack of JPG/PNG images (up to 50). */
+-export function JpgToPdfClient() {
+-  return (
+-    <SimpleToolClient
+-      op="jpg-to-pdf"
+-      cta="Build PDF →"
+-      accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+-      multiple
+-      resultFilename={() => "images.pdf"}
+-      downloadLabel="Download PDF"
+-    />
+-  );
+-}
+diff --git a/apps/web/app/(tools)/jpg-to-pdf/page.tsx b/apps/web/app/(tools)/jpg-to-pdf/page.tsx
+index 7eb1dea..89d8d54 100644
+--- a/apps/web/app/(tools)/jpg-to-pdf/page.tsx
++++ b/apps/web/app/(tools)/jpg-to-pdf/page.tsx
+@@ -1,11 +1,8 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { JpgToPdfClient } from "./jpg-to-pdf-client";
+-import { Image, ArrowRight } from "lucide-react";
++import { JpgToPdfCard } from "./jpg-to-pdf-card";
+ 
+ export const metadata: Metadata = {
+   title: "JPG to PDF",
+@@ -18,56 +15,7 @@ export default function JpgToPdfPage() {
+ 
+   return (
+     <ToolPageShell tool={tool} index="07" variant="multi-image">
+-      <Card className="p-8">
+-        <div className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40">
+-          <div className="grid h-14 w-14 place-items-center rounded-xl bg-emerald-50">
+-            <Image className="size-7 text-emerald-600" />
+-          </div>
+-          <div>
+-            <p className="font-bold text-foreground">Drop your images here</p>
+-            <p className="mt-1 text-sm text-muted-foreground">
+-              JPG, PNG, WEBP — up to 20 images at once
+-            </p>
+-          </div>
+-          <Button>Select images</Button>
+-        </div>
+-
+-        <div className="mt-8 grid grid-cols-4 gap-3 md:grid-cols-6">
+-          {Array.from({ length: 4 }).map((_, i) => (
+-            <div
+-              key={i}
+-              className="relative aspect-square overflow-hidden rounded-lg border bg-secondary"
+-            >
+-              <div className="absolute inset-0 flex items-center justify-center">
+-                <Image className="size-6 text-muted-foreground/40" />
+-              </div>
+-              <span className="absolute bottom-1 right-1 rounded bg-foreground/70 px-1.5 py-0.5 font-mono text-[10px] text-background">
+-                {i + 1}
+-              </span>
+-            </div>
+-          ))}
+-          <div className="grid aspect-square place-items-center rounded-lg border-2 border-dashed text-xs text-muted-foreground">
+-            + Add
+-          </div>
+-        </div>
+-
+-        <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl bg-foreground p-5 text-background md:flex-row md:items-center">
+-          <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs uppercase tracking-wider">
+-            <span>
+-              <span className="text-primary">4</span> images
+-            </span>
+-            <span className="flex items-center gap-2">
+-              <ArrowRight className="size-3" />
+-              <span className="text-primary">1</span> PDF
+-            </span>
+-          </div>
+-          <Button size="lg">Create PDF →</Button>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <JpgToPdfClient />
+-      </div>
++      <JpgToPdfCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/merge/merge-card.tsx b/apps/web/app/(tools)/merge/merge-card.tsx
+new file mode 100644
+index 0000000..6ed3297
+--- /dev/null
++++ b/apps/web/app/(tools)/merge/merge-card.tsx
+@@ -0,0 +1,176 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  FileText,
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++  Plus,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++export function MergeCard() {
++  const [files, setFiles] = useState<File[]>([]);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const picked = Array.from(e.target.files ?? []);
++    if (!picked.length) return;
++    setFiles((prev) => [...prev, ...picked].slice(0, 50));
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  function removeAt(i: number) {
++    setFiles((prev) => prev.filter((_, idx) => idx !== i));
++    runner.reset();
++  }
++  function discardAll() {
++    setFiles([]);
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onMerge() {
++    if (files.length < 2) return;
++    await runner.run(files, (ids) => ({ input_file_ids: ids }), "merge");
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++  const totalMb = (files.reduce((s, f) => s + f.size, 0) / 1024 / 1024).toFixed(1);
++  const hint =
++    files.length < 2
++      ? "Pick at least 2 PDFs"
++      : files.length > 50
++      ? "Max 50 PDFs"
++      : "Output keeps drop order — drop in the order you want";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf"
++        multiple
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
++        {files.map((f, i) => (
++          <div
++            key={`${f.name}-${i}`}
++            className="group relative aspect-[3/4] rounded-lg border bg-background p-3 text-xs"
++          >
++            <span className="absolute -left-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-foreground font-mono text-[10px] text-background">
++              {i + 1}
++            </span>
++            <button
++              type="button"
++              onClick={() => removeAt(i)}
++              className="absolute -right-2 -top-2 hidden h-6 w-6 place-items-center rounded-full bg-destructive text-background group-hover:grid"
++              aria-label={`Remove ${f.name}`}
++            >
++              <Trash2 className="size-3" />
++            </button>
++            <FileText className="size-5 text-muted-foreground" />
++            <p className="mt-2 truncate font-medium">{f.name}</p>
++            <p className="mt-1 text-[10px] text-muted-foreground">
++              {(f.size / 1024 / 1024).toFixed(1)} MB
++            </p>
++          </div>
++        ))}
++        {/* placeholder mockup tiles when nothing's added yet */}
++        {files.length === 0 &&
++          Array.from({ length: 5 }).map((_, i) => (
++            <div
++              key={`ph-${i}`}
++              className="relative aspect-[3/4] rounded-lg border bg-background p-3 text-xs opacity-40"
++            >
++              <span className="absolute -left-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-foreground font-mono text-[10px] text-background">
++                {i + 1}
++              </span>
++              <div className="mt-4 h-1 w-full rounded bg-muted" />
++              <div className="mt-1 h-1 w-3/4 rounded bg-muted" />
++              <div className="mt-1 h-1 w-5/6 rounded bg-muted" />
++            </div>
++          ))}
++        <button
++          type="button"
++          onClick={pickFile}
++          className="grid aspect-[3/4] place-items-center rounded-lg border-2 border-dashed text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
++        >
++          <span className="flex flex-col items-center gap-1">
++            <Plus className="size-5" />
++            {files.length === 0 ? "Add files" : "Add more"}
++          </span>
++        </button>
++      </div>
++
++      <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl bg-foreground p-5 text-background md:flex-row md:items-center">
++        <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs uppercase tracking-wider">
++          <span>
++            <span className="text-primary">{files.length}</span> files
++          </span>
++          <span>
++            <span className="text-primary">{totalMb}</span> MB total
++          </span>
++          <span className="text-background/60">{hint}</span>
++        </div>
++        <Button
++          size="lg"
++          disabled={files.length < 2 || files.length > 50 || busy}
++          onClick={onMerge}
++        >
++          {busy ? (
++            <>
++              <Loader2 className="mr-2 size-4 animate-spin" />
++              {runner.phase === "uploading" ? "Uploading…" : "Merging…"}
++            </>
++          ) : (
++            <>Merge now →</>
++          )}
++        </Button>
++      </div>
++
++      {runner.phase === "done" && (
++        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
++          <span className="flex items-center gap-2">
++            <CheckCircle2 className="size-4 text-primary" />
++            Done · auto-deletes in 5 min
++          </span>
++          <div className="flex gap-2">
++            <Button variant="outline" size="sm" onClick={discardAll}>
++              <Trash2 className="mr-1.5 size-4" />
++              Discard
++            </Button>
++            <Button size="sm" onClick={() => runner.download("merged.pdf")}>
++              <Download className="mr-1.5 size-4" />
++              Download merged PDF
++            </Button>
++          </div>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-6 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">Merge failed</p>
++            <p className="text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button variant="outline" size="sm" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/merge/merge-client.tsx b/apps/web/app/(tools)/merge/merge-client.tsx
+deleted file mode 100644
+index 8e386aa..0000000
+--- a/apps/web/app/(tools)/merge/merge-client.tsx
++++ /dev/null
+@@ -1,70 +0,0 @@
+-"use client";
+-
+-import { useState } from "react";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+-import { FileDropzone } from "@/components/tools/file-dropzone";
+-import { JobStatusPanel } from "@/components/tools/job-status";
+-import { useJobRunner } from "@/components/tools/use-job-runner";
+-
+-/**
+- * Multi-file merge. Backend accepts 2-50 PDFs and returns a single merged
+- * output_file_id. Reordering is left to the dropzone for now (drop in
+- * the order you want them concatenated) — a drag-handle list can replace
+- * the inline file list later without touching this client logic.
+- */
+-export function MergeClient() {
+-  const [files, setFiles] = useState<File[]>([]);
+-  const runner = useJobRunner();
+-
+-  async function onSubmit() {
+-    if (files.length < 2) return;
+-    await runner.run(files, (ids) => ({ input_file_ids: ids }), "merge");
+-  }
+-
+-  const totalMb = (files.reduce((s, f) => s + f.size, 0) / 1024 / 1024).toFixed(1);
+-
+-  return (
+-    <Card className="grid gap-8 p-8">
+-      <FileDropzone files={files} onChange={setFiles} multiple maxSizeMB={30} />
+-
+-      <div className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-foreground p-5 text-background md:flex-row md:items-center">
+-        <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs uppercase tracking-wider">
+-          <span>
+-            <span className="text-primary">{files.length}</span> files
+-          </span>
+-          <span>
+-            <span className="text-primary">{totalMb}</span> MB total
+-          </span>
+-          <span className="text-background/60">
+-            {files.length < 2
+-              ? "Pick at least 2 PDFs"
+-              : files.length > 50
+-              ? "Max 50 PDFs"
+-              : "Order matches drop order"}
+-          </span>
+-        </div>
+-        <Button
+-          size="lg"
+-          disabled={
+-            files.length < 2 ||
+-            files.length > 50 ||
+-            runner.phase === "uploading" ||
+-            runner.phase === "running"
+-          }
+-          onClick={onSubmit}
+-        >
+-          Merge now →
+-        </Button>
+-      </div>
+-
+-      <JobStatusPanel
+-        phase={runner.phase}
+-        error={runner.error}
+-        onDownload={() => runner.download("merged.pdf")}
+-        onReset={runner.reset}
+-        downloadLabel="Download merged PDF"
+-      />
+-    </Card>
+-  );
+-}
+diff --git a/apps/web/app/(tools)/merge/page.tsx b/apps/web/app/(tools)/merge/page.tsx
+index de3e417..0703540 100644
+--- a/apps/web/app/(tools)/merge/page.tsx
++++ b/apps/web/app/(tools)/merge/page.tsx
+@@ -1,10 +1,8 @@
+ import type { Metadata } from "next";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
++import { notFound } from "next/navigation";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { notFound } from "next/navigation";
+-import { MergeClient } from "./merge-client";
++import { MergeCard } from "./merge-card";
+ 
+ export const metadata: Metadata = {
+   title: "Merge PDF",
+@@ -17,48 +15,7 @@ export default function MergePage() {
+ 
+   return (
+     <ToolPageShell tool={tool} index="01" variant="drag-to-reorder">
+-      <Card className="p-8">
+-        <div className="grid grid-cols-2 gap-4 md:grid-cols-6">
+-          {Array.from({ length: 5 }).map((_, i) => (
+-            <div
+-              key={i}
+-              className="relative aspect-[3/4] rounded-lg border bg-background p-3 text-xs"
+-            >
+-              <span className="absolute -left-2 -top-2 grid h-6 w-6 place-items-center rounded-full bg-foreground font-mono text-[10px] text-background">
+-                {i + 1}
+-              </span>
+-              <div className="mt-4 h-1 w-full rounded bg-muted" />
+-              <div className="mt-1 h-1 w-3/4 rounded bg-muted" />
+-              <div className="mt-1 h-1 w-5/6 rounded bg-muted" />
+-            </div>
+-          ))}
+-          <div className="grid aspect-[3/4] place-items-center rounded-lg border-2 border-dashed text-sm text-muted-foreground">
+-            + Add more
+-          </div>
+-        </div>
+-
+-        <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl bg-foreground p-5 text-background md:flex-row md:items-center">
+-          <div className="flex flex-wrap gap-x-6 gap-y-1 font-mono text-xs uppercase tracking-wider">
+-            <span>
+-              <span className="text-primary">5</span> files
+-            </span>
+-            <span>
+-              <span className="text-primary">24</span> pages
+-            </span>
+-            <span>
+-              <span className="text-primary">~6.5MB</span> output
+-            </span>
+-            <span>
+-              <span className="text-primary">~3s</span> estimated
+-            </span>
+-          </div>
+-          <Button size="lg">Merge now →</Button>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <MergeClient />
+-      </div>
++      <MergeCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/ocr/ocr-card.tsx b/apps/web/app/(tools)/ocr/ocr-card.tsx
+new file mode 100644
+index 0000000..4a7caa8
+--- /dev/null
++++ b/apps/web/app/(tools)/ocr/ocr-card.tsx
+@@ -0,0 +1,196 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  Eye,
++  Sparkles,
++  Languages,
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++const langs = [
++  { code: "eng", label: "English" },
++  { code: "rus", label: "Russian" },
++  { code: "uzb", label: "Uzbek (Latin)" },
++  { code: "uzb_cyrl", label: "Uzbek (Cyrillic)" },
++  { code: "kir", label: "Kyrgyz" },
++  { code: "eng+rus", label: "English + Russian" },
++  { code: "eng+uzb", label: "English + Uzbek" },
++];
++
++export function OcrCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const [lang, setLang] = useState("eng");
++  const [forceOcr, setForceOcr] = useState(false);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      runner.reset();
++    }
++  }
++  function discard() {
++    setFile(null);
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onRun() {
++    if (!file) return;
++    await runner.run(
++      [file],
++      (ids) => ({ input_file_id: ids[0], lang, force_ocr: forceOcr }),
++      "ocr",
++    );
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf,image/jpeg,image/png,image/tiff,.jpg,.jpeg,.png,.tif,.tiff"
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="grid gap-8 md:grid-cols-2">
++        <div className="flex flex-col gap-6">
++          <button
++            type="button"
++            onClick={pickFile}
++            className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40"
++          >
++            <div className="grid h-14 w-14 place-items-center rounded-xl bg-primary/10">
++              <Eye className="size-7 text-primary" />
++            </div>
++            <div>
++              <p className="font-bold text-foreground">
++                {file ? file.name : "Drop your scanned PDF"}
++              </p>
++              <p className="mt-1 text-sm text-muted-foreground">
++                {file
++                  ? `${(file.size / 1024 / 1024).toFixed(1)} MB · click to replace`
++                  : "or an image (JPG, PNG, TIFF)"}
++              </p>
++            </div>
++            {!file && (
++              <span className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
++                Select file
++              </span>
++            )}
++          </button>
++
++          <div>
++            <label htmlFor="ocr-lang" className="flex items-center gap-2 text-sm font-semibold text-foreground">
++              <Languages className="size-4" /> Document language
++            </label>
++            <select
++              id="ocr-lang"
++              value={lang}
++              onChange={(e) => setLang(e.target.value)}
++              className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
++            >
++              {langs.map((l) => (
++                <option key={l.code} value={l.code}>
++                  {l.label}
++                </option>
++              ))}
++            </select>
++          </div>
++
++          <label className="flex items-center gap-2 text-sm">
++            <input
++              type="checkbox"
++              checked={forceOcr}
++              onChange={(e) => setForceOcr(e.target.checked)}
++              className="size-4 accent-primary"
++            />
++            <span>Re-OCR pages that already have text</span>
++          </label>
++        </div>
++
++        <div className="flex flex-col gap-4">
++          <div className="flex items-center gap-2">
++            <Sparkles className="size-4 text-primary" />
++            <p className="text-sm font-semibold text-foreground">Extracted text preview</p>
++          </div>
++          <div className="flex-1 rounded-xl border bg-secondary/20 p-5">
++            <div className="space-y-2 opacity-40">
++              {Array.from({ length: 7 }).map((_, i) => (
++                <div
++                  key={i}
++                  className="h-2 rounded bg-foreground"
++                  style={{ width: `${50 + (i * 13) % 45}%` }}
++                />
++              ))}
++            </div>
++            <p className="mt-6 text-center text-xs text-muted-foreground">
++              {file ? "Click Run OCR to process this file" : "Upload a file to see the extracted text"}
++            </p>
++          </div>
++
++          <Button size="lg" className="w-full" disabled={!file || busy} onClick={onRun}>
++            {busy ? (
++              <>
++                <Loader2 className="mr-2 size-4 animate-spin" />
++                {runner.phase === "uploading" ? "Uploading…" : "Reading…"}
++              </>
++            ) : (
++              <>Run OCR →</>
++            )}
++          </Button>
++        </div>
++      </div>
++
++      {runner.phase === "done" && (
++        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
++          <span className="flex items-center gap-2">
++            <CheckCircle2 className="size-4 text-primary" />
++            Done · auto-deletes in 5 min
++          </span>
++          <div className="flex gap-2">
++            <Button variant="outline" size="sm" onClick={discard}>
++              <Trash2 className="mr-1.5 size-4" />
++              Discard
++            </Button>
++            <Button
++              size="sm"
++              onClick={() => runner.download(`ocr-${file?.name ?? "result.pdf"}`)}
++            >
++              <Download className="mr-1.5 size-4" />
++              Download searchable PDF
++            </Button>
++          </div>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-8 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">OCR failed</p>
++            <p className="text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button variant="outline" size="sm" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/ocr/ocr-client.tsx b/apps/web/app/(tools)/ocr/ocr-client.tsx
+deleted file mode 100644
+index 3435449..0000000
+--- a/apps/web/app/(tools)/ocr/ocr-client.tsx
++++ /dev/null
+@@ -1,60 +0,0 @@
+-"use client";
+-
+-import { useState } from "react";
+-import { SimpleToolClient } from "@/components/tools/simple-tool-client";
+-
+-const langs = [
+-  { code: "eng", label: "English" },
+-  { code: "rus", label: "Russian" },
+-  { code: "uzb", label: "Uzbek (Latin)" },
+-  { code: "uzb_cyrl", label: "Uzbek (Cyrillic)" },
+-  { code: "kir", label: "Kyrgyz" },
+-  { code: "eng+rus", label: "English + Russian" },
+-  { code: "eng+uzb", label: "English + Uzbek" },
+-];
+-
+-/**
+- * Add a searchable text layer to a scanned PDF. The lang code maps
+- * straight to Tesseract — multi-language hits use the `eng+uzb` syntax.
+- */
+-export function OcrClient() {
+-  const [lang, setLang] = useState("eng");
+-  const [forceOcr, setForceOcr] = useState(false);
+-
+-  return (
+-    <SimpleToolClient
+-      op="ocr"
+-      cta="Run OCR →"
+-      resultFilename={(f) => `ocr-${f?.name ?? "result.pdf"}`}
+-      downloadLabel="Download searchable PDF"
+-      buildExtraBody={() => ({ lang, force_ocr: forceOcr })}
+-      extraFields={
+-        <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
+-          <label className="grid gap-1.5">
+-            <span className="text-sm font-medium">Language</span>
+-            <select
+-              value={lang}
+-              onChange={(e) => setLang(e.target.value)}
+-              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+-            >
+-              {langs.map((l) => (
+-                <option key={l.code} value={l.code}>
+-                  {l.label}
+-                </option>
+-              ))}
+-            </select>
+-          </label>
+-          <label className="flex items-end gap-2 pb-2 text-sm">
+-            <input
+-              type="checkbox"
+-              checked={forceOcr}
+-              onChange={(e) => setForceOcr(e.target.checked)}
+-              className="size-4 accent-primary"
+-            />
+-            <span>Re-OCR pages that already have text</span>
+-          </label>
+-        </div>
+-      }
+-    />
+-  );
+-}
+diff --git a/apps/web/app/(tools)/ocr/page.tsx b/apps/web/app/(tools)/ocr/page.tsx
+index 6931fee..a2797d1 100644
+--- a/apps/web/app/(tools)/ocr/page.tsx
++++ b/apps/web/app/(tools)/ocr/page.tsx
+@@ -1,83 +1,21 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { OcrClient } from "./ocr-client";
+-import { Eye, Sparkles, Languages } from "lucide-react";
++import { OcrCard } from "./ocr-card";
+ 
+ export const metadata: Metadata = {
+   title: "OCR PDF",
+   description: "Make scanned PDFs searchable and copy-pasteable with AI OCR.",
+ };
+ 
+-const languages = ["English", "French", "German", "Spanish", "Arabic", "Chinese", "Japanese"];
+-
+ export default function OcrPage() {
+   const tool = getToolBySlug("ocr");
+   if (!tool) notFound();
+ 
+   return (
+     <ToolPageShell tool={tool} index="11" variant="AI-powered">
+-      <Card className="p-8">
+-        <div className="grid gap-8 md:grid-cols-2">
+-          {/* Upload */}
+-          <div className="flex flex-col gap-6">
+-            <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40">
+-              <div className="grid h-14 w-14 place-items-center rounded-xl bg-primary/10">
+-                <Eye className="size-7 text-primary" />
+-              </div>
+-              <div>
+-                <p className="font-bold text-foreground">Drop your scanned PDF</p>
+-                <p className="mt-1 text-sm text-muted-foreground">or an image (JPG, PNG, TIFF)</p>
+-              </div>
+-              <Button>Select file</Button>
+-            </div>
+-
+-            <div>
+-              <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+-                <Languages className="size-4" /> Document language
+-              </label>
+-              <select className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+-                {languages.map((l) => (
+-                  <option key={l}>{l}</option>
+-                ))}
+-              </select>
+-            </div>
+-          </div>
+-
+-          {/* Preview / result */}
+-          <div className="flex flex-col gap-4">
+-            <div className="flex items-center gap-2">
+-              <Sparkles className="size-4 text-primary" />
+-              <p className="text-sm font-semibold text-foreground">Extracted text preview</p>
+-            </div>
+-            <div className="flex-1 rounded-xl border bg-secondary/20 p-5">
+-              <div className="space-y-2 opacity-40">
+-                {Array.from({ length: 7 }).map((_, i) => (
+-                  <div
+-                    key={i}
+-                    className="h-2 rounded bg-foreground"
+-                    style={{ width: `${50 + (i * 13) % 45}%` }}
+-                  />
+-                ))}
+-              </div>
+-              <p className="mt-6 text-center text-xs text-muted-foreground">
+-                Upload a file to see the extracted text
+-              </p>
+-            </div>
+-
+-            <Button size="lg" className="w-full">
+-              Run OCR →
+-            </Button>
+-          </div>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <OcrClient />
+-      </div>
++      <OcrCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/pdf-to-word/page.tsx b/apps/web/app/(tools)/pdf-to-word/page.tsx
+index 4de94ff..1494c80 100644
+--- a/apps/web/app/(tools)/pdf-to-word/page.tsx
++++ b/apps/web/app/(tools)/pdf-to-word/page.tsx
+@@ -1,83 +1,21 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { PdfToWordClient } from "./pdf-to-word-client";
+-import { FileText, ArrowRight, CheckCircle2 } from "lucide-react";
++import { PdfToWordCard } from "./pdf-to-word-card";
+ 
+ export const metadata: Metadata = {
+   title: "PDF to Word",
+   description: "Convert PDF to editable .docx with formatting intact.",
+ };
+ 
+-const features = [
+-  "Preserves fonts, tables, and layouts",
+-  "Editable .docx output",
+-  "No watermarks",
+-];
+-
+ export default function PdfToWordPage() {
+   const tool = getToolBySlug("pdf-to-word");
+   if (!tool) notFound();
+ 
+   return (
+     <ToolPageShell tool={tool} index="05" variant="layout-aware">
+-      <Card className="p-8">
+-        <div className="grid gap-10 md:grid-cols-2">
+-          {/* Upload zone */}
+-          <div className="flex flex-col gap-4">
+-            <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40">
+-              <div className="grid h-14 w-14 place-items-center rounded-xl bg-emerald-50">
+-                <FileText className="size-7 text-emerald-600" />
+-              </div>
+-              <div>
+-                <p className="font-bold text-foreground">Drop your PDF here</p>
+-                <p className="mt-1 text-sm text-muted-foreground">or click to browse</p>
+-              </div>
+-              <Button>Select PDF</Button>
+-            </div>
+-          </div>
+-
+-          {/* Info panel */}
+-          <div className="flex flex-col justify-center gap-6">
+-            <div>
+-              <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+-                What you get
+-              </p>
+-              <div className="mt-4 flex flex-col gap-3">
+-                {features.map((f) => (
+-                  <div key={f} className="flex items-center gap-3">
+-                    <CheckCircle2 className="size-5 shrink-0 text-emerald-500" />
+-                    <span className="text-sm font-medium text-foreground">{f}</span>
+-                  </div>
+-                ))}
+-              </div>
+-            </div>
+-
+-            <div className="flex items-center gap-6 rounded-2xl bg-foreground p-5 text-background">
+-              <div className="text-center">
+-                <p className="font-mono text-xs uppercase text-background/60">Input</p>
+-                <p className="mt-1 font-bold">.PDF</p>
+-              </div>
+-              <ArrowRight className="size-5 text-primary" />
+-              <div className="text-center">
+-                <p className="font-mono text-xs uppercase text-background/60">Output</p>
+-                <p className="mt-1 font-bold text-primary">.DOCX</p>
+-              </div>
+-            </div>
+-
+-            <Button size="lg" className="w-full">
+-              Convert to Word →
+-            </Button>
+-          </div>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <PdfToWordClient />
+-      </div>
++      <PdfToWordCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/pdf-to-word/pdf-to-word-card.tsx b/apps/web/app/(tools)/pdf-to-word/pdf-to-word-card.tsx
+new file mode 100644
+index 0000000..af89d0f
+--- /dev/null
++++ b/apps/web/app/(tools)/pdf-to-word/pdf-to-word-card.tsx
+@@ -0,0 +1,205 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  FileText,
++  ArrowRight,
++  CheckCircle2,
++  Loader2,
++  Download,
++  AlertCircle,
++  Trash2,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++const features = [
++  "Preserves fonts, tables, and layouts",
++  "Editable .docx output",
++  "No watermarks",
++];
++
++/**
++ * Single integrated card for PDF→Word. Keeps Bahrom's marketing layout
++ * (left = upload zone, right = features + format ribbon + CTA) and
++ * wires the buttons to the real backend job pipeline. Replaces the
++ * previous two-card setup (static mockup + separate functional widget)
++ * — having both confused users who tried the bottom one and wondered
++ * why the top one did nothing.
++ */
++export function PdfToWordCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      runner.reset();
++    }
++  }
++
++  async function onConvert() {
++    if (!file) return;
++    await runner.run([file], (ids) => ({ input_file_id: ids[0] }), "pdf-to-word");
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++  const done = runner.phase === "done";
++  const failed = runner.phase === "failed";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf"
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="grid gap-10 md:grid-cols-2">
++        {/* Upload zone */}
++        <div className="flex flex-col gap-4">
++          <button
++            type="button"
++            onClick={pickFile}
++            className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40"
++          >
++            <div className="grid h-14 w-14 place-items-center rounded-xl bg-emerald-50">
++              <FileText className="size-7 text-emerald-600" />
++            </div>
++            <div>
++              <p className="font-bold text-foreground">
++                {file ? file.name : "Drop your PDF here"}
++              </p>
++              <p className="mt-1 text-sm text-muted-foreground">
++                {file
++                  ? `${(file.size / 1024 / 1024).toFixed(1)} MB · click to replace`
++                  : "or click to browse · up to 30 MB"}
++              </p>
++            </div>
++            {!file && (
++              <span className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
++                Select PDF
++              </span>
++            )}
++          </button>
++
++          {file && (
++            <button
++              type="button"
++              onClick={() => {
++                setFile(null);
++                runner.reset();
++                if (inputRef.current) inputRef.current.value = "";
++              }}
++              className="flex items-center justify-center gap-1.5 self-start rounded px-2 py-1 text-xs text-muted-foreground hover:text-destructive"
++            >
++              <Trash2 className="size-3.5" /> Remove file
++            </button>
++          )}
++        </div>
++
++        {/* Info panel */}
++        <div className="flex flex-col justify-center gap-6">
++          <div>
++            <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
++              What you get
++            </p>
++            <div className="mt-4 flex flex-col gap-3">
++              {features.map((f) => (
++                <div key={f} className="flex items-center gap-3">
++                  <CheckCircle2 className="size-5 shrink-0 text-emerald-500" />
++                  <span className="text-sm font-medium text-foreground">{f}</span>
++                </div>
++              ))}
++            </div>
++          </div>
++
++          <div className="flex items-center gap-6 rounded-2xl bg-foreground p-5 text-background">
++            <div className="text-center">
++              <p className="font-mono text-xs uppercase text-background/60">Input</p>
++              <p className="mt-1 font-bold">.PDF</p>
++            </div>
++            <ArrowRight className="size-5 text-primary" />
++            <div className="text-center">
++              <p className="font-mono text-xs uppercase text-background/60">Output</p>
++              <p className="mt-1 font-bold text-primary">.DOCX</p>
++            </div>
++          </div>
++
++          <Button size="lg" className="w-full" disabled={!file || busy} onClick={onConvert}>
++            {busy ? (
++              <>
++                <Loader2 className="mr-2 size-4 animate-spin" />
++                {runner.phase === "uploading" ? "Uploading…" : "Converting…"}
++              </>
++            ) : (
++              <>Convert to Word →</>
++            )}
++          </Button>
++        </div>
++      </div>
++
++      {(done || failed) && (
++        <div className="mt-6 border-t pt-6">
++          {done && (
++            <div className="flex flex-wrap items-center justify-between gap-4">
++              <span className="flex items-center gap-2 text-sm">
++                <CheckCircle2 className="size-4 text-primary" />
++                <span className="font-medium">Done.</span>
++                <span className="text-muted-foreground">
++                  Auto-deleted in 5 minutes — save it now.
++                </span>
++              </span>
++              <div className="flex items-center gap-2">
++                <Button
++                  size="sm"
++                  variant="outline"
++                  onClick={() => {
++                    setFile(null);
++                    runner.reset();
++                    if (inputRef.current) inputRef.current.value = "";
++                  }}
++                >
++                  <Trash2 className="mr-1.5 size-4" />
++                  Discard
++                </Button>
++                <Button
++                  size="sm"
++                  onClick={() =>
++                    runner.download(
++                      (file?.name ?? "result").replace(/\.pdf$/i, "") + ".docx",
++                    )
++                  }
++                >
++                  <Download className="mr-1.5 size-4" />
++                  Download .docx
++                </Button>
++              </div>
++            </div>
++          )}
++          {failed && (
++            <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
++              <AlertCircle className="mt-0.5 size-4 text-destructive" />
++              <div className="flex-1">
++                <p className="font-medium text-destructive">Conversion failed</p>
++                <p className="mt-1 text-muted-foreground">{runner.error}</p>
++              </div>
++              <Button size="sm" variant="outline" onClick={runner.reset}>
++                Try again
++              </Button>
++            </div>
++          )}
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx b/apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx
+deleted file mode 100644
+index 6b1eb51..0000000
+--- a/apps/web/app/(tools)/pdf-to-word/pdf-to-word-client.tsx
++++ /dev/null
+@@ -1,15 +0,0 @@
+-"use client";
+-
+-import { SimpleToolClient } from "@/components/tools/simple-tool-client";
+-
+-/** PDF → .docx via LibreOffice in the worker. */
+-export function PdfToWordClient() {
+-  return (
+-    <SimpleToolClient
+-      op="pdf-to-word"
+-      cta="Convert to Word →"
+-      resultFilename={(f) => (f?.name ?? "result").replace(/\.pdf$/i, "") + ".docx"}
+-      downloadLabel="Download .docx"
+-    />
+-  );
+-}
+diff --git a/apps/web/app/(tools)/protect/page.tsx b/apps/web/app/(tools)/protect/page.tsx
+index 48faa68..728090b 100644
+--- a/apps/web/app/(tools)/protect/page.tsx
++++ b/apps/web/app/(tools)/protect/page.tsx
+@@ -1,11 +1,8 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { ProtectClient } from "./protect-client";
+-import { Lock, Eye, EyeOff, ShieldCheck } from "lucide-react";
++import { ProtectCard } from "./protect-card";
+ 
+ export const metadata: Metadata = {
+   title: "Protect PDF",
+@@ -18,69 +15,7 @@ export default function ProtectPage() {
+ 
+   return (
+     <ToolPageShell tool={tool} index="09" variant="AES-256">
+-      <Card className="p-8">
+-        <div className="mx-auto max-w-md">
+-          <div className="flex flex-col gap-6">
+-            <div className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-8 text-center transition-colors hover:border-primary/40">
+-              <div className="grid h-14 w-14 place-items-center rounded-xl bg-amber-50">
+-                <Lock className="size-7 text-amber-600" />
+-              </div>
+-              <div>
+-                <p className="font-bold text-foreground">Drop your PDF here</p>
+-                <p className="mt-1 text-sm text-muted-foreground">or click to browse</p>
+-              </div>
+-              <Button>Select PDF</Button>
+-            </div>
+-
+-            <div className="flex flex-col gap-4">
+-              <div>
+-                <label className="block text-sm font-semibold text-foreground">Password</label>
+-                <div className="relative mt-2">
+-                  <input
+-                    type="password"
+-                    placeholder="Enter a strong password"
+-                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 pr-10 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+-                  />
+-                  <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+-                    <Eye className="size-4" />
+-                  </button>
+-                </div>
+-              </div>
+-
+-              <div>
+-                <label className="block text-sm font-semibold text-foreground">
+-                  Confirm password
+-                </label>
+-                <div className="relative mt-2">
+-                  <input
+-                    type="password"
+-                    placeholder="Repeat the password"
+-                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 pr-10 text-sm outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+-                  />
+-                  <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+-                    <EyeOff className="size-4" />
+-                  </button>
+-                </div>
+-              </div>
+-            </div>
+-
+-            <div className="flex items-center gap-2 rounded-xl bg-amber-50 p-4">
+-              <ShieldCheck className="size-4 shrink-0 text-amber-600" />
+-              <p className="text-xs text-amber-800">
+-                Encrypted with AES-256. We never store your password.
+-              </p>
+-            </div>
+-
+-            <Button size="lg" className="w-full">
+-              Lock PDF →
+-            </Button>
+-          </div>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <ProtectClient />
+-      </div>
++      <ProtectCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/protect/protect-card.tsx b/apps/web/app/(tools)/protect/protect-card.tsx
+new file mode 100644
+index 0000000..babe4a6
+--- /dev/null
++++ b/apps/web/app/(tools)/protect/protect-card.tsx
+@@ -0,0 +1,219 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  Lock,
++  Eye,
++  EyeOff,
++  ShieldCheck,
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++export function ProtectCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const [password, setPassword] = useState("");
++  const [confirm, setConfirm] = useState("");
++  const [show, setShow] = useState(false);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      runner.reset();
++    }
++  }
++  function discard() {
++    setFile(null);
++    setPassword("");
++    setConfirm("");
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onLock() {
++    if (!file || !canSubmit) return;
++    await runner.run(
++      [file],
++      (ids) => ({ input_file_id: ids[0], password }),
++      "protect",
++    );
++  }
++
++  const tooShort = password.length > 0 && password.length < 6;
++  const mismatch = password.length > 0 && confirm.length > 0 && password !== confirm;
++  const canSubmit = !!file && password.length >= 6 && password === confirm;
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf"
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="mx-auto max-w-md">
++        <div className="flex flex-col gap-6">
++          <button
++            type="button"
++            onClick={pickFile}
++            className="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-8 text-center transition-colors hover:border-primary/40"
++          >
++            <div className="grid h-14 w-14 place-items-center rounded-xl bg-amber-50">
++              <Lock className="size-7 text-amber-600" />
++            </div>
++            <div>
++              <p className="font-bold text-foreground">
++                {file ? file.name : "Drop your PDF here"}
++              </p>
++              <p className="mt-1 text-sm text-muted-foreground">
++                {file
++                  ? `${(file.size / 1024 / 1024).toFixed(1)} MB · click to replace`
++                  : "or click to browse"}
++              </p>
++            </div>
++            {!file && (
++              <span className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
++                Select PDF
++              </span>
++            )}
++          </button>
++
++          <div className="flex flex-col gap-4">
++            <div>
++              <label htmlFor="protect-pwd" className="block text-sm font-semibold text-foreground">
++                Password
++              </label>
++              <div className="relative mt-2">
++                <input
++                  id="protect-pwd"
++                  type={show ? "text" : "password"}
++                  value={password}
++                  onChange={(e) => setPassword(e.target.value)}
++                  placeholder="Enter a strong password"
++                  autoComplete="new-password"
++                  className={`w-full rounded-lg border bg-background px-4 py-2.5 pr-10 text-sm outline-none transition-colors ${
++                    tooShort
++                      ? "border-destructive focus:border-destructive"
++                      : "border-border focus:border-primary focus:ring-1 focus:ring-primary"
++                  }`}
++                />
++                <button
++                  type="button"
++                  onClick={() => setShow((v) => !v)}
++                  aria-label={show ? "Hide password" : "Show password"}
++                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
++                >
++                  {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
++                </button>
++              </div>
++              {tooShort && (
++                <p className="mt-1 text-xs text-destructive">At least 6 characters</p>
++              )}
++            </div>
++
++            <div>
++              <label htmlFor="protect-pwd-confirm" className="block text-sm font-semibold text-foreground">
++                Confirm password
++              </label>
++              <div className="relative mt-2">
++                <input
++                  id="protect-pwd-confirm"
++                  type={show ? "text" : "password"}
++                  value={confirm}
++                  onChange={(e) => setConfirm(e.target.value)}
++                  placeholder="Repeat the password"
++                  autoComplete="new-password"
++                  className={`w-full rounded-lg border bg-background px-4 py-2.5 pr-10 text-sm outline-none transition-colors ${
++                    mismatch
++                      ? "border-destructive focus:border-destructive"
++                      : "border-border focus:border-primary focus:ring-1 focus:ring-primary"
++                  }`}
++                />
++                <button
++                  type="button"
++                  onClick={() => setShow((v) => !v)}
++                  aria-label={show ? "Hide password" : "Show password"}
++                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
++                >
++                  {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
++                </button>
++              </div>
++              {mismatch && (
++                <p className="mt-1 text-xs text-destructive">Passwords don't match</p>
++              )}
++            </div>
++          </div>
++
++          <div className="flex items-center gap-2 rounded-xl bg-amber-50 p-4">
++            <ShieldCheck className="size-4 shrink-0 text-amber-600" />
++            <p className="text-xs text-amber-800">
++              Encrypted with AES-256. We never store your password.
++            </p>
++          </div>
++
++          <Button size="lg" className="w-full" disabled={!canSubmit || busy} onClick={onLock}>
++            {busy ? (
++              <>
++                <Loader2 className="mr-2 size-4 animate-spin" />
++                {runner.phase === "uploading" ? "Uploading…" : "Locking…"}
++              </>
++            ) : (
++              <>Lock PDF →</>
++            )}
++          </Button>
++        </div>
++      </div>
++
++      {runner.phase === "done" && (
++        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
++          <span className="flex items-center gap-2">
++            <CheckCircle2 className="size-4 text-primary" />
++            Done · auto-deletes in 5 min
++          </span>
++          <div className="flex gap-2">
++            <Button variant="outline" size="sm" onClick={discard}>
++              <Trash2 className="mr-1.5 size-4" />
++              Discard
++            </Button>
++            <Button
++              size="sm"
++              onClick={() =>
++                runner.download(`protected-${file?.name ?? "result.pdf"}`)
++              }
++            >
++              <Download className="mr-1.5 size-4" />
++              Download protected PDF
++            </Button>
++          </div>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-8 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">Protect failed</p>
++            <p className="text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button variant="outline" size="sm" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/protect/protect-client.tsx b/apps/web/app/(tools)/protect/protect-client.tsx
+deleted file mode 100644
+index 90b5314..0000000
+--- a/apps/web/app/(tools)/protect/protect-client.tsx
++++ /dev/null
+@@ -1,100 +0,0 @@
+-"use client";
+-
+-import { useState } from "react";
+-import { Eye, EyeOff } from "lucide-react";
+-import { SimpleToolClient } from "@/components/tools/simple-tool-client";
+-
+-/**
+- * Add a password to a PDF. Body shape: { input_file_id, password }.
+- * Repeats the password locally so the user doesn't lock themselves
+- * out of their own file with a typo we never see.
+- */
+-export function ProtectClient() {
+-  const [password, setPassword] = useState("");
+-  const [confirm, setConfirm] = useState("");
+-  const [show, setShow] = useState(false);
+-
+-  const mismatch = password.length > 0 && confirm.length > 0 && password !== confirm;
+-  const tooShort = password.length > 0 && password.length < 6;
+-
+-  return (
+-    <SimpleToolClient
+-      op="protect"
+-      cta="Protect now →"
+-      resultFilename={(f) => `protected-${f?.name ?? "result.pdf"}`}
+-      downloadLabel="Download protected PDF"
+-      buildExtraBody={() => ({ password })}
+-      extraFields={
+-        <div className="grid gap-4">
+-          <PasswordRow
+-            id="protect-pwd"
+-            label="Password"
+-            value={password}
+-            show={show}
+-            onChange={setPassword}
+-            onToggle={() => setShow((v) => !v)}
+-            invalid={tooShort}
+-            invalidMsg="At least 6 characters"
+-          />
+-          <PasswordRow
+-            id="protect-pwd-confirm"
+-            label="Confirm password"
+-            value={confirm}
+-            show={show}
+-            onChange={setConfirm}
+-            onToggle={() => setShow((v) => !v)}
+-            invalid={mismatch}
+-            invalidMsg="Passwords don't match"
+-          />
+-        </div>
+-      }
+-    />
+-  );
+-}
+-
+-function PasswordRow({
+-  id,
+-  label,
+-  value,
+-  show,
+-  onChange,
+-  onToggle,
+-  invalid,
+-  invalidMsg,
+-}: {
+-  id: string;
+-  label: string;
+-  value: string;
+-  show: boolean;
+-  onChange: (v: string) => void;
+-  onToggle: () => void;
+-  invalid: boolean;
+-  invalidMsg: string;
+-}) {
+-  return (
+-    <label htmlFor={id} className="grid gap-1.5">
+-      <span className="text-sm font-medium">{label}</span>
+-      <div className="relative">
+-        <input
+-          id={id}
+-          type={show ? "text" : "password"}
+-          value={value}
+-          onChange={(e) => onChange(e.target.value)}
+-          className={`w-full rounded-lg border bg-card px-3 py-2 pr-10 text-sm focus:outline-none ${
+-            invalid ? "border-destructive focus:border-destructive" : "focus:border-primary"
+-          }`}
+-          autoComplete="new-password"
+-        />
+-        <button
+-          type="button"
+-          onClick={onToggle}
+-          aria-label={show ? "Hide password" : "Show password"}
+-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
+-        >
+-          {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+-        </button>
+-      </div>
+-      {invalid && <span className="text-xs text-destructive">{invalidMsg}</span>}
+-    </label>
+-  );
+-}
+diff --git a/apps/web/app/(tools)/split/page.tsx b/apps/web/app/(tools)/split/page.tsx
+index ce9985a..f7710b0 100644
+--- a/apps/web/app/(tools)/split/page.tsx
++++ b/apps/web/app/(tools)/split/page.tsx
+@@ -1,10 +1,8 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { SplitClient } from "./split-client";
++import { SplitCard } from "./split-card";
+ 
+ export const metadata: Metadata = {
+   title: "Split PDF",
+@@ -17,48 +15,7 @@ export default function SplitPage() {
+ 
+   return (
+     <ToolPageShell tool={tool} index="02" variant="visual picker">
+-      <Card className="p-8">
+-        <div className="flex flex-wrap gap-2">
+-          {["Extract pages", "Split by ranges", "Split every N"].map((tab, i) => (
+-            <Button
+-              key={tab}
+-              variant={i === 0 ? "default" : "outline"}
+-              size="sm"
+-              className="rounded-full"
+-            >
+-              <span className="mr-1 font-mono text-[10px] opacity-60">0{i + 1}</span> {tab}
+-            </Button>
+-          ))}
+-        </div>
+-
+-        <div className="mt-8 grid grid-cols-4 gap-3 md:grid-cols-8">
+-          {Array.from({ length: 16 }).map((_, i) => (
+-            <div
+-              key={i}
+-              className="relative aspect-[3/4] rounded-md border-2 border-primary/30 bg-primary/5"
+-            >
+-              <span className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-primary text-[10px] text-primary-foreground">
+-                ✓
+-              </span>
+-              <span className="absolute bottom-1 left-1 font-mono text-[10px] text-primary">
+-                {String(i + 1).padStart(2, "0")}
+-              </span>
+-            </div>
+-          ))}
+-        </div>
+-
+-        <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border bg-secondary p-5 md:flex-row md:items-center">
+-          <div className="text-sm">
+-            <span className="text-primary">7</span> of 16 pages selected · Output:{" "}
+-            <strong>1 file, ~2.4 MB</strong>
+-          </div>
+-          <Button size="lg">Extract pages →</Button>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <SplitClient />
+-      </div>
++      <SplitCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/split/split-card.tsx b/apps/web/app/(tools)/split/split-card.tsx
+new file mode 100644
+index 0000000..182c947
+--- /dev/null
++++ b/apps/web/app/(tools)/split/split-card.tsx
+@@ -0,0 +1,201 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++  Upload,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++import { downloadFile } from "@/lib/api";
++
++const tabs = [
++  { key: "extract", label: "Extract pages", placeholder: "1,3,5" },
++  { key: "ranges", label: "Split by ranges", placeholder: "1-3,4-6,7-10" },
++  { key: "everyN", label: "Split every N", placeholder: "Every 5 pages" },
++] as const;
++type TabKey = (typeof tabs)[number]["key"];
++
++export function SplitCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const [activeTab, setActiveTab] = useState<TabKey>("ranges");
++  const [ranges, setRanges] = useState("1-3,4-5");
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      runner.reset();
++    }
++  }
++  function discard() {
++    setFile(null);
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onSplit() {
++    if (!file || !ranges.trim()) return;
++    await runner.run(
++      [file],
++      (ids) => ({ input_file_id: ids[0], split_ranges: ranges.trim() }),
++      "split",
++    );
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++  const outputs = (runner.result?.output_file_ids as string[] | undefined) ?? [];
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf"
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="flex flex-wrap gap-2">
++        {tabs.map((t, i) => (
++          <Button
++            key={t.key}
++            variant={activeTab === t.key ? "default" : "outline"}
++            size="sm"
++            onClick={() => setActiveTab(t.key)}
++            className="rounded-full"
++          >
++            <span className="mr-1 font-mono text-[10px] opacity-60">0{i + 1}</span> {t.label}
++          </Button>
++        ))}
++      </div>
++
++      {!file ? (
++        <button
++          type="button"
++          onClick={pickFile}
++          className="mt-8 flex w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-12 text-center transition-colors hover:border-primary/40"
++        >
++          <Upload className="size-6 text-muted-foreground" />
++          <p className="text-base font-medium">Drop a PDF or click to browse</p>
++          <p className="text-xs text-muted-foreground">up to 30 MB</p>
++        </button>
++      ) : (
++        <div className="mt-8 flex items-center justify-between rounded-xl border bg-card p-3 text-sm">
++          <span className="truncate font-medium">{file.name}</span>
++          <button
++            type="button"
++            onClick={discard}
++            className="ml-3 rounded p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
++            aria-label="Remove file"
++          >
++            <Trash2 className="size-4" />
++          </button>
++        </div>
++      )}
++
++      <div className="mt-6">
++        <label htmlFor="split-ranges" className="block text-sm font-medium">
++          Page ranges
++        </label>
++        <input
++          id="split-ranges"
++          type="text"
++          value={ranges}
++          onChange={(e) => setRanges(e.target.value)}
++          placeholder={tabs.find((t) => t.key === activeTab)?.placeholder}
++          className="mt-2 w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
++        />
++        <p className="mt-1 text-xs text-muted-foreground">
++          Each group becomes its own PDF. Example: <code>1-3,5,7-9</code> → 3 files.
++        </p>
++      </div>
++
++      <div className="mt-8 flex flex-col items-start justify-between gap-4 rounded-2xl border bg-secondary p-5 md:flex-row md:items-center">
++        <div className="text-sm">
++          {file ? (
++            <>
++              <span className="text-primary">{ranges.split(",").length}</span> group
++              {ranges.split(",").length === 1 ? "" : "s"} from{" "}
++              <strong>{file.name}</strong>
++            </>
++          ) : (
++            <>Pick a PDF to begin</>
++          )}
++        </div>
++        <Button
++          size="lg"
++          disabled={!file || !ranges.trim() || busy}
++          onClick={onSplit}
++        >
++          {busy ? (
++            <>
++              <Loader2 className="mr-2 size-4 animate-spin" />
++              {runner.phase === "uploading" ? "Uploading…" : "Splitting…"}
++            </>
++          ) : (
++            <>Split now →</>
++          )}
++        </Button>
++      </div>
++
++      {runner.phase === "done" && outputs.length > 0 && (
++        <div className="mt-6 rounded-xl border border-primary/30 bg-primary/5 p-4">
++          <div className="mb-3 flex items-center justify-between">
++            <span className="flex items-center gap-2 text-sm">
++              <CheckCircle2 className="size-4 text-primary" />
++              <span className="font-medium">{outputs.length} file{outputs.length === 1 ? "" : "s"} ready</span>
++              <span className="text-muted-foreground">· auto-deletes in 5 min</span>
++            </span>
++            <Button variant="outline" size="sm" onClick={discard}>
++              <Trash2 className="mr-1.5 size-4" />
++              Discard
++            </Button>
++          </div>
++          <ul className="grid gap-2">
++            {outputs.map((id, i) => (
++              <li
++                key={id}
++                className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm"
++              >
++                <span>Part {i + 1}</span>
++                <Button
++                  size="sm"
++                  variant="outline"
++                  onClick={() =>
++                    downloadFile(id, `${file?.name ?? "split"}-part-${i + 1}.pdf`)
++                  }
++                >
++                  <Download className="mr-1.5 size-4" />
++                  Download
++                </Button>
++              </li>
++            ))}
++          </ul>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-6 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">Split failed</p>
++            <p className="text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button variant="outline" size="sm" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/split/split-client.tsx b/apps/web/app/(tools)/split/split-client.tsx
+deleted file mode 100644
+index d8e4f51..0000000
+--- a/apps/web/app/(tools)/split/split-client.tsx
++++ /dev/null
+@@ -1,96 +0,0 @@
+-"use client";
+-
+-import { useState } from "react";
+-import { Download } from "lucide-react";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+-import { FileDropzone } from "@/components/tools/file-dropzone";
+-import { JobStatusPanel } from "@/components/tools/job-status";
+-import { useJobRunner } from "@/components/tools/use-job-runner";
+-import { downloadFile } from "@/lib/api";
+-
+-/**
+- * Split a PDF by page ranges. Backend returns `output_file_ids: uuid[]`
+- * — one per group — so we render a per-file download list instead of
+- * the single "download" button JobStatusPanel ships by default.
+- */
+-export function SplitClient() {
+-  const [files, setFiles] = useState<File[]>([]);
+-  const [ranges, setRanges] = useState("1-3,4-5");
+-  const runner = useJobRunner();
+-  const file = files[0];
+-
+-  async function onSubmit() {
+-    if (!file) return;
+-    await runner.run(
+-      files,
+-      (ids) => ({ input_file_id: ids[0], split_ranges: ranges }),
+-      "split",
+-    );
+-  }
+-
+-  const outputs =
+-    (runner.result?.output_file_ids as string[] | undefined) ?? [];
+-
+-  return (
+-    <Card className="grid gap-8 p-8">
+-      <FileDropzone files={files} onChange={setFiles} maxSizeMB={30} />
+-
+-      <label className="grid gap-2">
+-        <span className="text-sm font-medium">Page ranges</span>
+-        <input
+-          type="text"
+-          value={ranges}
+-          onChange={(e) => setRanges(e.target.value)}
+-          placeholder="1-3,4-5,7"
+-          className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+-        />
+-        <span className="text-xs text-muted-foreground">
+-          Each group becomes a separate PDF. Example: <code>1-3,5,7-9</code> → 3 files.
+-        </span>
+-      </label>
+-
+-      <div className="flex justify-end">
+-        <Button
+-          size="lg"
+-          disabled={!file || !ranges.trim() || runner.phase === "uploading" || runner.phase === "running"}
+-          onClick={onSubmit}
+-        >
+-          Split now →
+-        </Button>
+-      </div>
+-
+-      {runner.phase !== "done" && (
+-        <JobStatusPanel
+-          phase={runner.phase}
+-          error={runner.error}
+-          onReset={runner.reset}
+-          hideDownload
+-        />
+-      )}
+-
+-      {runner.phase === "done" && outputs.length > 0 && (
+-        <div className="rounded-xl border border-primary/30 bg-primary/5 p-4">
+-          <p className="mb-3 text-sm font-medium">
+-            {outputs.length} file{outputs.length === 1 ? "" : "s"} ready · expires in 5 minutes
+-          </p>
+-          <ul className="grid gap-2">
+-            {outputs.map((id, i) => (
+-              <li key={id} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
+-                <span>Part {i + 1}</span>
+-                <Button
+-                  size="sm"
+-                  variant="outline"
+-                  onClick={() => downloadFile(id, `${file?.name ?? "split"}-part-${i + 1}.pdf`)}
+-                >
+-                  <Download className="mr-1.5 size-4" />
+-                  Download
+-                </Button>
+-              </li>
+-            ))}
+-          </ul>
+-        </div>
+-      )}
+-    </Card>
+-  );
+-}
+diff --git a/apps/web/app/(tools)/unlock/page.tsx b/apps/web/app/(tools)/unlock/page.tsx
+index df4e96c..3c93737 100644
+--- a/apps/web/app/(tools)/unlock/page.tsx
++++ b/apps/web/app/(tools)/unlock/page.tsx
+@@ -1,11 +1,8 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { UnlockClient } from "./unlock-client";
+-import { Unlock, ShieldOff } from "lucide-react";
++import { UnlockCard } from "./unlock-card";
+ 
+ export const metadata: Metadata = {
+   title: "Unlock PDF",
+@@ -18,54 +15,7 @@ export default function UnlockPage() {
+ 
+   return (
+     <ToolPageShell tool={tool} index="10" variant="password removal">
+-      <Card className="p-8">
+-        <div className="mx-auto max-w-md">
+-          <div className="flex flex-col items-center gap-6 text-center">
+-            <div className="grid h-20 w-20 place-items-center rounded-2xl bg-amber-50">
+-              <Unlock className="size-10 text-amber-600" />
+-            </div>
+-            <div>
+-              <h2 className="text-xl font-bold text-foreground">Upload your protected PDF</h2>
+-              <p className="mt-2 text-sm text-muted-foreground">
+-                Enter the password and we'll strip the lock so you can work freely.
+-              </p>
+-            </div>
+-
+-            <div className="w-full rounded-xl border-2 border-dashed border-border bg-secondary/30 p-8 text-center transition-colors hover:border-primary/40">
+-              <p className="text-sm font-medium text-muted-foreground">Drop your PDF here or</p>
+-              <Button size="sm" className="mt-3">
+-                Choose file
+-              </Button>
+-            </div>
+-
+-            <div className="w-full">
+-              <label className="block text-left text-sm font-semibold text-foreground">
+-                PDF Password
+-              </label>
+-              <input
+-                type="password"
+-                placeholder="Enter the document password"
+-                className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none ring-0 transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
+-              />
+-            </div>
+-
+-            <div className="flex w-full items-center gap-2 rounded-xl bg-amber-50 p-4 text-left">
+-              <ShieldOff className="size-4 shrink-0 text-amber-600" />
+-              <p className="text-xs text-amber-800">
+-                Only unlock PDFs you own or have explicit permission to modify.
+-              </p>
+-            </div>
+-
+-            <Button size="lg" className="w-full">
+-              Unlock PDF →
+-            </Button>
+-          </div>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <UnlockClient />
+-      </div>
++      <UnlockCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/unlock/unlock-card.tsx b/apps/web/app/(tools)/unlock/unlock-card.tsx
+new file mode 100644
+index 0000000..1df5d82
+--- /dev/null
++++ b/apps/web/app/(tools)/unlock/unlock-card.tsx
+@@ -0,0 +1,183 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  Unlock,
++  ShieldOff,
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++  Eye,
++  EyeOff,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++export function UnlockCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const [password, setPassword] = useState("");
++  const [show, setShow] = useState(false);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      runner.reset();
++    }
++  }
++  function discard() {
++    setFile(null);
++    setPassword("");
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onUnlock() {
++    if (!file || !password) return;
++    await runner.run(
++      [file],
++      (ids) => ({ input_file_id: ids[0], password }),
++      "unlock",
++    );
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf"
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="mx-auto max-w-md">
++        <div className="flex flex-col items-center gap-6 text-center">
++          <div className="grid h-20 w-20 place-items-center rounded-2xl bg-amber-50">
++            <Unlock className="size-10 text-amber-600" />
++          </div>
++          <div>
++            <h2 className="text-xl font-bold text-foreground">Upload your protected PDF</h2>
++            <p className="mt-2 text-sm text-muted-foreground">
++              Enter the password and we'll strip the lock so you can work freely.
++            </p>
++          </div>
++
++          <button
++            type="button"
++            onClick={pickFile}
++            className="w-full rounded-xl border-2 border-dashed border-border bg-secondary/30 p-8 text-center transition-colors hover:border-primary/40"
++          >
++            {file ? (
++              <>
++                <p className="truncate text-sm font-semibold text-foreground">{file.name}</p>
++                <p className="mt-1 text-xs text-muted-foreground">
++                  {(file.size / 1024 / 1024).toFixed(1)} MB · click to replace
++                </p>
++              </>
++            ) : (
++              <>
++                <p className="text-sm font-medium text-muted-foreground">Drop your PDF here or</p>
++                <span className="mt-3 inline-flex items-center justify-center rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
++                  Choose file
++                </span>
++              </>
++            )}
++          </button>
++
++          <div className="w-full">
++            <label htmlFor="unlock-pwd" className="block text-left text-sm font-semibold text-foreground">
++              PDF Password
++            </label>
++            <div className="relative mt-2">
++              <input
++                id="unlock-pwd"
++                type={show ? "text" : "password"}
++                value={password}
++                onChange={(e) => setPassword(e.target.value)}
++                placeholder="Enter the document password"
++                autoComplete="current-password"
++                className="w-full rounded-lg border border-border bg-background px-4 py-2.5 pr-10 text-sm outline-none ring-0 transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
++              />
++              <button
++                type="button"
++                onClick={() => setShow((v) => !v)}
++                aria-label={show ? "Hide password" : "Show password"}
++                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
++              >
++                {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
++              </button>
++            </div>
++          </div>
++
++          <div className="flex w-full items-center gap-2 rounded-xl bg-amber-50 p-4 text-left">
++            <ShieldOff className="size-4 shrink-0 text-amber-600" />
++            <p className="text-xs text-amber-800">
++              Only unlock PDFs you own or have explicit permission to modify.
++            </p>
++          </div>
++
++          <Button
++            size="lg"
++            className="w-full"
++            disabled={!file || !password || busy}
++            onClick={onUnlock}
++          >
++            {busy ? (
++              <>
++                <Loader2 className="mr-2 size-4 animate-spin" />
++                {runner.phase === "uploading" ? "Uploading…" : "Unlocking…"}
++              </>
++            ) : (
++              <>Unlock PDF →</>
++            )}
++          </Button>
++        </div>
++      </div>
++
++      {runner.phase === "done" && (
++        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
++          <span className="flex items-center gap-2">
++            <CheckCircle2 className="size-4 text-primary" />
++            Done · auto-deletes in 5 min
++          </span>
++          <div className="flex gap-2">
++            <Button variant="outline" size="sm" onClick={discard}>
++              <Trash2 className="mr-1.5 size-4" />
++              Discard
++            </Button>
++            <Button
++              size="sm"
++              onClick={() => runner.download(`unlocked-${file?.name ?? "result.pdf"}`)}
++            >
++              <Download className="mr-1.5 size-4" />
++              Download unlocked PDF
++            </Button>
++          </div>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-8 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">Unlock failed</p>
++            <p className="text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button variant="outline" size="sm" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/unlock/unlock-client.tsx b/apps/web/app/(tools)/unlock/unlock-client.tsx
+deleted file mode 100644
+index e5e922b..0000000
+--- a/apps/web/app/(tools)/unlock/unlock-client.tsx
++++ /dev/null
+@@ -1,47 +0,0 @@
+-"use client";
+-
+-import { useState } from "react";
+-import { Eye, EyeOff } from "lucide-react";
+-import { SimpleToolClient } from "@/components/tools/simple-tool-client";
+-
+-/** Strip a known password from a protected PDF. */
+-export function UnlockClient() {
+-  const [password, setPassword] = useState("");
+-  const [show, setShow] = useState(false);
+-
+-  return (
+-    <SimpleToolClient
+-      op="unlock"
+-      cta="Unlock now →"
+-      resultFilename={(f) => `unlocked-${f?.name ?? "result.pdf"}`}
+-      downloadLabel="Download unlocked PDF"
+-      buildExtraBody={() => ({ password })}
+-      extraFields={
+-        <label htmlFor="unlock-pwd" className="grid gap-1.5">
+-          <span className="text-sm font-medium">Password</span>
+-          <div className="relative">
+-            <input
+-              id="unlock-pwd"
+-              type={show ? "text" : "password"}
+-              value={password}
+-              onChange={(e) => setPassword(e.target.value)}
+-              className="w-full rounded-lg border bg-card px-3 py-2 pr-10 text-sm focus:border-primary focus:outline-none"
+-              autoComplete="current-password"
+-            />
+-            <button
+-              type="button"
+-              onClick={() => setShow((v) => !v)}
+-              aria-label={show ? "Hide password" : "Show password"}
+-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-accent"
+-            >
+-              {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+-            </button>
+-          </div>
+-          <span className="text-xs text-muted-foreground">
+-            Backend returns &quot;not encrypted&quot; if the file isn&apos;t protected.
+-          </span>
+-        </label>
+-      }
+-    />
+-  );
+-}
+diff --git a/apps/web/app/(tools)/watermark/page.tsx b/apps/web/app/(tools)/watermark/page.tsx
+index 26cfde1..39086f2 100644
+--- a/apps/web/app/(tools)/watermark/page.tsx
++++ b/apps/web/app/(tools)/watermark/page.tsx
+@@ -1,11 +1,8 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { WatermarkClient } from "./watermark-client";
+-import { Layers, Type, Image } from "lucide-react";
++import { WatermarkCard } from "./watermark-card";
+ 
+ export const metadata: Metadata = {
+   title: "Watermark PDF",
+@@ -18,85 +15,7 @@ export default function WatermarkPage() {
+ 
+   return (
+     <ToolPageShell tool={tool} index="12" variant="text · image">
+-      <Card className="p-8">
+-        <div className="grid gap-8 md:grid-cols-[1fr_300px]">
+-          {/* Preview */}
+-          <div className="relative min-h-80 overflow-hidden rounded-xl border bg-white p-6 shadow-sm">
+-            <div className="space-y-2">
+-              {Array.from({ length: 10 }).map((_, i) => (
+-                <div
+-                  key={i}
+-                  className="h-2 rounded bg-muted"
+-                  style={{ width: `${60 + (i * 7) % 35}%` }}
+-                />
+-              ))}
+-            </div>
+-            {/* Watermark overlay */}
+-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+-              <p
+-                className="select-none text-5xl font-black uppercase tracking-widest text-foreground/10"
+-                style={{ transform: "rotate(-35deg)" }}
+-              >
+-                CONFIDENTIAL
+-              </p>
+-            </div>
+-          </div>
+-
+-          {/* Controls */}
+-          <div className="flex flex-col gap-5">
+-            <div className="flex gap-2">
+-              <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary">
+-                <Type className="size-4" /> Text
+-              </button>
+-              <button className="flex flex-1 items-center justify-center gap-2 rounded-lg border bg-card px-4 py-2.5 text-sm font-semibold text-foreground/70 hover:border-primary/40">
+-                <Image className="size-4" /> Image
+-              </button>
+-            </div>
+-
+-            <div>
+-              <label className="block text-sm font-semibold text-foreground">Watermark text</label>
+-              <input
+-                defaultValue="CONFIDENTIAL"
+-                className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+-              />
+-            </div>
+-
+-            <div>
+-              <label className="block text-sm font-semibold text-foreground">Opacity</label>
+-              <div className="mt-2 flex items-center gap-3">
+-                <input type="range" min={5} max={100} defaultValue={15} className="flex-1" />
+-                <span className="font-mono text-sm font-semibold text-primary">15%</span>
+-              </div>
+-            </div>
+-
+-            <div>
+-              <label className="block text-sm font-semibold text-foreground">Rotation</label>
+-              <div className="mt-2 flex items-center gap-3">
+-                <input type="range" min={-90} max={90} defaultValue={-35} className="flex-1" />
+-                <span className="font-mono text-sm font-semibold text-primary">−35°</span>
+-              </div>
+-            </div>
+-
+-            <div>
+-              <label className="block text-sm font-semibold text-foreground">Apply to</label>
+-              <select className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary">
+-                <option>All pages</option>
+-                <option>First page only</option>
+-                <option>Custom range</option>
+-              </select>
+-            </div>
+-
+-            <Button size="lg" className="w-full">
+-              <Layers className="size-4" />
+-              Apply watermark →
+-            </Button>
+-          </div>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <WatermarkClient />
+-      </div>
++      <WatermarkCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/watermark/watermark-card.tsx b/apps/web/app/(tools)/watermark/watermark-card.tsx
+new file mode 100644
+index 0000000..856a721
+--- /dev/null
++++ b/apps/web/app/(tools)/watermark/watermark-card.tsx
+@@ -0,0 +1,281 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  Layers,
++  Type,
++  Loader2,
++  Download,
++  Trash2,
++  AlertCircle,
++  CheckCircle2,
++  Upload,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++const positions = [
++  { code: "c", label: "Center" },
++  { code: "tl", label: "Top-left" },
++  { code: "tr", label: "Top-right" },
++  { code: "bl", label: "Bottom-left" },
++  { code: "br", label: "Bottom-right" },
++];
++
++export function WatermarkCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const [text, setText] = useState("CONFIDENTIAL");
++  const [position, setPosition] = useState("c");
++  const [opacity, setOpacity] = useState(0.15);
++  const [rotation, setRotation] = useState(-35);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      runner.reset();
++    }
++  }
++  function discard() {
++    setFile(null);
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onApply() {
++    if (!file || !text.trim()) return;
++    await runner.run(
++      [file],
++      (ids) => ({
++        input_file_id: ids[0],
++        mode: "text",
++        text,
++        position,
++        opacity,
++        rotation,
++        pages: "all",
++      }),
++      "watermark",
++    );
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept="application/pdf,.pdf"
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="grid gap-8 md:grid-cols-[1fr_300px]">
++        <div className="flex flex-col gap-4">
++          <div className="relative min-h-80 flex-1 overflow-hidden rounded-xl border bg-white p-6 shadow-sm">
++            <div className="space-y-2">
++              {Array.from({ length: 10 }).map((_, i) => (
++                <div
++                  key={i}
++                  className="h-2 rounded bg-muted"
++                  style={{ width: `${60 + (i * 7) % 35}%` }}
++                />
++              ))}
++            </div>
++            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
++              <p
++                className="select-none text-5xl font-black uppercase tracking-widest text-foreground/10"
++                style={{
++                  transform: `rotate(${rotation}deg)`,
++                  opacity: Math.max(opacity * 2, 0.08),
++                }}
++              >
++                {text || "DRAFT"}
++              </p>
++            </div>
++          </div>
++
++          <button
++            type="button"
++            onClick={pickFile}
++            className="flex w-full items-center justify-between rounded-lg border-2 border-dashed border-border bg-secondary/20 px-4 py-3 text-left transition-colors hover:border-primary/40"
++          >
++            <span className="flex items-center gap-3">
++              <Upload className="size-4 text-muted-foreground" />
++              <span className="truncate text-sm font-medium">
++                {file ? file.name : "Drop a PDF or click to browse"}
++              </span>
++            </span>
++            {file ? (
++              <span
++                role="button"
++                tabIndex={0}
++                onClick={(e) => {
++                  e.stopPropagation();
++                  discard();
++                }}
++                onKeyDown={(e) => {
++                  if (e.key === "Enter" || e.key === " ") {
++                    e.preventDefault();
++                    e.stopPropagation();
++                    discard();
++                  }
++                }}
++                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-destructive"
++                aria-label="Remove file"
++              >
++                <Trash2 className="size-4" />
++              </span>
++            ) : (
++              <span className="text-xs text-muted-foreground">up to 30 MB</span>
++            )}
++          </button>
++        </div>
++
++        <div className="flex flex-col gap-5">
++          <div className="flex gap-2">
++            <button
++              type="button"
++              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary"
++            >
++              <Type className="size-4" /> Text
++            </button>
++          </div>
++
++          <div>
++            <label htmlFor="wm-text" className="block text-sm font-semibold text-foreground">
++              Watermark text
++            </label>
++            <input
++              id="wm-text"
++              value={text}
++              onChange={(e) => setText(e.target.value)}
++              className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
++            />
++          </div>
++
++          <div>
++            <label htmlFor="wm-opacity" className="block text-sm font-semibold text-foreground">
++              Opacity
++            </label>
++            <div className="mt-2 flex items-center gap-3">
++              <input
++                id="wm-opacity"
++                type="range"
++                min={5}
++                max={100}
++                value={Math.round(opacity * 100)}
++                onChange={(e) => setOpacity(parseInt(e.target.value, 10) / 100)}
++                className="flex-1"
++              />
++              <span className="font-mono text-sm font-semibold text-primary">
++                {Math.round(opacity * 100)}%
++              </span>
++            </div>
++          </div>
++
++          <div>
++            <label htmlFor="wm-rotation" className="block text-sm font-semibold text-foreground">
++              Rotation
++            </label>
++            <div className="mt-2 flex items-center gap-3">
++              <input
++                id="wm-rotation"
++                type="range"
++                min={-90}
++                max={90}
++                step={5}
++                value={rotation}
++                onChange={(e) => setRotation(parseInt(e.target.value, 10))}
++                className="flex-1"
++              />
++              <span className="font-mono text-sm font-semibold text-primary">
++                {rotation > 0 ? `+${rotation}` : rotation}°
++              </span>
++            </div>
++          </div>
++
++          <div>
++            <label htmlFor="wm-position" className="block text-sm font-semibold text-foreground">
++              Position
++            </label>
++            <select
++              id="wm-position"
++              value={position}
++              onChange={(e) => setPosition(e.target.value)}
++              className="mt-2 w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
++            >
++              {positions.map((p) => (
++                <option key={p.code} value={p.code}>
++                  {p.label}
++                </option>
++              ))}
++            </select>
++          </div>
++
++          <Button
++            size="lg"
++            className="w-full"
++            disabled={!file || !text.trim() || busy}
++            onClick={onApply}
++          >
++            {busy ? (
++              <>
++                <Loader2 className="mr-2 size-4 animate-spin" />
++                {runner.phase === "uploading" ? "Uploading…" : "Applying…"}
++              </>
++            ) : (
++              <>
++                <Layers className="mr-1.5 size-4" />
++                Apply watermark →
++              </>
++            )}
++          </Button>
++        </div>
++      </div>
++
++      {runner.phase === "done" && (
++        <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 p-3 text-sm">
++          <span className="flex items-center gap-2">
++            <CheckCircle2 className="size-4 text-primary" />
++            Done · auto-deletes in 5 min
++          </span>
++          <div className="flex gap-2">
++            <Button variant="outline" size="sm" onClick={discard}>
++              <Trash2 className="mr-1.5 size-4" />
++              Discard
++            </Button>
++            <Button
++              size="sm"
++              onClick={() =>
++                runner.download(`watermarked-${file?.name ?? "result.pdf"}`)
++              }
++            >
++              <Download className="mr-1.5 size-4" />
++              Download watermarked PDF
++            </Button>
++          </div>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-8 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">Watermark failed</p>
++            <p className="text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button variant="outline" size="sm" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/watermark/watermark-client.tsx b/apps/web/app/(tools)/watermark/watermark-client.tsx
+deleted file mode 100644
+index 5eb3b8e..0000000
+--- a/apps/web/app/(tools)/watermark/watermark-client.tsx
++++ /dev/null
+@@ -1,96 +0,0 @@
+-"use client";
+-
+-import { useState } from "react";
+-import { SimpleToolClient } from "@/components/tools/simple-tool-client";
+-
+-const positions = [
+-  { code: "c", label: "Center" },
+-  { code: "tl", label: "Top-left" },
+-  { code: "tr", label: "Top-right" },
+-  { code: "bl", label: "Bottom-left" },
+-  { code: "br", label: "Bottom-right" },
+-];
+-
+-/**
+- * Text watermark. Image-mode is a follow-up — wiring image_file_id
+- * requires a second upload field and a small UI toggle, which we'll
+- * fold in once the text variant has live traffic.
+- */
+-export function WatermarkClient() {
+-  const [text, setText] = useState("DRAFT");
+-  const [position, setPosition] = useState("c");
+-  const [opacity, setOpacity] = useState(0.4);
+-  const [rotation, setRotation] = useState(-45);
+-
+-  return (
+-    <SimpleToolClient
+-      op="watermark"
+-      cta="Add watermark →"
+-      resultFilename={(f) => `watermarked-${f?.name ?? "result.pdf"}`}
+-      downloadLabel="Download watermarked PDF"
+-      buildExtraBody={() => ({
+-        mode: "text",
+-        text,
+-        position,
+-        opacity,
+-        rotation,
+-        pages: "all",
+-      })}
+-      extraFields={
+-        <div className="grid gap-4 md:grid-cols-2">
+-          <label className="grid gap-1.5">
+-            <span className="text-sm font-medium">Text</span>
+-            <input
+-              type="text"
+-              value={text}
+-              onChange={(e) => setText(e.target.value)}
+-              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+-            />
+-          </label>
+-          <label className="grid gap-1.5">
+-            <span className="text-sm font-medium">Position</span>
+-            <select
+-              value={position}
+-              onChange={(e) => setPosition(e.target.value)}
+-              className="w-full rounded-lg border bg-card px-3 py-2 text-sm focus:border-primary focus:outline-none"
+-            >
+-              {positions.map((p) => (
+-                <option key={p.code} value={p.code}>
+-                  {p.label}
+-                </option>
+-              ))}
+-            </select>
+-          </label>
+-          <label className="grid gap-1.5">
+-            <span className="text-sm font-medium">
+-              Opacity: <span className="text-muted-foreground">{opacity.toFixed(2)}</span>
+-            </span>
+-            <input
+-              type="range"
+-              min={0}
+-              max={1}
+-              step={0.05}
+-              value={opacity}
+-              onChange={(e) => setOpacity(parseFloat(e.target.value))}
+-              className="w-full accent-primary"
+-            />
+-          </label>
+-          <label className="grid gap-1.5">
+-            <span className="text-sm font-medium">
+-              Rotation: <span className="text-muted-foreground">{rotation}°</span>
+-            </span>
+-            <input
+-              type="range"
+-              min={-90}
+-              max={90}
+-              step={5}
+-              value={rotation}
+-              onChange={(e) => setRotation(parseInt(e.target.value, 10))}
+-              className="w-full accent-primary"
+-            />
+-          </label>
+-        </div>
+-      }
+-    />
+-  );
+-}
+diff --git a/apps/web/app/(tools)/word-to-pdf/page.tsx b/apps/web/app/(tools)/word-to-pdf/page.tsx
+index 58cad7a..2ba82f7 100644
+--- a/apps/web/app/(tools)/word-to-pdf/page.tsx
++++ b/apps/web/app/(tools)/word-to-pdf/page.tsx
+@@ -1,81 +1,21 @@
+ import type { Metadata } from "next";
+ import { notFound } from "next/navigation";
+-import { Button } from "@converto/ui/components/button";
+-import { Card } from "@converto/ui/components/card";
+ import { ToolPageShell } from "@/components/tools/tool-page-shell";
+ import { getToolBySlug } from "@converto/data";
+-import { WordToPdfClient } from "./word-to-pdf-client";
+-import { FileText, ArrowRight, CheckCircle2 } from "lucide-react";
++import { WordToPdfCard } from "./word-to-pdf-card";
+ 
+ export const metadata: Metadata = {
+   title: "Word to PDF",
+   description: "Convert Word documents to PDF. Pristine output, every font preserved.",
+ };
+ 
+-const features = [
+-  "Every font and image preserved",
+-  "Pixel-perfect layout",
+-  "Universal .pdf output",
+-];
+-
+ export default function WordToPdfPage() {
+   const tool = getToolBySlug("word-to-pdf");
+   if (!tool) notFound();
+ 
+   return (
+     <ToolPageShell tool={tool} index="06" variant="font-perfect">
+-      <Card className="p-8">
+-        <div className="grid gap-10 md:grid-cols-2">
+-          <div className="flex flex-col gap-4">
+-            <div className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40">
+-              <div className="grid h-14 w-14 place-items-center rounded-xl bg-blue-50">
+-                <FileText className="size-7 text-blue-600" />
+-              </div>
+-              <div>
+-                <p className="font-bold text-foreground">Drop your .docx here</p>
+-                <p className="mt-1 text-sm text-muted-foreground">or click to browse</p>
+-              </div>
+-              <Button>Select Word file</Button>
+-            </div>
+-          </div>
+-
+-          <div className="flex flex-col justify-center gap-6">
+-            <div>
+-              <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+-                What you get
+-              </p>
+-              <div className="mt-4 flex flex-col gap-3">
+-                {features.map((f) => (
+-                  <div key={f} className="flex items-center gap-3">
+-                    <CheckCircle2 className="size-5 shrink-0 text-blue-500" />
+-                    <span className="text-sm font-medium text-foreground">{f}</span>
+-                  </div>
+-                ))}
+-              </div>
+-            </div>
+-
+-            <div className="flex items-center gap-6 rounded-2xl bg-foreground p-5 text-background">
+-              <div className="text-center">
+-                <p className="font-mono text-xs uppercase text-background/60">Input</p>
+-                <p className="mt-1 font-bold">.DOCX</p>
+-              </div>
+-              <ArrowRight className="size-5 text-primary" />
+-              <div className="text-center">
+-                <p className="font-mono text-xs uppercase text-background/60">Output</p>
+-                <p className="mt-1 font-bold text-primary">.PDF</p>
+-              </div>
+-            </div>
+-
+-            <Button size="lg" className="w-full">
+-              Convert to PDF →
+-            </Button>
+-          </div>
+-        </div>
+-      </Card>
+-
+-      <div className="mt-8">
+-        <WordToPdfClient />
+-      </div>
++      <WordToPdfCard />
+     </ToolPageShell>
+   );
+ }
+diff --git a/apps/web/app/(tools)/word-to-pdf/word-to-pdf-card.tsx b/apps/web/app/(tools)/word-to-pdf/word-to-pdf-card.tsx
+new file mode 100644
+index 0000000..7d3351a
+--- /dev/null
++++ b/apps/web/app/(tools)/word-to-pdf/word-to-pdf-card.tsx
+@@ -0,0 +1,181 @@
++"use client";
++
++import { useRef, useState } from "react";
++import {
++  FileText,
++  ArrowRight,
++  CheckCircle2,
++  Loader2,
++  Download,
++  AlertCircle,
++  Trash2,
++} from "lucide-react";
++import { Button } from "@converto/ui/components/button";
++import { Card } from "@converto/ui/components/card";
++import { useJobRunner } from "@/components/tools/use-job-runner";
++
++const features = [
++  "Every font and image preserved",
++  "Pixel-perfect layout",
++  "Universal .pdf output",
++];
++
++export function WordToPdfCard() {
++  const [file, setFile] = useState<File | null>(null);
++  const inputRef = useRef<HTMLInputElement>(null);
++  const runner = useJobRunner();
++
++  function pickFile() {
++    inputRef.current?.click();
++  }
++  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
++    const f = e.target.files?.[0];
++    if (f) {
++      setFile(f);
++      runner.reset();
++    }
++  }
++  function discard() {
++    setFile(null);
++    runner.reset();
++    if (inputRef.current) inputRef.current.value = "";
++  }
++  async function onConvert() {
++    if (!file) return;
++    await runner.run([file], (ids) => ({ input_file_id: ids[0] }), "word-to-pdf");
++  }
++
++  const busy = runner.phase === "uploading" || runner.phase === "running";
++
++  return (
++    <Card className="p-8">
++      <input
++        ref={inputRef}
++        type="file"
++        accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
++        hidden
++        onChange={onFileChange}
++      />
++
++      <div className="grid gap-10 md:grid-cols-2">
++        <div className="flex flex-col gap-4">
++          <button
++            type="button"
++            onClick={pickFile}
++            className="flex flex-1 flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed border-border bg-secondary/20 p-10 text-center transition-colors hover:border-primary/40"
++          >
++            <div className="grid h-14 w-14 place-items-center rounded-xl bg-blue-50">
++              <FileText className="size-7 text-blue-600" />
++            </div>
++            <div>
++              <p className="font-bold text-foreground">
++                {file ? file.name : "Drop your .docx here"}
++              </p>
++              <p className="mt-1 text-sm text-muted-foreground">
++                {file
++                  ? `${(file.size / 1024 / 1024).toFixed(1)} MB · click to replace`
++                  : "or click to browse · up to 30 MB"}
++              </p>
++            </div>
++            {!file && (
++              <span className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
++                Select Word file
++              </span>
++            )}
++          </button>
++
++          {file && (
++            <button
++              type="button"
++              onClick={discard}
++              className="flex items-center justify-center gap-1.5 self-start rounded px-2 py-1 text-xs text-muted-foreground hover:text-destructive"
++            >
++              <Trash2 className="size-3.5" /> Remove file
++            </button>
++          )}
++        </div>
++
++        <div className="flex flex-col justify-center gap-6">
++          <div>
++            <p className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
++              What you get
++            </p>
++            <div className="mt-4 flex flex-col gap-3">
++              {features.map((f) => (
++                <div key={f} className="flex items-center gap-3">
++                  <CheckCircle2 className="size-5 shrink-0 text-blue-500" />
++                  <span className="text-sm font-medium text-foreground">{f}</span>
++                </div>
++              ))}
++            </div>
++          </div>
++
++          <div className="flex items-center gap-6 rounded-2xl bg-foreground p-5 text-background">
++            <div className="text-center">
++              <p className="font-mono text-xs uppercase text-background/60">Input</p>
++              <p className="mt-1 font-bold">.DOCX</p>
++            </div>
++            <ArrowRight className="size-5 text-primary" />
++            <div className="text-center">
++              <p className="font-mono text-xs uppercase text-background/60">Output</p>
++              <p className="mt-1 font-bold text-primary">.PDF</p>
++            </div>
++          </div>
++
++          <Button size="lg" className="w-full" disabled={!file || busy} onClick={onConvert}>
++            {busy ? (
++              <>
++                <Loader2 className="mr-2 size-4 animate-spin" />
++                {runner.phase === "uploading" ? "Uploading…" : "Converting…"}
++              </>
++            ) : (
++              <>Convert to PDF →</>
++            )}
++          </Button>
++        </div>
++      </div>
++
++      {runner.phase === "done" && (
++        <div className="mt-6 border-t pt-6">
++          <div className="flex flex-wrap items-center justify-between gap-4">
++            <span className="flex items-center gap-2 text-sm">
++              <CheckCircle2 className="size-4 text-primary" />
++              <span className="font-medium">Done.</span>
++              <span className="text-muted-foreground">Auto-deletes in 5 minutes.</span>
++            </span>
++            <div className="flex items-center gap-2">
++              <Button size="sm" variant="outline" onClick={discard}>
++                <Trash2 className="mr-1.5 size-4" />
++                Discard
++              </Button>
++              <Button
++                size="sm"
++                onClick={() =>
++                  runner.download(
++                    (file?.name ?? "result").replace(/\.docx?$/i, "") + ".pdf",
++                  )
++                }
++              >
++                <Download className="mr-1.5 size-4" />
++                Download .pdf
++              </Button>
++            </div>
++          </div>
++        </div>
++      )}
++
++      {runner.phase === "failed" && (
++        <div className="mt-6 flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
++          <AlertCircle className="mt-0.5 size-4 text-destructive" />
++          <div className="flex-1">
++            <p className="font-medium text-destructive">Conversion failed</p>
++            <p className="mt-1 text-muted-foreground">{runner.error}</p>
++          </div>
++          <Button size="sm" variant="outline" onClick={runner.reset}>
++            Try again
++          </Button>
++        </div>
++      )}
++    </Card>
++  );
++}
+diff --git a/apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx b/apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx
+deleted file mode 100644
+index 071ac6a..0000000
+--- a/apps/web/app/(tools)/word-to-pdf/word-to-pdf-client.tsx
++++ /dev/null
+@@ -1,18 +0,0 @@
+-"use client";
+-
+-import { SimpleToolClient } from "@/components/tools/simple-tool-client";
+-
+-/** .doc/.docx → PDF via Gotenberg in the worker. */
+-export function WordToPdfClient() {
+-  return (
+-    <SimpleToolClient
+-      op="word-to-pdf"
+-      cta="Convert to PDF →"
+-      accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+-      resultFilename={(f) =>
+-        (f?.name ?? "result").replace(/\.docx?$/i, "") + ".pdf"
+-      }
+-      downloadLabel="Download PDF"
+-    />
+-  );
+-}
 -- 
 2.34.1
 
