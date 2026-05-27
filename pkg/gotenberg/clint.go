@@ -40,7 +40,10 @@ func New(url string) Client {
 	return &gotenbergClient{
 		baseURL: url,
 		httpClient: &http.Client{
-			Timeout: 2 * time.Minute,
+			// 3 min matches the gotenberg --api-timeout=180s on the server
+			// (plus a small margin for upload+download), so LibreOffice has
+			// time to render the long-tail of complex docx/xlsx/pptx files.
+			Timeout: 3 * time.Minute,
 			Transport: &http.Transport{
 				MaxIdleConns:        100,
 				MaxIdleConnsPerHost: 20,

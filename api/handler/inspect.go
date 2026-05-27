@@ -51,9 +51,15 @@ func (h Handler) CreateInspectJob(c *gin.Context) {
 		return
 	}
 
-	// inspect runs synchronously inside the service — return 200 + Done
-	// instead of 202/Created so callers can short-circuit polling.
-	handleResponse(c, h.log, "inspect job created", http.StatusOK, models.JobCreatedResponse{ID: jobID, Status: models.JobStatusDone})
+	// inspect runs synchronously — fetch the full job so the client gets
+	// page_count/title/author/etc in a single round-trip instead of having
+	// to GET /api/pdf/inspect/:id separately.
+	job, err := h.services.Inspect().GetByID(ctx, jobID)
+	if err != nil {
+		handleResponse(c, h.log, "failed to load inspect result", http.StatusInternalServerError, err.Error())
+		return
+	}
+	handleResponse(c, h.log, "inspect job created", http.StatusOK, job)
 }
 
 // GetInspectJob godoc

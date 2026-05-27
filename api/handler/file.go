@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -236,8 +238,15 @@ func (h Handler) DownloadFile(c *gin.Context) {
 		return
 	}
 
+	// Legacy uploads stored the file extension (e.g. ".pdf") in FileType
+	// instead of a real MIME. Map back to the proper Content-Type so
+	// browsers can preview PDFs/images inline instead of treating them
+	// as text/octet-streams. Fall back to the stored value when it
+	// already looks like a MIME ("type/subtype"), and to a safe default
+	// for genuinely unknown extensions.
+	contentType := resolveContentType(file.FileType, file.FileName)
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, file.FileName))
-	c.Header("Content-Type", file.FileType)
+	c.Header("Content-Type", contentType)
 	c.Header("Accept-Ranges", "bytes")
 
 	// ETag enables If-None-Match → 304 from http.ServeContent. The sha256
@@ -263,6 +272,31 @@ func (h Handler) DownloadFile(c *gin.Context) {
 	}
 	defer f.Close()
 	http.ServeContent(c.Writer, c.Request, file.FileName, fi.ModTime(), f)
+}
+
+// resolveContentType normalises the heterogeneous FileType column into a
+// real MIME string. The upload handler used to stash filepath.Ext() in
+// here (".pdf", ".jpg"), so older rows have an extension; newer rows
+// might carry a proper "application/pdf" already. We accept either.
+//
+// The fileName fallback covers cases where FileType is blank or junk —
+// we sniff the extension from the saved filename. octet-stream is the
+// last-resort default so the response is still a valid HTTP message.
+func resolveContentType(fileType, fileName string) string {
+	if strings.Contains(fileType, "/") {
+		return fileType // already a MIME
+	}
+	ext := fileType
+	if !strings.HasPrefix(ext, ".") {
+		ext = filepath.Ext(fileName)
+	}
+	if ext == "" {
+		return "application/octet-stream"
+	}
+	if mt := mime.TypeByExtension(ext); mt != "" {
+		return mt
+	}
+	return "application/octet-stream"
 }
 
 // DeleteFile godoc

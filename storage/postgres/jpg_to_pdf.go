@@ -100,14 +100,23 @@ func (r *jpgToPDFRepo) parseUUIDArray(input string) []string {
 }
 
 // ✅ UPDATE status + output
+// outputFileID may be "" when marking a job as "failed" — convert to SQL NULL
+// so postgres doesn't reject it against the UUID column type.
 func (r *jpgToPDFRepo) UpdateStatusAndOutput(ctx context.Context, id, status, outputFileID string) error {
+	var outID any
+	if outputFileID == "" {
+		outID = nil
+	} else {
+		outID = outputFileID
+	}
+
 	query := `
 		UPDATE jpg_to_pdf_jobs
 		SET status = $1, output_file_id = $2
 		WHERE id = $3
 	`
 
-	_, err := r.db.Exec(ctx, query, status, outputFileID, id)
+	_, err := r.db.Exec(ctx, query, status, outID, id)
 	if err != nil {
 		r.log.Error("jpgToPDFRepo.UpdateStatusAndOutput failed", logger.Error(err))
 	}
