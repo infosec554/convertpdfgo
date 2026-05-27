@@ -2,7 +2,7 @@
 
 Backend `convertpdfgo.com`'da live. Quyidagi patch frontend'ga **35 ta PDF tool + cloud export + My files**'ni ulaydi va 10 ta tool sahifasidagi **dublikat upload zonasini olib tashlaydi**.
 
-Patch fayl: <https://raw.githubusercontent.com/infosec554/convertpdfgo/main/deploy/frontend-wiring.patch> · 3 commit · ~70 fayl
+Patch fayl: <https://gist.github.com/infosec554/226ffa333b155e4930f233be05d80f74> · 3 commit · ~70 fayl
 
 ---
 
@@ -12,7 +12,7 @@ Patch fayl: <https://raw.githubusercontent.com/infosec554/convertpdfgo/main/depl
 cd ~/path/to/converto
 git checkout main && git pull
 git checkout -b feat/backend-wiring
-curl -sL https://raw.githubusercontent.com/infosec554/convertpdfgo/main/deploy/frontend-wiring.patch | git am
+curl -sL https://gist.githubusercontent.com/infosec554/226ffa333b155e4930f233be05d80f74/raw/frontend-wiring.patch | git am
 git push origin feat/backend-wiring
 ```
 
