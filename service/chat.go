@@ -41,7 +41,11 @@ type ChatService interface {
 	// stored message ID + retrieved chunk citations); subsequent events
 	// are StreamToken; the final event is StreamDone (with usage stats).
 	// On any error the channel emits StreamError and closes.
-	SendMessage(ctx context.Context, sessionID, content string) (<-chan ChatStreamEvent, error)
+	//
+	// Optional `attachments` (e.g. an image the user dropped into the
+	// chat input) are passed through to Gemini's multimodal endpoint
+	// alongside the text content.
+	SendMessage(ctx context.Context, sessionID, content string, attachments []llm.Attachment) (<-chan ChatStreamEvent, error)
 }
 
 // ChatStreamEvent is one frame of the SendMessage stream. Exactly one of
@@ -205,13 +209,15 @@ const retrievalK = 7
 // Errors before streaming starts come back as the second return value.
 // Errors during streaming surface as a ChatStreamEvent{Type:"error"} on
 // the channel just before it closes.
-func (c *chatService) SendMessage(ctx context.Context, sessionID, content string) (<-chan ChatStreamEvent, error) {
+func (c *chatService) SendMessage(ctx context.Context, sessionID, content string, attachments []llm.Attachment) (<-chan ChatStreamEvent, error) {
 	if !c.enabled() {
 		return nil, ErrChatDisabled
 	}
 
 	content = strings.TrimSpace(content)
-	if content == "" {
+	// Allow attachment-only turns (drop an image, no caption) — only
+	// reject when *everything* is empty.
+	if content == "" && len(attachments) == 0 {
 		return nil, errors.New("chat: empty message")
 	}
 
@@ -268,14 +274,20 @@ func (c *chatService) SendMessage(ctx context.Context, sessionID, content string
 
 	system, turns := pdfchat.BuildPrompt(retrieved, history, content)
 
-	// Convert pdfchat turns → llm.Message.
+	// Convert pdfchat turns → llm.Message. Attach any user-supplied
+	// images to the final turn (the one carrying the new question) so
+	// Gemini gets text + image in a single multimodal user message.
 	msgs := make([]llm.Message, len(turns))
 	for i, t := range turns {
 		role := llm.RoleUser
 		if t.Role == "assistant" {
 			role = llm.RoleAssistant
 		}
-		msgs[i] = llm.Message{Role: role, Content: t.Content}
+		msg := llm.Message{Role: role, Content: t.Content}
+		if i == len(turns)-1 && len(attachments) > 0 {
+			msg.Attachments = attachments
+		}
+		msgs[i] = msg
 	}
 
 	// Kick off the LLM stream.

@@ -18,10 +18,21 @@ const (
 	RoleAssistant Role = "assistant"
 )
 
-// Message is one turn in a chat conversation.
+// Message is one turn in a chat conversation. Attachments piggyback on
+// the same turn — Gemini accepts both an image part and a text part in
+// one user message, so the API surface stays small.
 type Message struct {
-	Role    Role
-	Content string
+	Role        Role
+	Content     string
+	Attachments []Attachment
+}
+
+// Attachment is an inline binary the user wants the model to see. Right
+// now only images are supported (Gemini multimodal); audio/video could
+// land here too once we wire them up.
+type Attachment struct {
+	MIMEType string // "image/jpeg" | "image/png" | "image/webp" | ...
+	Data     []byte // raw bytes — the provider encodes for the wire
 }
 
 // ChatOpts tunes a single Chat call. All fields are optional; zero values

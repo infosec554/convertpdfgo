@@ -44,8 +44,16 @@ type ChatCitation struct {
 }
 
 // ChatSendMessageRequest is the body for POST /api/chat/sessions/<id>/messages.
+//
+// Image (optional) lets the user attach a single image alongside their
+// question. The frontend reads the file as base64 and posts it inline —
+// no separate upload round-trip — so the limit is the JSON body cap on
+// the API (200 MiB). Practically we cap at ~10 MiB worth of image in
+// the handler.
 type ChatSendMessageRequest struct {
-	Content string `json:"content" binding:"required"`
+	Content     string `json:"content"`
+	ImageBase64 string `json:"image_base64,omitempty"`
+	ImageMIME   string `json:"image_mime,omitempty"` // e.g. "image/jpeg"
 }
 
 // ChatSessionDetail is what GET /api/chat/sessions/<id> returns —

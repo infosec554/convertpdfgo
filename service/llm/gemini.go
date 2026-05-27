@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -76,8 +77,14 @@ func (g *geminiProvider) EmbedDim() int { return geminiEmbedDim }
 // and trailing `]`). We read the body line-by-line and extract each
 // element as it lands.
 
+type geminiInlineData struct {
+	MIMEType string `json:"mimeType"`
+	Data     string `json:"data"` // base64
+}
+
 type geminiPart struct {
-	Text string `json:"text,omitempty"`
+	Text       string            `json:"text,omitempty"`
+	InlineData *geminiInlineData `json:"inlineData,omitempty"`
 }
 
 type geminiContent struct {
@@ -181,9 +188,32 @@ func (g *geminiProvider) buildChatReq(msgs []Message, opts ChatOpts) geminiChatR
 			}
 			continue
 		}
+
+		// Build parts: images first, then text. Gemini's docs recommend
+		// this order — vision tokens are processed alongside the text,
+		// putting them first gives the model the visual context before
+		// the prompt.
+		parts := make([]geminiPart, 0, len(m.Attachments)+1)
+		for _, att := range m.Attachments {
+			if len(att.Data) == 0 || att.MIMEType == "" {
+				continue
+			}
+			parts = append(parts, geminiPart{
+				InlineData: &geminiInlineData{
+					MIMEType: att.MIMEType,
+					Data:     base64.StdEncoding.EncodeToString(att.Data),
+				},
+			})
+		}
+		if m.Content != "" {
+			parts = append(parts, geminiPart{Text: m.Content})
+		}
+		if len(parts) == 0 {
+			continue // skip empty turns
+		}
 		req.Contents = append(req.Contents, geminiContent{
 			Role:  role,
-			Parts: []geminiPart{{Text: m.Content}},
+			Parts: parts,
 		})
 	}
 

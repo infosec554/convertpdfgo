@@ -2,11 +2,13 @@ package handler
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -208,9 +210,44 @@ func (h Handler) SendChatMessage(c *gin.Context) {
 		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
 		return
 	}
-	if req.Content == "" {
-		handleResponse(c, h.log, "content required", http.StatusBadRequest, "content is required")
+	if req.Content == "" && req.ImageBase64 == "" {
+		handleResponse(c, h.log, "content or image required", http.StatusBadRequest, "send text, an image, or both")
 		return
+	}
+
+	// Decode the optional inline image. We accept either a bare base64
+	// blob or a "data:image/png;base64,..." data URL since browsers
+	// produce both depending on how the file was read.
+	var attachments []llm.Attachment
+	if req.ImageBase64 != "" {
+		raw := req.ImageBase64
+		mime := req.ImageMIME
+		if strings.HasPrefix(raw, "data:") {
+			if comma := strings.Index(raw, ","); comma > 0 {
+				header := raw[5:comma] // "image/png;base64"
+				raw = raw[comma+1:]
+				if semi := strings.Index(header, ";"); semi > 0 {
+					if mime == "" {
+						mime = header[:semi]
+					}
+				}
+			}
+		}
+		bin, err := base64.StdEncoding.DecodeString(raw)
+		if err != nil {
+			handleResponse(c, h.log, "invalid image_base64", http.StatusBadRequest, err.Error())
+			return
+		}
+		// 10 MiB cap — bigger ones blow past Gemini's per-request budget
+		// and slow the stream down dramatically.
+		if len(bin) > 10*1024*1024 {
+			handleResponse(c, h.log, "image too large (max 10 MiB)", http.StatusBadRequest, "")
+			return
+		}
+		if mime == "" {
+			mime = "image/jpeg" // sensible default
+		}
+		attachments = append(attachments, llm.Attachment{MIMEType: mime, Data: bin})
 	}
 
 	// Detach from gin's default request timeout — streaming responses can
@@ -218,7 +255,7 @@ func (h Handler) SendChatMessage(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 90*time.Second)
 	defer cancel()
 
-	stream, err := h.services.Chat().SendMessage(ctx, id, req.Content)
+	stream, err := h.services.Chat().SendMessage(ctx, id, req.Content, attachments)
 	if err != nil {
 		if errors.Is(err, service.ErrChatDisabled) {
 			handleResponse(c, h.log, "chat feature unavailable", http.StatusServiceUnavailable, err.Error())
