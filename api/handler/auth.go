@@ -30,19 +30,28 @@ func (h Handler) audit(c *gin.Context, event, userID, email, provider string) {
 // rejects revoked JTIs, and stuffs user_id / user_role into the request
 // context for downstream handlers.
 func (h Handler) AuthorizerMiddleware(c *gin.Context) {
-	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
+	// Pull the token from the Authorization header (the normal API
+	// case) or, as a fallback, from a ?token= query string. The query
+	// fallback is needed for browser-initiated GETs that can't carry
+	// custom headers — OAuth connect-flows like /api/storage/*/connect
+	// rely on it. The JWT is short-lived and the call is HTTPS, so
+	// query-string leakage via referer/logs is an accepted trade-off.
+	var token string
+	if h := c.GetHeader("Authorization"); h != "" {
+		parts := strings.Split(h, " ")
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization format. Use 'Bearer {token}'"})
+			return
+		}
+		token = parts[1]
+	} else if q := c.Query("token"); q != "" {
+		token = q
+	} else {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})
 		return
 	}
 
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization format. Use 'Bearer {token}'"})
-		return
-	}
-
-	claims, err := jwt.ExtractClaims(parts[1])
+	claims, err := jwt.ExtractClaims(token)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 		return
