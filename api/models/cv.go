@@ -179,3 +179,19 @@ type CVExportRequest struct {
 	Format     string `json:"format" binding:"required"` // pdf | docx | txt
 	TemplateID string `json:"template_id,omitempty"`
 }
+
+// CVCoverLetterRequest asks the AI to write a cover letter for a target
+// job, grounded in the candidate's existing CV sections.
+type CVCoverLetterRequest struct {
+	JobTitle       string `json:"job_title,omitempty"`
+	JobDescription string `json:"job_description" binding:"required"`
+	Tone           string `json:"tone,omitempty"` // enthusiastic|formal|conversational
+}
+
+// CVCoverLetterResponse is the generated body plus metadata.
+type CVCoverLetterResponse struct {
+	Text      string `json:"text"`
+	WordCount int    `json:"word_count"`
+	Tone      string `json:"tone"`
+	Locale    string `json:"locale"`
+}

@@ -47,6 +47,7 @@ type Service interface {
 	ImproveField(ctx context.Context, cvID, userID string, req models.CVImproveRequest) (*models.CVImproveResponse, error)
 	ParseVoice(ctx context.Context, cvID string, req models.CVVoiceRequest) (*models.CVVoiceResponse, error)
 	Translate(ctx context.Context, cvID, targetLocale string) error
+	GenerateCoverLetter(ctx context.Context, cvID string, req models.CVCoverLetterRequest) (*models.CVCoverLetterResponse, error)
 	RunATSCheck(ctx context.Context, cvID, userID string, req models.CVATSRequest) (*models.CVATSRun, error)
 	ListATSRuns(ctx context.Context, cvID string) ([]models.CVATSRun, error)
 
@@ -83,7 +84,8 @@ type service struct {
 	parser     *parser
 	improver   *improver
 	voice      *voiceParser
-	translator *translator
+	translator  *translator
+	coverLetter *coverLetter
 	ats        *ats
 	renderer   *renderer
 	exporter   *exporter
@@ -404,4 +406,11 @@ func (s *service) RenderPreviewHTML(ctx context.Context, cvID string) (string, e
 		return "", err
 	}
 	return s.renderer.Render(sess.TemplateID, sess.Locale, sections)
+}
+
+func (s *service) GenerateCoverLetter(ctx context.Context, cvID string, req models.CVCoverLetterRequest) (*models.CVCoverLetterResponse, error) {
+	if !s.enabled() {
+		return nil, ErrCVDisabled
+	}
+	return s.coverLetter.Generate(ctx, cvID, req)
 }

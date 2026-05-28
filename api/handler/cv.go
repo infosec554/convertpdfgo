@@ -350,3 +350,25 @@ func (h Handler) ExportCV(c *gin.Context) {
 		"hint": "poll GET /api/cv/sessions/" + cvID + " for last_pdf_id (PDF) or files list",
 	})
 }
+
+func (h Handler) GenerateCVCoverLetter(c *gin.Context) {
+	cvID := c.Param("id")
+	uid := c.GetString("user_id")
+	if uid == "" {
+		handleResponse(c, h.log, "sign-in required", http.StatusUnauthorized, "")
+		return
+	}
+	var req models.CVCoverLetterRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	defer cancel()
+	resp, err := h.services.CV().GenerateCoverLetter(ctx, cvID, req)
+	if err != nil {
+		handleResponse(c, h.log, "cover-letter failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+	handleResponse(c, h.log, "cover letter generated", http.StatusOK, resp)
+}

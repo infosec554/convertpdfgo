@@ -38,6 +38,7 @@ func registerCVRoutes(r *gin.Engine, h handler.Handler) {
 
 		// ATS
 		cv.POST("/sessions/:id/ats-check", h.RunCVATSCheck)
+		cv.POST("/sessions/:id/cover-letter", h.GenerateCVCoverLetter)
 		cv.GET("/sessions/:id/ats-runs", h.ListCVATSRuns)
 
 		// Preview + Export
