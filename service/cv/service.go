@@ -107,6 +107,7 @@ func New(stg storage.IStorage, log logger.ILogger, got gotenberg.Client) Service
 	s.improver = newImprover(p, log)
 	s.voice = newVoiceParser(p, log)
 	s.translator = newTranslator(stg, p, log)
+	s.coverLetter = newCoverLetter(stg, p, log)
 	s.ats = newATS(stg, p, log)
 	s.renderer = newRenderer(log)
 	s.exporter = newExporter(stg, log, got, s.renderer)
