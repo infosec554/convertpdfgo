@@ -310,6 +310,10 @@ func (s *Store) Chat() storage.IChatStorage {
 	return NewChatRepo(s.pool, s.log)
 }
 
+func (s *Store) CV() storage.ICVStorage {
+	return NewCVRepo(s.pool, s.log)
+}
+
 func (s *Store) PDFToHTML() storage.IPDFToHTMLStorage {
 	return NewPDFToHTMLRepo(s.pool, s.log)
 }

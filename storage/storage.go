@@ -75,6 +75,53 @@ type IStorage interface {
 
 	// PDF Chat AI — RAG-based chat with uploaded PDFs (migration 0017).
 	Chat() IChatStorage
+
+	// AI Resume / CV Builder — multi-mode CV creation (migration 0018).
+	CV() ICVStorage
+}
+
+// ICVStorage backs the cv_* tables created by migration 0018.
+//
+// Sections are kept as a flat row-per-block (rather than a JSON blob on
+// the session) so embeddings can live alongside content and so reorder /
+// update of one section doesn't rewrite the entire CV.
+type ICVStorage interface {
+	// Sessions
+	CreateSession(ctx context.Context, s *models.CVSession) error
+	GetSession(ctx context.Context, id string) (*models.CVSession, error)
+	UpdateSession(ctx context.Context, s *models.CVSession) error
+	UpdateSessionStatus(ctx context.Context, id, status, parseError string) error
+	UpdateSessionLastPDF(ctx context.Context, id, fileID string) error
+	ListSessions(ctx context.Context, userID string, limit int) ([]models.CVSession, error)
+	DeleteSession(ctx context.Context, id string) error
+
+	// Sections
+	AddSection(ctx context.Context, s *models.CVSection) error
+	UpdateSection(ctx context.Context, id string, content map[string]any) error
+	UpdateSectionEmbedding(ctx context.Context, id string, embedding []float32) error
+	DeleteSection(ctx context.Context, id string) error
+	ListSections(ctx context.Context, cvID string) ([]models.CVSection, error)
+	ReorderSections(ctx context.Context, cvID string, order []string) error
+	ReplaceSections(ctx context.Context, cvID string, sections []models.CVSection) error
+
+	// Templates
+	ListTemplates(ctx context.Context) ([]models.CVTemplate, error)
+	GetTemplate(ctx context.Context, id string) (*models.CVTemplate, error)
+
+	// ATS
+	SaveATSRun(ctx context.Context, r *models.CVATSRun) error
+	GetLatestATSScore(ctx context.Context, cvID string) (int, bool, error)
+	ListATSRuns(ctx context.Context, cvID string, limit int) ([]models.CVATSRun, error)
+
+	// AI history (for cost tracking + dedup)
+	LogAIImprove(ctx context.Context, cvID, sectionID, fieldPath, prompt string, suggestions any, tokensIn, tokensOut int) error
+
+	// Voice
+	SaveVoiceSegment(ctx context.Context, cvID, transcript, parsedSection string, parsedContent map[string]any, locale string) error
+
+	// Rate limits — small helper, returns "still under cap" and bumps counter.
+	CheckAndBumpAILimit(ctx context.Context, userID string, dailyCap int) (allowed bool, used int, err error)
+	CheckAndBumpATSLimit(ctx context.Context, userID string, dailyCap int) (allowed bool, used int, err error)
 }
 
 // IChatStorage backs the chat_sessions / chat_messages / pdf_chunks /

@@ -6,6 +6,7 @@ import (
 	"convertpdfgo/pkg/gotenberg"
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/pkg/mailer"
+	"convertpdfgo/service/cv"
 	"convertpdfgo/storage"
 )
 
@@ -78,6 +79,9 @@ type IServiceManager interface {
 
 	// PDF Chat AI — RAG-backed chat over uploaded PDFs.
 	Chat() ChatService
+
+	// AI Resume / CV Builder (migration 0018, package service/cv).
+	CV() cv.Service
 }
 
 type service struct {
@@ -136,6 +140,7 @@ type service struct {
 	inviteService        InviteService
 	contactService       ContactService
 	chatService          ChatService
+	cvService            cv.Service
 }
 
 func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer, redis storage.IRedisStorage, gotClient gotenberg.Client, cfg config.Config) IServiceManager {
@@ -196,11 +201,16 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		inviteService:        NewInviteService(storage, redis, log, NewMailerService(mailerCore), cfg),
 		contactService:       NewContactService(storage, log, NewMailerService(mailerCore), cfg),
 		chatService:          NewChatService(storage, log, gotClient),
+		cvService:            cv.New(storage, log, gotClient),
 	}
 }
 
 func (s *service) Chat() ChatService {
 	return s.chatService
+}
+
+func (s *service) CV() cv.Service {
+	return s.cvService
 }
 
 func (s *service) User() UserService {

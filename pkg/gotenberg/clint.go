@@ -19,6 +19,7 @@ type Client interface {
 	ExcelToPDF(ctx context.Context, srcPath, dstPath string) (int64, error)
 	PowerPointToPDF(ctx context.Context, srcPath, dstPath string) (int64, error)
 	HTMLToPDF(ctx context.Context, srcPath, dstPath string) (int64, error)
+	HTMLStringToPDF(ctx context.Context, html string, dstPath string) (int64, error)
 	URLToPDF(ctx context.Context, dstPath string, opts URLToPDFOptions) (int64, error)
 }
 
@@ -172,6 +173,26 @@ func (g *gotenbergClient) PowerPointToPDF(ctx context.Context, srcPath, dstPath 
 
 func (g *gotenbergClient) HTMLToPDF(ctx context.Context, srcPath, dstPath string) (int64, error) {
 	return g.convert(ctx, "/forms/chromium/convert/html", srcPath, dstPath, "index.html", nil)
+}
+
+// HTMLStringToPDF renders an in-memory HTML string to PDF — used by the
+// CV Builder export pipeline, which generates HTML from a Go template
+// and shouldn't have to write a temp file just to hand it to Gotenberg.
+//
+// We materialise it as a temp file because Gotenberg's HTML endpoint
+// strictly requires a multipart upload named "index.html"; the file
+// gets removed immediately after the call returns.
+func (g *gotenbergClient) HTMLStringToPDF(ctx context.Context, html string, dstPath string) (int64, error) {
+	tmpDir, err := os.MkdirTemp("", "gotenberg-html-*")
+	if err != nil {
+		return 0, fmt.Errorf("gotenberg HTMLStringToPDF: tmpdir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+	srcPath := filepath.Join(tmpDir, "index.html")
+	if err := os.WriteFile(srcPath, []byte(html), 0o600); err != nil {
+		return 0, fmt.Errorf("gotenberg HTMLStringToPDF: write temp: %w", err)
+	}
+	return g.HTMLToPDF(ctx, srcPath, dstPath)
 }
 
 // URLToPDF renders a public URL via Gotenberg's chromium converter. No file

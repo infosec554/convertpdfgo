@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="{{.Locale}}">
+<head>
+<meta charset="UTF-8" />
+<title>{{.Personal.Name}}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, system-ui, sans-serif; color: #111; line-height: 1.4; padding: 56px 64px; max-width: 720px; margin: 0 auto; font-size: 10.5pt; }
+  header { margin-bottom: 28px; }
+  h1 { font-size: 22pt; font-weight: 300; letter-spacing: 1px; }
+  .role { font-size: 11pt; color: #555; margin-top: 4px; font-weight: 400; }
+  .contact { font-size: 9.5pt; color: #777; margin-top: 10px; }
+  .contact span { margin-right: 14px; }
+  h2 { font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: #999; margin-top: 22px; margin-bottom: 10px; }
+  .item { margin-bottom: 14px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .title { font-weight: 600; font-size: 11pt; }
+  .meta { color: #888; font-size: 9.5pt; }
+  .sub { color: #555; font-size: 10pt; margin-top: 2px; }
+  ul { margin-top: 4px; padding-left: 16px; }
+  li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{.Personal.Name}}</h1>
+  {{if nonzero .Personal.Title}}<div class="role">{{.Personal.Title}}</div>{{end}}
+  <div class="contact">
+    {{if nonzero .Personal.Email}}<span>{{.Personal.Email}}</span>{{end}}
+    {{if nonzero .Personal.Phone}}<span>{{.Personal.Phone}}</span>{{end}}
+    {{if nonzero .Personal.Location}}<span>{{.Personal.Location}}</span>{{end}}
+    {{if nonzero .Personal.LinkedIn}}<span>{{.Personal.LinkedIn}}</span>{{end}}
+  </div>
+</header>
+{{if .HasContent.summary}}<section><h2>About</h2><p>{{.Summary}}</p></section>{{end}}
+{{if .HasContent.experience}}<section><h2>Experience</h2>{{range .Experience}}<div class="item"><div class="row"><div class="title">{{.Title}} · {{.Company}}</div><div class="meta">{{.Period}}</div></div>{{if .Bullets}}<ul>{{range .Bullets}}<li>{{.}}</li>{{end}}</ul>{{end}}</div>{{end}}</section>{{end}}
+{{if .HasContent.education}}<section><h2>Education</h2>{{range .Education}}<div class="item"><div class="row"><div class="title">{{.Degree}}</div><div class="meta">{{.Period}}</div></div><div class="sub">{{.School}}{{if nonzero .GPA}} · GPA {{.GPA}}{{end}}</div></div>{{end}}</section>{{end}}
+{{if .HasContent.skills}}<section><h2>Skills</h2><p>{{join .Skills.Technical " · "}}</p>{{if .Skills.Soft}}<p style="color:#888;font-size:9.5pt;margin-top:4px;">{{join .Skills.Soft " · "}}</p>{{end}}</section>{{end}}
+{{if .HasContent.languages}}<section><h2>Languages</h2><p>{{range $i, $l := .Languages}}{{if $i}} · {{end}}{{$l.Name}}{{if nonzero $l.Level}} ({{$l.Level}}){{end}}{{end}}</p></section>{{end}}
+{{if .HasContent.projects}}<section><h2>Projects</h2>{{range .Projects}}<div class="item"><div class="title">{{.Name}}</div>{{if nonzero .Description}}<div class="sub">{{.Description}}</div>{{end}}</div>{{end}}</section>{{end}}
+{{if .HasContent.awards}}<section><h2>Awards</h2>{{range .Awards}}<div class="item"><div class="row"><div class="title">{{.Title}}</div><div class="meta">{{.Year}}</div></div></div>{{end}}</section>{{end}}
+{{if .HasContent.certifications}}<section><h2>Certifications</h2>{{range .Certs}}<div class="item"><div class="row"><div class="title">{{.Name}}</div><div class="meta">{{.Year}}</div></div></div>{{end}}</section>{{end}}
+</body>
+</html>

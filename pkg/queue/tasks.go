@@ -52,6 +52,16 @@ const (
 	// save → summarise). Payload is SimpleJobPayload with JobID =
 	// session_id; the chat service knows how to find the file from there.
 	TaskChatIndex = "chat:index_pdf"
+
+	// AI Resume Builder — payload is SimpleJobPayload with JobID =
+	// cv_session_id. ProcessImport pulls the source file, extracts
+	// text, asks Gemini for structured JSON, and saves cv_sections.
+	TaskCVImport = "cv:import_parse"
+
+	// AI Resume Builder — payload is SimpleJobPayload with JobID =
+	// cv_session_id. ProcessExport renders the current template +
+	// content to PDF (default) and registers the output as a file row.
+	TaskCVExport = "cv:export"
 )
 
 // MergePayload carries data needed to process a merge job in the worker.

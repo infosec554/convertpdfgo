@@ -79,6 +79,17 @@ func (h *Handlers) Register(mux *asynq.ServeMux) {
 	mux.HandleFunc(TaskChatIndex, h.runByID("chat_index", func(ctx context.Context, id string) error {
 		return h.services.Chat().Process(ctx, id)
 	}))
+
+	// AI Resume Builder — import parses an uploaded CV via Gemini and
+	// fills cv_sections rows; export renders the current template +
+	// content into a PDF (or DOCX/TXT, controlled by the saved format
+	// hint on the session row).
+	mux.HandleFunc(TaskCVImport, h.runByID("cv_import_parse", func(ctx context.Context, id string) error {
+		return h.services.CV().ProcessImport(ctx, id)
+	}))
+	mux.HandleFunc(TaskCVExport, h.runByID("cv_export", func(ctx context.Context, id string) error {
+		return h.services.CV().ProcessExport(ctx, id)
+	}))
 }
 
 // runByID returns a handler that decodes a SimpleJobPayload and invokes fn(ctx, jobID).

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="{{.Locale}}">
+<head>
+<meta charset="UTF-8" />
+<title>{{.Personal.Name}} — Resume</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    color: #0F0E0C;
+    line-height: 1.5;
+    padding: 48px;
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 11pt;
+  }
+  header { border-bottom: 3px solid #E35323; padding-bottom: 16px; margin-bottom: 24px; }
+  h1 { font-size: 28pt; font-weight: 800; letter-spacing: -0.5px; }
+  .role { font-size: 13pt; color: #4A4A4A; margin-top: 4px; }
+  .contact { display: flex; flex-wrap: wrap; gap: 16px; font-size: 10pt; color: #6B6B6B; margin-top: 12px; }
+  h2 {
+    font-size: 12pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #E35323;
+    border-bottom: 1px solid #E0E0E0;
+    padding-bottom: 4px;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  .item { margin-bottom: 16px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .title { font-weight: 700; font-size: 11.5pt; }
+  .meta { color: #6B6B6B; font-size: 10pt; }
+  .sub { color: #4A4A4A; font-size: 10.5pt; margin-top: 2px; }
+  ul { margin-top: 6px; padding-left: 18px; }
+  li { margin-bottom: 4px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag {
+    background: #FAF6EE;
+    border: 1px solid #E35323;
+    color: #E35323;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 9.5pt;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>{{.Personal.Name}}</h1>
+  {{if nonzero .Personal.Title}}<div class="role">{{.Personal.Title}}</div>{{end}}
+  <div class="contact">
+    {{if nonzero .Personal.Email}}<span>✉ {{.Personal.Email}}</span>{{end}}
+    {{if nonzero .Personal.Phone}}<span>☎ {{.Personal.Phone}}</span>{{end}}
+    {{if nonzero .Personal.Location}}<span>📍 {{.Personal.Location}}</span>{{end}}
+    {{if nonzero .Personal.LinkedIn}}<span>in {{.Personal.LinkedIn}}</span>{{end}}
+    {{if nonzero .Personal.GitHub}}<span>⌥ {{.Personal.GitHub}}</span>{{end}}
+    {{if nonzero .Personal.Website}}<span>🌐 {{.Personal.Website}}</span>{{end}}
+  </div>
+</header>
+
+{{if .HasContent.summary}}
+<section>
+  <h2>Summary</h2>
+  <p>{{.Summary}}</p>
+</section>
+{{end}}
+
+{{if .HasContent.experience}}
+<section>
+  <h2>Experience</h2>
+  {{range .Experience}}
+  <div class="item">
+    <div class="row">
+      <div class="title">{{.Title}}</div>
+      <div class="meta">{{.Period}}</div>
+    </div>
+    <div class="sub">{{.Company}}{{if nonzero .Location}} · {{.Location}}{{end}}</div>
+    {{if .Bullets}}
+    <ul>
+      {{range .Bullets}}<li>{{.}}</li>{{end}}
+    </ul>
+    {{end}}
+  </div>
+  {{end}}
+</section>
+{{end}}
+
+{{if .HasContent.education}}
+<section>
+  <h2>Education</h2>
+  {{range .Education}}
+  <div class="item">
+    <div class="row">
+      <div class="title">{{.Degree}}</div>
+      <div class="meta">{{.Period}}</div>
+    </div>
+    <div class="sub">{{.School}}{{if nonzero .GPA}} · GPA {{.GPA}}{{end}}{{if nonzero .Honors}} · {{.Honors}}{{end}}</div>
+  </div>
+  {{end}}
+</section>
+{{end}}
+
+{{if .HasContent.skills}}
+<section>
+  <h2>Skills</h2>
+  {{if .Skills.Technical}}<div class="tags" style="margin-bottom:6px;">{{range .Skills.Technical}}<span class="tag">{{.}}</span>{{end}}</div>{{end}}
+  {{if .Skills.Soft}}<div class="tags">{{range .Skills.Soft}}<span class="tag" style="border-color:#6B6B6B;color:#6B6B6B;">{{.}}</span>{{end}}</div>{{end}}
+</section>
+{{end}}
+
+{{if .HasContent.languages}}
+<section>
+  <h2>Languages</h2>
+  <div class="tags">
+    {{range .Languages}}<span class="tag" style="border-color:#0F0E0C;color:#0F0E0C;">{{.Name}}{{if nonzero .Level}} — {{.Level}}{{end}}</span>{{end}}
+  </div>
+</section>
+{{end}}
+
+{{if .HasContent.projects}}
+<section>
+  <h2>Projects</h2>
+  {{range .Projects}}
+  <div class="item">
+    <div class="title">{{.Name}}{{if nonzero .Link}} · <span class="meta">{{.Link}}</span>{{end}}</div>
+    {{if nonzero .Description}}<div class="sub">{{.Description}}</div>{{end}}
+    {{if .Tech}}<div class="tags" style="margin-top:6px;">{{range .Tech}}<span class="tag">{{.}}</span>{{end}}</div>{{end}}
+  </div>
+  {{end}}
+</section>
+{{end}}
+
+{{if .HasContent.awards}}
+<section>
+  <h2>Awards</h2>
+  {{range .Awards}}
+  <div class="item">
+    <div class="row">
+      <div class="title">{{.Title}}</div>
+      <div class="meta">{{.Year}}</div>
+    </div>
+    {{if nonzero .Issuer}}<div class="sub">{{.Issuer}}</div>{{end}}
+  </div>
+  {{end}}
+</section>
+{{end}}
+
+{{if .HasContent.certifications}}
+<section>
+  <h2>Certifications</h2>
+  {{range .Certs}}
+  <div class="item">
+    <div class="row">
+      <div class="title">{{.Name}}</div>
+      <div class="meta">{{.Year}}</div>
+    </div>
+    {{if nonzero .Issuer}}<div class="sub">{{.Issuer}}</div>{{end}}
+  </div>
+  {{end}}
+</section>
+{{end}}
+
+</body>
+</html>
