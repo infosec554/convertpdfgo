@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="{{.Locale}}">
+<head>
+<meta charset="UTF-8" />
+<title>{{.Personal.Name}} — Resume</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    color: #1A1A1A;
+    line-height: 1.5;
+    padding: 60px 64px;
+    max-width: 800px;
+    margin: 0 auto;
+    font-size: 10.5pt;
+  }
+  header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 16px; margin-bottom: 22px; border-bottom: 1px solid #E5E7EB; }
+  .head-left h1 { font-size: 24pt; font-weight: 700; letter-spacing: -0.5px; color: #111; }
+  .head-left .role { font-size: 11.5pt; color: #635BFF; margin-top: 4px; font-weight: 600; }
+  .head-right { text-align: right; font-size: 9.5pt; color: #4B5563; line-height: 1.7; }
+  .head-right a { color: #4B5563; text-decoration: none; }
+  h2 {
+    font-size: 10pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #635BFF;
+    margin-top: 22px;
+    margin-bottom: 10px;
+  }
+  .item { margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #F3F4F6; }
+  .item:last-child { border-bottom: 0; padding-bottom: 0; margin-bottom: 0; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .title { font-weight: 700; font-size: 11pt; color: #111; }
+  .meta { color: #6B7280; font-size: 9.5pt; font-weight: 500; }
+  .sub { color: #374151; font-size: 10pt; margin-top: 2px; font-weight: 500; }
+  ul { margin-top: 6px; padding-left: 16px; }
+  li { margin-bottom: 3px; color: #374151; }
+  p { color: #374151; font-size: 10.5pt; line-height: 1.6; }
+  .pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pill {
+    background: #F3F4F6;
+    color: #1F2937;
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-size: 9.5pt;
+    font-weight: 600;
+  }
+  .pill.primary {
+    background: #EEF2FF;
+    color: #4338CA;
+  }
+  .two-pills { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .two-pills h3 { font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #6B7280; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="head-left">
+    <h1>{{.Personal.Name}}</h1>
+    {{if nonzero .Personal.Title}}<div class="role">{{.Personal.Title}}</div>{{end}}
+  </div>
+  <div class="head-right">
+    {{if nonzero .Personal.Email}}<div>{{.Personal.Email}}</div>{{end}}
+    {{if nonzero .Personal.Phone}}<div>{{.Personal.Phone}}</div>{{end}}
+    {{if nonzero .Personal.Location}}<div>{{.Personal.Location}}</div>{{end}}
+    {{if nonzero .Personal.LinkedIn}}<div>{{.Personal.LinkedIn}}</div>{{end}}
+    {{if nonzero .Personal.GitHub}}<div>{{.Personal.GitHub}}</div>{{end}}
+    {{if nonzero .Personal.Website}}<div>{{.Personal.Website}}</div>{{end}}
+  </div>
+</header>
+
+{{if .HasContent.summary}}<section><h2>Profile</h2><p>{{.Summary}}</p></section>{{end}}
+
+{{if .HasContent.experience}}<section><h2>Experience</h2>
+{{range .Experience}}<div class="item">
+  <div class="row"><div class="title">{{.Title}} <span style="font-weight:500;color:#6B7280;">— {{.Company}}</span></div><div class="meta">{{.Period}}</div></div>
+  {{if nonzero .Location}}<div class="sub">{{.Location}}</div>{{end}}
+  {{if .Bullets}}<ul>{{range .Bullets}}<li>{{.}}</li>{{end}}</ul>{{end}}
+</div>{{end}}
+</section>{{end}}
+
+{{if .HasContent.projects}}<section><h2>Projects</h2>
+{{range .Projects}}<div class="item">
+  <div class="title">{{.Name}}{{if nonzero .Link}} <span class="meta">↗ {{.Link}}</span>{{end}}</div>
+  {{if nonzero .Description}}<div class="sub">{{.Description}}</div>{{end}}
+  {{if .Tech}}<div class="pills" style="margin-top:6px;">{{range .Tech}}<span class="pill">{{.}}</span>{{end}}</div>{{end}}
+</div>{{end}}
+</section>{{end}}
+
+{{if .HasContent.education}}<section><h2>Education</h2>
+{{range .Education}}<div class="item">
+  <div class="row"><div class="title">{{.Degree}} <span style="font-weight:500;color:#6B7280;">— {{.School}}</span></div><div class="meta">{{.Period}}</div></div>
+  {{if or (nonzero .GPA) (nonzero .Honors)}}<div class="sub">{{if nonzero .GPA}}GPA {{.GPA}}{{end}}{{if and (nonzero .GPA) (nonzero .Honors)}} · {{end}}{{if nonzero .Honors}}{{.Honors}}{{end}}</div>{{end}}
+</div>{{end}}
+</section>{{end}}
+
+{{if .HasContent.skills}}<section><h2>Skills</h2>
+<div class="two-pills">
+  {{if .Skills.Technical}}<div>
+    <h3>Technical</h3>
+    <div class="pills">{{range .Skills.Technical}}<span class="pill primary">{{.}}</span>{{end}}</div>
+  </div>{{end}}
+  {{if .Skills.Soft}}<div>
+    <h3>Soft Skills</h3>
+    <div class="pills">{{range .Skills.Soft}}<span class="pill">{{.}}</span>{{end}}</div>
+  </div>{{end}}
+</div>
+</section>{{end}}
+
+{{if .HasContent.languages}}<section><h2>Languages</h2>
+<div class="pills">{{range .Languages}}<span class="pill">{{.Name}}{{if nonzero .Level}} · {{.Level}}{{end}}</span>{{end}}</div>
+</section>{{end}}
+
+{{if .HasContent.awards}}<section><h2>Awards</h2>
+{{range .Awards}}<div class="item" style="border:0;padding:0;margin-bottom:6px;">
+  <div class="row"><div class="title">{{.Title}}{{if nonzero .Issuer}} <span style="font-weight:500;color:#6B7280;">— {{.Issuer}}</span>{{end}}</div><div class="meta">{{.Year}}</div></div>
+</div>{{end}}
+</section>{{end}}
+
+{{if .HasContent.certifications}}<section><h2>Certifications</h2>
+{{range .Certs}}<div class="item" style="border:0;padding:0;margin-bottom:6px;">
+  <div class="row"><div class="title">{{.Name}}{{if nonzero .Issuer}} <span style="font-weight:500;color:#6B7280;">— {{.Issuer}}</span>{{end}}</div><div class="meta">{{.Year}}</div></div>
+</div>{{end}}
+</section>{{end}}
+
+</body>
+</html>

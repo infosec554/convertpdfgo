@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="{{.Locale}}">
+<head>
+<meta charset="UTF-8" />
+<title>{{.Personal.Name}} — Portfolio</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Helvetica Neue', 'Helvetica', Arial, sans-serif;
+    color: #111;
+    line-height: 1.5;
+    padding: 56px;
+    max-width: 860px;
+    margin: 0 auto;
+    font-size: 11pt;
+    background: #fff;
+  }
+  header { margin-bottom: 40px; }
+  h1 {
+    font-size: 64pt;
+    font-weight: 900;
+    letter-spacing: -3px;
+    line-height: 0.95;
+    color: #111;
+  }
+  h1 .accent { color: #FF4D00; }
+  .role { font-size: 14pt; color: #FF4D00; margin-top: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .contact { margin-top: 18px; font-size: 10pt; color: #555; }
+  .contact span { display: inline-block; margin-right: 18px; padding-bottom: 2px; border-bottom: 2px solid #111; }
+  .grid { display: grid; grid-template-columns: 180px 1fr; gap: 28px; margin-top: 14px; }
+  .section-label {
+    font-size: 9pt;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    color: #FF4D00;
+    padding-top: 4px;
+    border-top: 4px solid #FF4D00;
+  }
+  .section-body { font-size: 11pt; }
+  .item { margin-bottom: 18px; }
+  .item:last-child { margin-bottom: 0; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .title { font-weight: 800; font-size: 13pt; letter-spacing: -0.2px; }
+  .meta { color: #888; font-size: 10pt; font-weight: 600; }
+  .sub { color: #555; font-size: 11pt; margin-top: 2px; font-weight: 500; }
+  ul { margin-top: 6px; padding-left: 16px; }
+  li { margin-bottom: 4px; }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .tag {
+    background: #111;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 9pt;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .tag.outline { background: transparent; color: #111; border: 2px solid #111; }
+  p { font-size: 11.5pt; line-height: 1.6; }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{.Personal.Name}}<span class="accent">.</span></h1>
+  {{if nonzero .Personal.Title}}<div class="role">{{.Personal.Title}}</div>{{end}}
+  <div class="contact">
+    {{if nonzero .Personal.Email}}<span>{{.Personal.Email}}</span>{{end}}
+    {{if nonzero .Personal.Phone}}<span>{{.Personal.Phone}}</span>{{end}}
+    {{if nonzero .Personal.Location}}<span>{{.Personal.Location}}</span>{{end}}
+    {{if nonzero .Personal.Website}}<span>{{.Personal.Website}}</span>{{end}}
+  </div>
+</header>
+
+{{if .HasContent.summary}}
+<div class="grid"><div class="section-label">About</div><div class="section-body"><p>{{.Summary}}</p></div></div>
+{{end}}
+
+{{if .HasContent.experience}}
+<div class="grid"><div class="section-label">Work</div><div class="section-body">
+{{range .Experience}}<div class="item">
+  <div class="row"><div class="title">{{.Title}}</div><div class="meta">{{.Period}}</div></div>
+  <div class="sub">{{.Company}}{{if nonzero .Location}} · {{.Location}}{{end}}</div>
+  {{if .Bullets}}<ul>{{range .Bullets}}<li>{{.}}</li>{{end}}</ul>{{end}}
+</div>{{end}}
+</div></div>
+{{end}}
+
+{{if .HasContent.projects}}
+<div class="grid"><div class="section-label">Work / Projects</div><div class="section-body">
+{{range .Projects}}<div class="item">
+  <div class="title">{{.Name}}{{if nonzero .Link}} <span class="meta">→ {{.Link}}</span>{{end}}</div>
+  {{if nonzero .Description}}<div class="sub">{{.Description}}</div>{{end}}
+  {{if .Tech}}<div class="tags">{{range .Tech}}<span class="tag">{{.}}</span>{{end}}</div>{{end}}
+</div>{{end}}
+</div></div>
+{{end}}
+
+{{if .HasContent.skills}}
+<div class="grid"><div class="section-label">Toolkit</div><div class="section-body">
+<div class="tags">{{range .Skills.Technical}}<span class="tag">{{.}}</span>{{end}}{{range .Skills.Soft}}<span class="tag outline">{{.}}</span>{{end}}</div>
+</div></div>
+{{end}}
+
+{{if .HasContent.education}}
+<div class="grid"><div class="section-label">Education</div><div class="section-body">
+{{range .Education}}<div class="item">
+  <div class="row"><div class="title">{{.Degree}}</div><div class="meta">{{.Period}}</div></div>
+  <div class="sub">{{.School}}{{if nonzero .Honors}} · {{.Honors}}{{end}}</div>
+</div>{{end}}
+</div></div>
+{{end}}
+
+{{if .HasContent.awards}}
+<div class="grid"><div class="section-label">Recognition</div><div class="section-body">
+{{range .Awards}}<div class="item">
+  <div class="row"><div class="title">{{.Title}}</div><div class="meta">{{.Year}}</div></div>
+  {{if nonzero .Issuer}}<div class="sub">{{.Issuer}}</div>{{end}}
+</div>{{end}}
+</div></div>
+{{end}}
+
+{{if .HasContent.languages}}
+<div class="grid"><div class="section-label">Languages</div><div class="section-body">
+<div class="tags">{{range .Languages}}<span class="tag outline">{{.Name}}{{if nonzero .Level}} — {{.Level}}{{end}}</span>{{end}}</div>
+</div></div>
+{{end}}
+
+</body>
+</html>

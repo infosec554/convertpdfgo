@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="{{.Locale}}">
+<head>
+<meta charset="UTF-8" />
+<title>{{.Personal.Name}} — Curriculum Vitae</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Times New Roman', Times, serif;
+    color: #000;
+    line-height: 1.5;
+    padding: 56px 72px;
+    max-width: 820px;
+    margin: 0 auto;
+    font-size: 11pt;
+  }
+  header { text-align: center; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 2px solid #000; }
+  h1 { font-size: 22pt; font-weight: 700; }
+  .role { font-size: 12pt; color: #000; margin-top: 4px; font-style: italic; }
+  .contact { margin-top: 8px; font-size: 10pt; }
+  .contact span:not(:last-child)::after { content: " | "; margin: 0 4px; }
+  h2 {
+    font-size: 12pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #000;
+    border-bottom: 1px solid #000;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    padding-bottom: 2px;
+  }
+  .item { margin-bottom: 10px; }
+  .row { display: flex; justify-content: space-between; align-items: baseline; }
+  .title { font-weight: 700; font-size: 11pt; }
+  .meta { font-size: 10.5pt; }
+  .sub { font-size: 10.5pt; font-style: italic; margin-top: 1px; }
+  ul { margin-top: 4px; padding-left: 22px; }
+  li { margin-bottom: 2px; font-size: 10.5pt; text-align: justify; }
+  ol { margin-top: 4px; padding-left: 22px; }
+  ol li { padding-left: 4px; }
+  p { text-align: justify; font-size: 10.5pt; }
+  .pub-note { font-size: 9pt; color: #555; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>{{.Personal.Name}}</h1>
+  {{if nonzero .Personal.Title}}<div class="role">{{.Personal.Title}}</div>{{end}}
+  <div class="contact">
+    {{if nonzero .Personal.Email}}<span>{{.Personal.Email}}</span>{{end}}
+    {{if nonzero .Personal.Phone}}<span>{{.Personal.Phone}}</span>{{end}}
+    {{if nonzero .Personal.Location}}<span>{{.Personal.Location}}</span>{{end}}
+    {{if nonzero .Personal.Website}}<span>{{.Personal.Website}}</span>{{end}}
+  </div>
+</header>
+
+{{if .HasContent.summary}}<section><h2>Research Statement</h2><p>{{.Summary}}</p></section>{{end}}
+
+{{if .HasContent.education}}<section><h2>Education</h2>
+{{range .Education}}<div class="item">
+  <div class="row"><div class="title">{{.Degree}}</div><div class="meta">{{.Period}}</div></div>
+  <div class="sub">{{.School}}{{if nonzero .GPA}} · GPA {{.GPA}}{{end}}{{if nonzero .Honors}} · {{.Honors}}{{end}}</div>
+</div>{{end}}
+</section>{{end}}
+
+{{if .HasContent.experience}}<section><h2>Academic & Professional Appointments</h2>
+{{range .Experience}}<div class="item">
+  <div class="row"><div class="title">{{.Title}}</div><div class="meta">{{.Period}}</div></div>
+  <div class="sub">{{.Company}}{{if nonzero .Location}} — {{.Location}}{{end}}</div>
+  {{if .Bullets}}<ul>{{range .Bullets}}<li>{{.}}</li>{{end}}</ul>{{end}}
+</div>{{end}}
+</section>{{end}}
+
+{{if .HasContent.projects}}<section><h2>Selected Publications</h2>
+<p class="pub-note">Listed in reverse chronological order.</p>
+<ol>
+{{range .Projects}}<li>
+  <strong>{{.Name}}</strong>{{if nonzero .Description}}. {{.Description}}{{end}}{{if nonzero .Link}} <em>({{.Link}})</em>{{end}}
+</li>{{end}}
+</ol>
+</section>{{end}}
+
+{{if .HasContent.awards}}<section><h2>Honors & Fellowships</h2>
+{{range .Awards}}<div class="item">
+  <div class="row"><div class="title">{{.Title}}{{if nonzero .Issuer}}, <em style="font-weight:normal;">{{.Issuer}}</em>{{end}}</div><div class="meta">{{.Year}}</div></div>
+</div>{{end}}
+</section>{{end}}
+
+{{if .HasContent.skills}}<section><h2>Research Skills</h2>
+<p>{{if .Skills.Technical}}<strong>Technical:</strong> {{join .Skills.Technical ", "}}{{end}}</p>
+{{if .Skills.Soft}}<p style="margin-top:4px;"><strong>Methods:</strong> {{join .Skills.Soft ", "}}</p>{{end}}
+</section>{{end}}
+
+{{if .HasContent.languages}}<section><h2>Languages</h2>
+<p>{{range $i, $l := .Languages}}{{if $i}} · {{end}}{{$l.Name}}{{if nonzero $l.Level}} ({{$l.Level}}){{end}}{{end}}</p>
+</section>{{end}}
+
+{{if .HasContent.certifications}}<section><h2>Certifications</h2>
+{{range .Certs}}<div class="item">
+  <div class="row"><div class="title">{{.Name}}{{if nonzero .Issuer}}, <em style="font-weight:normal;">{{.Issuer}}</em>{{end}}</div><div class="meta">{{.Year}}</div></div>
+</div>{{end}}
+</section>{{end}}
+
+</body>
+</html>
