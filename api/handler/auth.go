@@ -114,17 +114,30 @@ func (h Handler) AuthorizerMiddleware(c *gin.Context) {
 // behaviour but still serve guests (e.g. /file/{id}/download — owner
 // check only kicks in for files that *have* an owner).
 func (h Handler) OptionalAuthMiddleware(c *gin.Context) {
+	// Allow tokens via either the Authorization header (the default for
+	// fetch() calls) or a ?token= query param (for browser-native <a
+	// download> links where we can't attach a header). Same precedence as
+	// AuthorizerMiddleware so both endpoints behave consistently.
 	authHeader := c.GetHeader("Authorization")
-	if authHeader == "" {
+	var tokenStr string
+	if authHeader != "" {
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+			tokenStr = parts[1]
+		}
+	}
+	if tokenStr == "" {
+		tokenStr = c.Query("token")
+	}
+	if tokenStr == "" {
 		c.Next()
 		return
 	}
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-		c.Next() // malformed — treat as guest
-		return
+	parts := []string{"Bearer", tokenStr}
+	if false { // keep the original guard sites compiling
+		_ = parts
 	}
-	claims, err := jwt.ExtractClaims(parts[1])
+	claims, err := jwt.ExtractClaims(tokenStr)
 	if err != nil {
 		c.Next() // expired/invalid — treat as guest
 		return
