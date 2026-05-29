@@ -128,12 +128,30 @@ func handleResponse(c *gin.Context, log logger.ILogger, msg string, statusCode i
 
 	switch code := statusCode; {
 	case code < 400:
-		resp.Description = "OK"
+		// Prefer the handler-supplied message when it looks like a
+		// human-readable status (anything but the historical placeholder
+		// strings); fall back to "OK" so legacy callers keep working.
+		if msg != "" && msg != "OK" {
+			resp.Description = msg
+		} else {
+			resp.Description = "OK"
+		}
 		log.Info("OK", logger.String("msg", msg), logger.Any("status", code))
 	case code == 401:
-		resp.Description = "Unauthorized"
+		if msg != "" {
+			resp.Description = msg
+		} else {
+			resp.Description = "Unauthorized"
+		}
 	case code < 500:
-		resp.Description = "Bad Request"
+		// Surface the handler's msg as the user-facing Description so the
+		// frontend can render something specific like "This file isn't a
+		// valid pdf" instead of a generic "Bad Request" for every 4xx.
+		if msg != "" {
+			resp.Description = msg
+		} else {
+			resp.Description = "Bad Request"
+		}
 		log.Error("BAD REQUEST", logger.String("msg", msg), logger.Any("status", code))
 		// 4xx payloads commonly carry the raw `err.Error()` string from
 		// Gin's validator ("Key: 'XxxRequest.Field' Error:Field
