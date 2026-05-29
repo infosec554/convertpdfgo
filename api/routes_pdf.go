@@ -17,6 +17,7 @@ func registerPDFRoutes(r *gin.Engine, h handler.Handler) {
 	pdf := r.Group("/api/pdf")
 
 	// --- Page operations (rearrange / shrink an existing PDF) -----------
+	pdf.POST("/thumbnails", h.PDFThumbnails)
 	pdf.POST("/merge", h.CreateMergeJob)
 	pdf.GET("/merge/:id", h.GetMergeJob)
 	pdf.POST("/split", h.CreateSplitJob)
