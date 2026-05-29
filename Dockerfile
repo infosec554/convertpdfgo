@@ -42,7 +42,7 @@ FROM alpine:3.19
 RUN apk add --no-cache \
         ca-certificates tzdata xz \
         poppler-utils \
-        libreoffice ttf-liberation \
+        libreoffice ttf-liberation openjdk17-jre-headless \
         ocrmypdf tesseract-ocr \
         tesseract-ocr-data-eng tesseract-ocr-data-rus && \
     # Uzbek (Latin + Cyrillic) and Kyrgyz aren't always packaged on
