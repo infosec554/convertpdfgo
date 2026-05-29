@@ -79,6 +79,29 @@ func (h Handler) UploadFile(c *gin.Context) {
 		return
 	}
 
+	// ─── Magic-byte sniff ────────────────────────────────────────────────
+	// Reject obviously-fake uploads (e.g. an HTML 404 page renamed to .pdf)
+	// here, before we burn worker cycles on a doomed conversion. We peek
+	// the first 512 bytes, validate against the claimed extension, then
+	// stream from the start — the multipart reader needs a fresh Open()
+	// because we can't seek the original.
+	ext := strings.ToLower(filepath.Ext(fileHeader.Filename))
+	sniffSrc, err := fileHeader.Open()
+	if err != nil {
+		handleResponse(c, h.log, "failed to open upload", http.StatusInternalServerError, err.Error())
+		return
+	}
+	var head [512]byte
+	n, _ := io.ReadFull(sniffSrc, head[:])
+	_ = sniffSrc.Close()
+	if !magicMatchesExtension(ext, head[:n]) {
+		handleResponse(c, h.log, "This file isn't a valid "+strings.TrimPrefix(ext, ".")+" — it may be corrupted or a saved error page", http.StatusBadRequest, gin.H{
+			"expected_extension": ext,
+			"file_size":          fileHeader.Size,
+		})
+		return
+	}
+
 	fileName := fileHeader.Filename
 	fileType := filepath.Ext(fileName)
 	fileID := uuid.NewString()
@@ -550,4 +573,40 @@ func (h *Handler) CleanupOldFiles(c *gin.Context) {
 		return
 	}
 	handleResponse(c, h.log, "old files cleaned up", http.StatusOK, gin.H{"deleted_files": count})
+}
+
+
+// magicMatchesExtension does a cheap signature check for the file types
+// our toolchain actually accepts. Unknown extensions pass through — we'd
+// rather risk a downstream failure than reject something legitimate.
+func magicMatchesExtension(ext string, head []byte) bool {
+	if len(head) == 0 {
+		return false
+	}
+	switch ext {
+	case ".pdf":
+		return len(head) >= 5 && string(head[:5]) == "%PDF-"
+	case ".docx", ".xlsx", ".pptx", ".odt", ".ods", ".odp":
+		return len(head) >= 4 && head[0] == 0x50 && head[1] == 0x4B && (head[2] == 0x03 || head[2] == 0x05 || head[2] == 0x07) && (head[3] == 0x04 || head[3] == 0x06 || head[3] == 0x08)
+	case ".doc", ".xls", ".ppt":
+		return len(head) >= 8 && head[0] == 0xD0 && head[1] == 0xCF && head[2] == 0x11 && head[3] == 0xE0
+	case ".jpg", ".jpeg":
+		return len(head) >= 3 && head[0] == 0xFF && head[1] == 0xD8 && head[2] == 0xFF
+	case ".png":
+		return len(head) >= 8 && head[0] == 0x89 && head[1] == 0x50 && head[2] == 0x4E && head[3] == 0x47
+	case ".gif":
+		return len(head) >= 4 && head[0] == 0x47 && head[1] == 0x49 && head[2] == 0x46
+	case ".webp":
+		return len(head) >= 12 && string(head[0:4]) == "RIFF" && string(head[8:12]) == "WEBP"
+	case ".tif", ".tiff":
+		return len(head) >= 4 && ((head[0] == 0x49 && head[1] == 0x49 && head[2] == 0x2A) || (head[0] == 0x4D && head[1] == 0x4D && head[2] == 0x00 && head[3] == 0x2A))
+	case ".bmp":
+		return len(head) >= 2 && head[0] == 0x42 && head[1] == 0x4D
+	case ".heic", ".heif":
+		return len(head) >= 12 && string(head[4:8]) == "ftyp"
+	case ".csv", ".txt", ".html", ".htm", ".md", ".json", ".xml":
+		return true
+	default:
+		return true
+	}
 }
