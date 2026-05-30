@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -315,7 +317,7 @@ func normalizeFinish(g string) string {
 // endpoint on free tier — there's no synchronous batch endpoint we can
 // use without going through the async job API. We parallelise instead
 // with a small worker pool so a 1500-chunk PDF doesn't take 25 minutes.
-const geminiEmbedConcurrency = 8
+const geminiEmbedConcurrency = 4
 
 type geminiEmbedReq struct {
 	Content              geminiContent `json:"content"`
@@ -393,31 +395,82 @@ func (g *geminiProvider) embedOne(ctx context.Context, text string) ([]float32, 
 	}
 
 	url := fmt.Sprintf("%s/models/%s:embedContent?key=%s", geminiBaseURL, g.embedModel, g.apiKey)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("gemini: build embed: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := g.http.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("gemini: embed do: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-		if resp.StatusCode == http.StatusTooManyRequests {
-			return nil, fmt.Errorf("%w: %s", ErrRateLimited, strings.TrimSpace(string(errBody)))
+	// Retry on 429s using the server-suggested retryDelay where present,
+	// otherwise an exponential backoff capped at 30s. Free tier embedding
+	// is 100 req/min — even a small PDF can hit it during burst indexing.
+	const maxAttempts = 5
+	backoff := 2 * time.Second
+	var lastErr error
+	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+		if err != nil {
+			return nil, fmt.Errorf("gemini: build embed: %w", err)
 		}
-		return nil, fmt.Errorf("gemini: embed HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
-	}
+		req.Header.Set("Content-Type", "application/json")
 
-	var decoded geminiEmbedResp
-	if err := json.NewDecoder(resp.Body).Decode(&decoded); err != nil {
-		return nil, fmt.Errorf("gemini: decode embed: %w", err)
+		resp, err := g.http.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("gemini: embed do: %w", err)
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			var decoded geminiEmbedResp
+			if derr := json.NewDecoder(resp.Body).Decode(&decoded); derr != nil {
+				resp.Body.Close()
+				return nil, fmt.Errorf("gemini: decode embed: %w", derr)
+			}
+			resp.Body.Close()
+			if len(decoded.Embedding.Values) == 0 {
+				return nil, errors.New("gemini: empty embedding")
+			}
+			return decoded.Embedding.Values, nil
+		}
+
+		errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		resp.Body.Close()
+		trimmed := strings.TrimSpace(string(errBody))
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			lastErr = fmt.Errorf("%w: %s", ErrRateLimited, trimmed)
+			if attempt == maxAttempts {
+				return nil, lastErr
+			}
+			wait := parseGeminiRetryDelay(trimmed)
+			if wait <= 0 || wait > 60*time.Second {
+				wait = backoff
+			}
+			// Always add a small jitter so multiple workers don'''t wake up
+			// in lockstep and immediately re-hit the limit.
+			wait += time.Duration(attempt*350) * time.Millisecond
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(wait):
+			}
+			if backoff < 30*time.Second {
+				backoff *= 2
+			}
+			continue
+		}
+
+		return nil, fmt.Errorf("gemini: embed HTTP %d: %s", resp.StatusCode, trimmed)
 	}
-	if len(decoded.Embedding.Values) == 0 {
-		return nil, errors.New("gemini: empty embedding")
+	return nil, lastErr
+}
+
+// parseGeminiRetryDelay extracts the retryDelay (e.g. "17s") from a
+// Gemini 429 error body and returns it as a time.Duration. Zero on miss.
+var geminiRetrySecRE = regexp.MustCompile(`"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"`)
+
+func parseGeminiRetryDelay(body string) time.Duration {
+	m := geminiRetrySecRE.FindStringSubmatch(body)
+	if len(m) < 2 {
+		return 0
 	}
-	return decoded.Embedding.Values, nil
+	f, err := strconv.ParseFloat(m[1], 64)
+	if err != nil || f <= 0 {
+		return 0
+	}
+	return time.Duration(f * float64(time.Second))
 }
