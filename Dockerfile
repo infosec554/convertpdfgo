@@ -28,34 +28,35 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     esac
 
 # === Runtime stage ===
-FROM alpine:3.19
+# Debian (not Alpine) because pdf2docx's transitive dep on PyMuPDF +
+# opencv-python ships manylinux wheels that need glibc. Building those
+# from source on Alpine takes 20+ minutes and ~1 GB of build deps —
+# not worth it for one library. Tesseract / LibreOffice / poppler /
+# ocrmypdf all have matching debian packages.
+FROM debian:bookworm-slim
 
-# Runtime dependencies:
+ENV DEBIAN_FRONTEND=noninteractive
+# Runtime dependencies — same set as the alpine version, debian names:
 # - poppler-utils: pdftoppm (PDF→JPG), pdftotext (extract-text)
-# - libreoffice + ttf-liberation: PDF→DOCX via pkg/libreoffice (worker
-#   only, but the api image and worker image are the same Dockerfile
-#   target — bigger image accepted for one consistent runtime).
-#   ttf-liberation gives us serif/sans/mono fonts so the renderer
-#   doesn't fall back to glyph squares.
-# - pdfcpu CLI is bundled from the release tarball (rotate/crop/unlock/
-#   protect/header-footer shell out to it; library API is also linked).
-RUN apk add --no-cache \
-        ca-certificates tzdata xz \
+# - libreoffice + fonts-liberation: PDF→DOCX fallback via pkg/libreoffice;
+#   fonts-liberation gives us serif/sans/mono so the renderer doesn't
+#   fall back to glyph squares.
+# - pdfcpu CLI is bundled from the release tarball.
+# - python3 + pip + pdf2docx: primary PDF→DOCX path (flowing paragraph
+#   output instead of LibreOffice's absolute-positioned textboxes).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates tzdata xz-utils wget \
         poppler-utils \
-        libreoffice ttf-liberation openjdk17-jre-headless \
+        libreoffice fonts-liberation openjdk-17-jre-headless \
         ocrmypdf tesseract-ocr \
-        tesseract-ocr-data-eng tesseract-ocr-data-rus \
-        python3 py3-pip && \
-    # Uzbek (Latin + Cyrillic) and Kyrgyz aren't always packaged on
-    # alpine — pull them straight from tesseract-ocr/tessdata so /usr/
-    # share/tessdata has the full set our /api/pdf/ocr endpoints
-    # advertise. ~10 MB total.
-    # `osd` is the orientation/script detection model — required for
-    # `tesseract --psm 0` which our /api/pdf/ocr-detect-lang endpoint
-    # invokes. Alpine doesn't package it separately, so pull alongside
-    # the language data.
+        tesseract-ocr-eng tesseract-ocr-rus \
+        python3 python3-pip && \
+    # Uzbek (Latin + Cyrillic) and Kyrgyz aren't always in debian's
+    # tesseract package — pull them straight from upstream so the OCR
+    # endpoints have the full advertised language set. `osd` is the
+    # orientation/script detection model needed for psm=0.
     for lang in uzb uzb_cyrl kir osd; do \
-      wget -qO "/usr/share/tessdata/${lang}.traineddata" \
+      wget -qO "/usr/share/tesseract-ocr/5/tessdata/${lang}.traineddata" \
         "https://github.com/tesseract-ocr/tessdata/raw/main/${lang}.traineddata"; \
     done && \
     wget -qO- https://github.com/pdfcpu/pdfcpu/releases/download/v0.11.0/pdfcpu_0.11.0_Linux_x86_64.tar.xz \
@@ -63,12 +64,13 @@ RUN apk add --no-cache \
     install -m 0755 /tmp/pdfcpu_0.11.0_Linux_x86_64/pdfcpu /usr/local/bin/pdfcpu && \
     rm -rf /tmp/pdfcpu_0.11.0_Linux_x86_64 && \
     pdfcpu version && \
-    # pdf2docx is the de-facto best free PDF→DOCX library: it preserves
-    # paragraph flow, lists, and tables instead of LibreOffice's
-    # absolute-positioned text boxes. Install with --break-system-packages
-    # because alpine's pip refuses by default since PEP 668.
+    # pdf2docx — the de-facto best free PDF→DOCX library. We
+    # --break-system-packages because debian's PEP-668 system-wide pip
+    # refuses by default; using a venv would mean an extra binary in
+    # PATH for one library, not worth the complexity.
     pip3 install --no-cache-dir --break-system-packages pdf2docx && \
-    python3 -c "import pdf2docx; print('pdf2docx', pdf2docx.__version__)"
+    python3 -c "import pdf2docx; print('pdf2docx', pdf2docx.__version__)" && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=builder /out/app /app/app
