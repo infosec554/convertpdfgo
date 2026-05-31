@@ -44,7 +44,8 @@ RUN apk add --no-cache \
         poppler-utils \
         libreoffice ttf-liberation openjdk17-jre-headless \
         ocrmypdf tesseract-ocr \
-        tesseract-ocr-data-eng tesseract-ocr-data-rus && \
+        tesseract-ocr-data-eng tesseract-ocr-data-rus \
+        python3 py3-pip && \
     # Uzbek (Latin + Cyrillic) and Kyrgyz aren't always packaged on
     # alpine — pull them straight from tesseract-ocr/tessdata so /usr/
     # share/tessdata has the full set our /api/pdf/ocr endpoints
@@ -61,10 +62,17 @@ RUN apk add --no-cache \
         | tar -xJf- -C /tmp && \
     install -m 0755 /tmp/pdfcpu_0.11.0_Linux_x86_64/pdfcpu /usr/local/bin/pdfcpu && \
     rm -rf /tmp/pdfcpu_0.11.0_Linux_x86_64 && \
-    pdfcpu version
+    pdfcpu version && \
+    # pdf2docx is the de-facto best free PDF→DOCX library: it preserves
+    # paragraph flow, lists, and tables instead of LibreOffice's
+    # absolute-positioned text boxes. Install with --break-system-packages
+    # because alpine's pip refuses by default since PEP 668.
+    pip3 install --no-cache-dir --break-system-packages pdf2docx && \
+    python3 -c "import pdf2docx; print('pdf2docx', pdf2docx.__version__)"
 
 WORKDIR /app
 COPY --from=builder /out/app /app/app
+COPY scripts/pdf2docx_convert.py /app/scripts/pdf2docx_convert.py
 COPY migrations ./migrations
 
 EXPOSE 8080
