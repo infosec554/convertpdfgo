@@ -69,7 +69,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # refuses by default; using a venv would mean an extra binary in
     # PATH for one library, not worth the complexity.
     pip3 install --no-cache-dir --break-system-packages pdf2docx && \
-    python3 -c "import pdf2docx; print('pdf2docx', pdf2docx.__version__)" && \
+    python3 -c "from pdf2docx import Converter; print('pdf2docx OK')" && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
