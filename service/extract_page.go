@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
@@ -102,7 +101,7 @@ func (s *extractPageService) Process(ctx context.Context, jobID string) error {
 		return fmt.Errorf("no valid pages")
 	}
 
-	if err := api.ExtractPagesFile(file.FilePath, outputDir, pages, model.NewDefaultConfiguration()); err != nil {
+	if err := api.ExtractPagesFile(file.FilePath, outputDir, pages, relaxedPDFConf()); err != nil {
 		s.markFailed(ctx, job)
 		return fmt.Errorf("pdfcpu extract: %w", err)
 	}

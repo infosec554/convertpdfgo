@@ -1,3 +1,9 @@
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
 # Caddyfile — convertpdfgo.com edge config
 #
 # Two upstreams share the apex domain:

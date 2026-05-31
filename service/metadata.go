@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
@@ -84,7 +83,7 @@ func (s *metadataService) Process(ctx context.Context, jobID string) error {
 		return fmt.Errorf("no metadata fields provided")
 	}
 
-	conf := model.NewDefaultConfiguration()
+	conf := relaxedPDFConf()
 	if err := api.AddPropertiesFile(in.FilePath, outPath, props, conf); err != nil {
 		s.markFailed(ctx, job)
 		return fmt.Errorf("pdfcpu metadata: %w", err)

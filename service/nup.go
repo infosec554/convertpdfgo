@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
@@ -78,7 +77,7 @@ func (s *nupService) Process(ctx context.Context, jobID string) error {
 	}
 	outPath := filepath.Join(outDir, outID+".pdf")
 
-	conf := model.NewDefaultConfiguration()
+	conf := relaxedPDFConf()
 	descParts := []string{}
 	if job.Border {
 		descParts = append(descParts, "border:on")

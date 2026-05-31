@@ -9,7 +9,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
@@ -98,7 +97,7 @@ func (s *mergeService) Process(ctx context.Context, jobID string) error {
 	outputID := uuid.NewString()
 	outputPath := filepath.Join("storage/merge", outputID+".pdf")
 
-	conf := model.NewDefaultConfiguration()
+	conf := relaxedPDFConf()
 	if err := api.MergeCreateFile(inputPaths, outputPath, false, conf); err != nil {
 		s.markFailed(ctx, job)
 		return fmt.Errorf("pdfcpu merge: %w", err)

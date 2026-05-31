@@ -48,6 +48,7 @@ type Service interface {
 	ParseVoice(ctx context.Context, cvID string, req models.CVVoiceRequest) (*models.CVVoiceResponse, error)
 	Translate(ctx context.Context, cvID, targetLocale string) error
 	GenerateCoverLetter(ctx context.Context, cvID string, req models.CVCoverLetterRequest) (*models.CVCoverLetterResponse, error)
+	TranscribeAudio(ctx context.Context, audio []byte, mime, localeHint string) (string, error)
 	RunATSCheck(ctx context.Context, cvID, userID string, req models.CVATSRequest) (*models.CVATSRun, error)
 	ListATSRuns(ctx context.Context, cvID string) ([]models.CVATSRun, error)
 
@@ -86,6 +87,7 @@ type service struct {
 	voice      *voiceParser
 	translator  *translator
 	coverLetter *coverLetter
+	transcriber  *transcriber
 	ats        *ats
 	renderer   *renderer
 	exporter   *exporter
@@ -108,6 +110,7 @@ func New(stg storage.IStorage, log logger.ILogger, got gotenberg.Client) Service
 	s.voice = newVoiceParser(p, log)
 	s.translator = newTranslator(stg, p, log)
 	s.coverLetter = newCoverLetter(stg, p, log)
+	s.transcriber = newTranscriber(p, log)
 	s.ats = newATS(stg, p, log)
 	s.renderer = newRenderer(log)
 	s.exporter = newExporter(stg, log, got, s.renderer)
@@ -414,4 +417,11 @@ func (s *service) GenerateCoverLetter(ctx context.Context, cvID string, req mode
 		return nil, ErrCVDisabled
 	}
 	return s.coverLetter.Generate(ctx, cvID, req)
+}
+
+func (s *service) TranscribeAudio(ctx context.Context, audio []byte, mime, localeHint string) (string, error) {
+	if !s.enabled() {
+		return "", ErrCVDisabled
+	}
+	return s.transcriber.Transcribe(ctx, audio, mime, localeHint)
 }

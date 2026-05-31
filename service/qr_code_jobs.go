@@ -10,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/skip2/go-qrcode"
 
 	"convertpdfgo/api/models"
@@ -78,7 +77,7 @@ func (s *qrCodeService) Process(ctx context.Context, jobID string) error {
 	outputID := uuid.NewString()
 	outputPath := filepath.Join("storage/qr_code_pdf", outputID+".pdf")
 
-	conf := model.NewDefaultConfiguration()
+	conf := relaxedPDFConf()
 	pos := mapQRPosition(job.Position)
 	wmDetails := fmt.Sprintf("pos:%s, scale:1 rel, rot:0", pos)
 

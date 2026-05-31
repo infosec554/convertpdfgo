@@ -92,7 +92,7 @@ func (s *compressService) Process(ctx context.Context, jobID string) error {
 	}
 	outputPath := filepath.Join(outputDir, outputID+".pdf")
 
-	conf := model.NewDefaultConfiguration()
+	conf := relaxedPDFConf()
 	conf.Cmd = model.OPTIMIZE
 	if err := api.OptimizeFile(file.FilePath, outputPath, conf); err != nil {
 		s.markFailed(ctx, job)

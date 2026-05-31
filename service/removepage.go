@@ -11,7 +11,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
@@ -75,7 +74,7 @@ func (s *removePageService) Process(ctx context.Context, jobID string) error {
 	}
 	pageStrs := pkg.IntSliceToStringSlice(pageList)
 
-	if err := api.RemovePagesFile(file.FilePath, outputPath, pageStrs, model.NewDefaultConfiguration()); err != nil {
+	if err := api.RemovePagesFile(file.FilePath, outputPath, pageStrs, relaxedPDFConf()); err != nil {
 		s.markFailed(ctx, job)
 		return fmt.Errorf("pdfcpu remove: %w", err)
 	}

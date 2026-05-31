@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
@@ -102,7 +101,7 @@ func (s *watermarkService) Process(ctx context.Context, jobID string) error {
 
 	desc := fmt.Sprintf("scale:1 abs, rot:%d, op:%.2f, pos:%s", job.Rotation, job.Opacity, job.Position)
 	pages := pageSelection(job.Pages)
-	conf := model.NewDefaultConfiguration()
+	conf := relaxedPDFConf()
 
 	switch job.Mode {
 	case "text":

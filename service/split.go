@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/logger"
@@ -71,7 +70,7 @@ func (s *splitService) Process(ctx context.Context, jobID string) error {
 		}
 	}
 
-	if err := api.SplitFile(file.FilePath, outputDir, span, model.NewDefaultConfiguration()); err != nil {
+	if err := api.SplitFile(file.FilePath, outputDir, span, relaxedPDFConf()); err != nil {
 		return fmt.Errorf("pdfcpu split: %w", err)
 	}
 
