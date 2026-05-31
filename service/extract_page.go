@@ -101,50 +101,37 @@ func (s *extractPageService) Process(ctx context.Context, jobID string) error {
 		return fmt.Errorf("no valid pages")
 	}
 
-	if err := api.ExtractPagesFile(file.FilePath, outputDir, pages, relaxedPDFConf()); err != nil {
+	// TrimFile produces a single PDF containing only the selected pages
+	// (kept in original document order). Previously the code called
+	// ExtractPagesFile, which emits one PDF per selected page — we then
+	// only saved the first file and silently dropped the rest.
+	outputPath := filepath.Join(outputDir, "extracted.pdf")
+	if err := api.TrimFile(file.FilePath, outputPath, pages, relaxedPDFConf()); err != nil {
 		s.markFailed(ctx, job)
-		return fmt.Errorf("pdfcpu extract: %w", err)
+		return fmt.Errorf("pdfcpu trim: %w", err)
 	}
 
-	files, err := os.ReadDir(outputDir)
+	fi, err := os.Stat(outputPath)
 	if err != nil {
 		s.markFailed(ctx, job)
-		return fmt.Errorf("read output dir: %w", err)
+		return fmt.Errorf("stat output: %w", err)
 	}
 
-	var firstOutputID *string
-	for _, f := range files {
-		if f.IsDir() || !strings.HasSuffix(f.Name(), ".pdf") {
-			continue
-		}
-		fullPath := filepath.Join(outputDir, f.Name())
-		fi, err := os.Stat(fullPath)
-		if err != nil {
-			continue
-		}
-		fileID, err := s.stg.File().Save(ctx, models.File{
-			ID:         uuid.NewString(),
-			UserID:     job.UserID,
-			FileName:   f.Name(),
-			FilePath:   fullPath,
-			FileType:   "application/pdf",
-			FileSize:   fi.Size(),
-			UploadedAt: time.Now(),
-		})
-		if err != nil {
-			continue
-		}
-		if firstOutputID == nil {
-			firstOutputID = &fileID
-		}
-	}
-
-	if firstOutputID == nil {
+	fileID, err := s.stg.File().Save(ctx, models.File{
+		ID:         uuid.NewString(),
+		UserID:     job.UserID,
+		FileName:   "extracted.pdf",
+		FilePath:   outputPath,
+		FileType:   "application/pdf",
+		FileSize:   fi.Size(),
+		UploadedAt: time.Now(),
+	})
+	if err != nil {
 		s.markFailed(ctx, job)
-		return fmt.Errorf("no output files saved")
+		return fmt.Errorf("save output file: %w", err)
 	}
 
-	job.OutputFileID = firstOutputID
+	job.OutputFileID = &fileID
 	job.Status = "done"
 	return s.stg.ExtractPage().Update(ctx, job)
 }
