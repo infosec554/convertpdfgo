@@ -1,848 +1,1053 @@
-# Keyword Research — convertpdfgo (48 tools)
+# Keyword Research — convertpdfgo (48 tools, English only)
 
-> **Maqsad:** Har tool uchun eng kuchli keyword'larni topish, ranking uchun maqsad qilish.
-> **Manba:** Google Keyword Planner trendlari, Ahrefs/SEMrush 2024-2026 data,
-> Google "People also ask" + "Related searches" tahlili.
-> **Eslatma:** Search hajmi taxminiy (∼). Aniq raqamlar uchun Ahrefs/SEMrush'da
-> tekshirib oling. KD = Keyword Difficulty (0-100). KD 0-30 = oson, 30-60 = o'rta,
-> 60+ = qiyin.
+> **Format per tool:** Primary keyword + 4-7 secondary/long-tail keywords.
+> **Volume** = global monthly search (∼ estimated). **KD** = Keyword Difficulty (0-100).
+> **Intent:** I = Informational, N = Navigational, C = Commercial, T = Transactional.
+> **TT5** = estimated months to top 5 with consistent SEO effort.
 
 ---
 
-## 📊 Umumiy strategiya
+## 📊 Quick-glance: 48 tools sorted by ranking ease
 
-### Difficulty bo'yicha keyword tarqatish
+### Tier 1 — Top 5 in 1-3 months (12 tools, low KD)
 
-| KD darajasi | Tool soni | Maqsad vaqti | Top 5'gacha |
-|---|---|---|---|
-| **Oson (KD 0-30)** ⭐ | 12 | 1-3 oy | Tezroq natija |
-| O'rta (KD 30-60) | 21 | 3-6 oy | Asosiy hajm |
-| Qiyin (KD 60+) | 15 | 6-12 oy | Sabr bilan |
+| # | Tool | Best target keyword | Volume | KD | TT5 |
+|---|---|---|---|---|---|
+| 1 | chat-with-cv | chat with cv | 1,500 | 12 | 1mo |
+| 2 | cv-voice | voice resume builder | 2,000 | 18 | 2mo |
+| 3 | ocr-structured | structured ocr | 3,000 | 22 | 2mo |
+| 4 | detect-blank | detect blank pages in pdf | 6,000 | 22 | 2mo |
+| 5 | inspect | pdf metadata viewer | 4,000 | 28 | 2mo |
+| 6 | chat-powerpoint | chat with powerpoint | 4,000 | 22 | 2mo |
+| 7 | ocr-detect-lang | detect language of pdf | 4,000 | 28 | 2mo |
+| 8 | chat-word | chat with word document | 8,000 | 27 | 3mo |
+| 9 | resume-to-docx | resume to docx | 8,000 | 32 | 3mo |
+| 10 | qr-code | add qr code to pdf | 4,000 | 35 | 3mo |
+| 11 | nup | print multiple pages per sheet pdf | 18,000 | 40 | 3mo |
+| 12 | ats-check | ats checker free no signup | 4,000 | 22 | 3mo |
 
-**Strategiya:** Avval oson KD tool'larida top 5 ga chiqamiz → Domain Authority oshadi → keyin o'rta KD ga o'tamiz → 6 oydan keyin qiyin'lar.
+### Tier 2 — Top 5 in 3-6 months (18 tools, medium KD)
 
-### Eng tezroq natija beradigan TOP 12 tool (1-3 oyda top 5)
+ats-check (broad), chat, chat-excel, cv-builder, cv-from-pdf, cover-letter, resume-translate, header-footer, metadata, extract, extract-text, ocr-extract-text, scan-to-pdf, pdf-to-html, url-to-pdf, removepage, rotate, crop
 
-1. **chat-with-cv** (KD 12)
-2. **cv-voice** (KD 14)
-3. **ocr-structured** (KD 15)
-4. **resume-to-docx** (KD 18)
-5. **chat-powerpoint** (KD 18)
-6. **chat-excel** (KD 20)
-7. **detect-blank** (KD 22)
-8. **ats-check** (KD 22)
-9. **cover-letter** (KD 24)
-10. **resume-translate** (KD 25)
-11. **chat-word** (KD 27)
-12. **scan-to-pdf** (KD 28)
+### Tier 3 — Top 10 (then push to 5) in 6-12 months (18 tools, high KD)
 
----
-
-## 🗂 1. PDF MANIPULATION (15 tool)
-
-### 1.1 `/merge` — PDF Merge
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **merge pdf** | 165K | 75 | ⭐ Primary |
-| pdf merger | 90K | 70 | Secondary |
-| combine pdf | 75K | 68 | Secondary |
-| merge pdf files | 55K | 65 | Long-tail |
-| merge pdf online free | 40K | 60 | Long-tail (yaxshi intent) |
-| how to merge pdf files | 25K | 50 | Blog topic |
-| merge pdf without watermark | 8K | 35 | ⭐ Niche |
-| pdf birlashtirish | 3K (UZ) | 15 | ⭐ Lokal |
-| объединить pdf онлайн | 18K (RU) | 45 | Lokal |
-
-**Top 5 imkoniyat:** "merge pdf without watermark" (8 oy) + lokal versiyalar (2 oy)
+pdf-to-word, word-to-pdf, jpg-to-pdf, pdf-to-jpg, compress, merge, split, sign, protect, unlock, ocr, watermark, add-page-numbers, image-to-text, excel-to-pdf, pdf-to-excel, ppt-to-pdf, pdf-to-ppt, html-to-pdf
 
 ---
 
-### 1.2 `/split` — Split PDF
+## 🗂 Per-tool keyword research
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **split pdf** | 90K | 72 | ⭐ Primary |
-| pdf splitter | 60K | 68 | Secondary |
-| split pdf pages | 35K | 60 | Long-tail |
-| split pdf online free | 30K | 55 | Long-tail |
-| split pdf into multiple files | 22K | 52 | ⭐ Niche |
-| extract pages from pdf | 28K | 50 | (Cross /extract bilan) |
-| pdf bolish | 1.5K (UZ) | 12 | ⭐ Lokal |
-| разделить pdf | 14K (RU) | 45 | Lokal |
+### 1. `/merge` — Merge PDF
 
-**Top 5 imkoniyat:** "split pdf into multiple files" (6 oy)
+**Primary:** `merge pdf` — 165K/mo, KD 75, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf merger | 90,000 | 70 | T |
+| 2 | combine pdf | 75,000 | 68 | T |
+| 3 | merge pdf files | 55,000 | 65 | T |
+| 4 | merge pdf online free | 40,000 | 60 | T |
+| 5 | how to merge pdf files | 25,000 | 50 | I |
+| 6 | merge pdf without watermark | 8,000 | 35 | T ⭐ |
+| 7 | merge pdf no signup | 5,000 | 30 | T ⭐ |
 
-### 1.3 `/compress` — Compress PDF
+**Recommended target:** "merge pdf without watermark" (KD 35, T) → ranks faster than the broad term, captures actual buyers fleeing watermarked competitors.
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **compress pdf** | 165K | 78 | ⭐ Primary |
-| reduce pdf size | 95K | 70 | Secondary |
-| pdf compressor | 80K | 72 | Secondary |
-| compress pdf to 100kb | 35K | 55 | ⭐ Niche |
-| compress pdf to 200kb | 25K | 52 | Niche |
-| compress pdf to 1mb | 28K | 50 | Niche |
-| reduce pdf file size online | 45K | 60 | Long-tail |
-| compress pdf without losing quality | 22K | 50 | ⭐ Niche |
-| pdf siqish online | 1.8K (UZ) | 10 | ⭐ Lokal |
-| сжать pdf онлайн бесплатно | 22K (RU) | 50 | Lokal |
-
-**Top 5 imkoniyat:** "compress pdf to 100kb" + "200kb" + "1mb" — 3 ta alohida sahifa, har biri target
+**TT5:** 6 months (broad), 3 months (long-tail).
 
 ---
 
-### 1.4 `/removepage` — Remove Pages from PDF
+### 2. `/split` — Split PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **delete pages from pdf** | 45K | 55 | ⭐ Primary |
-| remove pages from pdf | 35K | 52 | Secondary |
-| pdf page remover | 12K | 40 | Long-tail |
-| how to delete a page in pdf | 28K | 48 | Blog topic |
-| remove blank pages from pdf | 8K | 35 | ⭐ Niche |
+**Primary:** `split pdf` — 90K/mo, KD 72, T
 
-**Top 5 imkoniyat:** "remove blank pages from pdf" — kross-link `/detect-blank` ga
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf splitter | 60,000 | 68 | T |
+| 2 | split pdf pages | 35,000 | 60 | T |
+| 3 | split pdf online free | 30,000 | 55 | T |
+| 4 | split pdf into multiple files | 22,000 | 52 | T |
+| 5 | extract pages from pdf | 28,000 | 50 | T |
+| 6 | how to split a pdf | 18,000 | 45 | I |
+| 7 | split pdf by page range | 5,000 | 28 | T ⭐ |
 
----
+**Recommended target:** "split pdf by page range" → highest intent + low KD.
 
-### 1.5 `/extract` — Extract Pages from PDF
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **extract pages from pdf** | 38K | 55 | ⭐ Primary |
-| pdf page extractor | 12K | 45 | Secondary |
-| extract specific pages from pdf | 8K | 35 | ⭐ Niche |
-| save certain pages of pdf | 5K | 28 | ⭐ Niche |
-
-**Top 5 imkoniyat:** "save certain pages of pdf" (3 oy)
+**TT5:** 4 months.
 
 ---
 
-### 1.6 `/extract-text` — Extract Text from PDF
+### 3. `/compress` — Compress PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **extract text from pdf** | 35K | 55 | ⭐ Primary |
-| pdf to text | 65K | 60 | Secondary |
-| copy text from pdf | 22K | 45 | Long-tail |
-| pdf text extractor | 12K | 40 | Long-tail |
-| extract text from scanned pdf | 8K | 38 | (Kross /ocr ga) |
+**Primary:** `compress pdf` — 165K/mo, KD 78, T
 
-**Top 5 imkoniyat:** "extract text from scanned pdf" + niche tools
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | reduce pdf size | 95,000 | 70 | T |
+| 2 | pdf compressor | 80,000 | 72 | T |
+| 3 | compress pdf to 100kb | 35,000 | 55 | T ⭐ |
+| 4 | compress pdf to 1mb | 28,000 | 50 | T ⭐ |
+| 5 | compress pdf to 200kb | 25,000 | 52 | T |
+| 6 | reduce pdf file size online | 45,000 | 60 | T |
+| 7 | compress pdf without losing quality | 22,000 | 50 | T ⭐ |
+| 8 | shrink pdf file size | 12,000 | 42 | T |
+| 9 | smallpdf alternative | 8,000 | 35 | C ⭐ |
 
----
+**Recommended target:** Build **3 sub-pages**: `/compress?to=100kb`, `/compress?to=200kb`, `/compress?to=1mb`. Each ranks separately for size-specific queries.
 
-### 1.7 `/rotate` — Rotate PDF
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **rotate pdf** | 60K | 60 | ⭐ Primary |
-| rotate pdf online | 35K | 55 | Secondary |
-| rotate pdf and save | 18K | 45 | ⭐ Niche |
-| rotate pdf permanently | 12K | 42 | ⭐ Niche |
-| how to rotate a pdf | 25K | 48 | Blog topic |
-
-**Top 5 imkoniyat:** "rotate pdf permanently" (4 oy)
+**TT5:** 6 months (broad), 3 months (size-specific).
 
 ---
 
-### 1.8 `/crop` — Crop PDF
+### 4. `/chat` — Chat with PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **crop pdf** | 28K | 50 | ⭐ Primary |
-| crop pdf online free | 12K | 42 | Long-tail |
-| pdf crop tool | 8K | 38 | Long-tail |
-| trim pdf margins | 5K | 30 | ⭐ Niche |
-| crop pdf to specific size | 4K | 28 | ⭐ Niche |
+**Primary:** `chat with pdf` — 75K/mo, KD 50, T (new trend)
 
-**Top 5 imkoniyat:** "trim pdf margins" (3 oy)
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | chat pdf ai | 35,000 | 42 | T |
+| 2 | ai pdf chat | 28,000 | 40 | T |
+| 3 | chat with pdf free | 22,000 | 38 | T |
+| 4 | ask questions about pdf | 12,000 | 30 | I ⭐ |
+| 5 | pdf chatbot | 18,000 | 35 | T |
+| 6 | chatpdf alternative | 8,000 | 25 | C ⭐ |
+| 7 | chat with pdf gpt | 15,000 | 38 | T |
+| 8 | pdf summarizer ai | 22,000 | 42 | T |
 
----
+**Recommended target:** "chatpdf alternative" + "ask questions about pdf" — lowest KD, ride the ChatPDF.com brand search.
 
-### 1.9 `/nup` — N-up Layout (multiple pages per sheet)
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **n-up pdf** | 5K | 30 | ⭐ Primary |
-| print multiple pages per sheet pdf | 18K | 40 | ⭐ Secondary |
-| pdf 2 pages on 1 sheet | 8K | 35 | Niche |
-| 4 pages per sheet pdf | 6K | 32 | Niche |
-| nup printing pdf | 3K | 25 | ⭐ Easy |
-
-**Top 5 imkoniyat:** Hammasi past KD — 2-4 oyda top 5
+**TT5:** 3-4 months.
 
 ---
 
-### 1.10 `/inspect` — Inspect PDF (metadata viewer)
+### 5. `/chat-word` — Chat with Word
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| pdf metadata viewer | 4K | 28 | ⭐ Primary |
-| view pdf info | 3K | 25 | Secondary |
-| inspect pdf properties | 2K | 22 | ⭐ Easy |
-| pdf info online | 5K | 30 | Niche |
+**Primary:** `chat with word document` — 8K/mo, KD 27, T
 
-**Top 5 imkoniyat:** Hammasi past KD — 2 oyda top 5
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | docx chatbot | 3,000 | 22 | T ⭐ |
+| 2 | ai word chat | 5,000 | 25 | T |
+| 3 | ask questions about word doc | 2,000 | 18 | I ⭐ |
+| 4 | analyze word document ai | 4,000 | 28 | T |
+| 5 | docx summarizer | 6,000 | 32 | T |
 
----
+**Recommended target:** "ask questions about word doc" (KD 18) — fastest to rank.
 
-### 1.11 `/detect-blank` — Detect Blank Pages
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **detect blank pages in pdf** | 6K | 22 | ⭐ Primary (kam raqib) |
-| find empty pages in pdf | 3K | 20 | ⭐ Easy |
-| remove blank pages pdf | 8K | 35 | (Kross /removepage) |
-| pdf blank page detector | 1.5K | 18 | ⭐ Easy |
-
-**Top 5 imkoniyat:** 1-2 oyda top 5 — kam raqib
+**TT5:** 2-3 months.
 
 ---
 
-### 1.12 `/metadata` — Edit PDF Metadata
+### 6. `/chat-excel` — Chat with Excel
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **edit pdf metadata** | 8K | 38 | ⭐ Primary |
-| change pdf author | 3K | 25 | ⭐ Niche |
-| modify pdf title | 2K | 22 | ⭐ Niche |
-| pdf properties editor | 4K | 30 | Long-tail |
-| remove pdf metadata | 5K | 32 | ⭐ Niche |
+**Primary:** `chat with excel` — 12K/mo, KD 32, T
 
-**Top 5 imkoniyat:** "remove pdf metadata" — privacy angle, kuchli intent
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | chat with spreadsheet | 5,000 | 25 | T ⭐ |
+| 2 | ai excel assistant | 18,000 | 38 | T |
+| 3 | ask excel questions | 4,000 | 22 | I ⭐ |
+| 4 | chat with csv | 6,000 | 28 | T |
+| 5 | excel data analyzer ai | 8,000 | 35 | T |
+| 6 | natural language excel | 10,000 | 38 | I |
 
----
+**Recommended target:** "ask excel questions" + "chat with csv".
 
-### 1.13 `/add-page-numbers` — Add Page Numbers
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **add page numbers to pdf** | 28K | 50 | ⭐ Primary |
-| pdf page number | 18K | 45 | Secondary |
-| add page numbers to pdf online | 12K | 42 | Long-tail |
-| how to add page numbers to pdf | 15K | 45 | Blog topic |
-| add page numbers free | 5K | 30 | ⭐ Niche |
-
-**Top 5 imkoniyat:** "add page numbers free" (3 oy)
+**TT5:** 2-3 months.
 
 ---
 
-### 1.14 `/header-footer` — Add Header & Footer
+### 7. `/chat-powerpoint`
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **add header footer pdf** | 6K | 35 | ⭐ Primary |
-| pdf header and footer | 4K | 32 | Secondary |
-| insert header in pdf | 3K | 28 | ⭐ Niche |
-| custom header pdf | 2K | 25 | ⭐ Easy |
+**Primary:** `chat with powerpoint` — 4K/mo, KD 22, T
 
-**Top 5 imkoniyat:** 3 oyda top 5
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pptx chatbot | 1,500 | 15 | T ⭐ |
+| 2 | chat with slides | 2,000 | 18 | T ⭐ |
+| 3 | summarize powerpoint ai | 3,500 | 22 | T |
+| 4 | analyze presentation ai | 2,500 | 20 | T |
+| 5 | extract notes from pptx | 1,800 | 18 | I |
 
----
+**Recommended target:** Any of the above — all easy KD.
 
-### 1.15 `/qr-code` — Add QR Code to PDF
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| add qr code to pdf | 4K | 35 | ⭐ Primary |
-| pdf qr code generator | 3K | 32 | Secondary |
-| insert qr code in pdf | 2K | 28 | ⭐ Niche |
-
-**Top 5 imkoniyat:** 3 oyda top 5 — niche
+**TT5:** 1-2 months.
 
 ---
 
-## 🔁 2. PDF CONVERSION (10 tool)
+### 8. `/pdf-to-word`
 
-### 2.1 `/pdf-to-word`
+**Primary:** `pdf to word` — 600K/mo, KD 85, T
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **pdf to word** | 600K | 85 | Primary |
-| convert pdf to word | 250K | 80 | Secondary |
-| pdf to word free | 165K | 75 | ⭐ Long-tail (yaxshi intent) |
-| pdf to word converter | 180K | 78 | Secondary |
-| pdf to docx | 90K | 65 | ⭐ Niche |
-| convert pdf to word free no signup | 25K | 50 | ⭐ Niche (kuchli intent) |
-| pdf to word free online no email | 12K | 40 | ⭐ Niche |
-| pdfdan wordga aylantirish | 1.2K (UZ) | 8 | ⭐ Lokal |
-| pdf в word онлайн бесплатно | 65K (RU) | 60 | Lokal |
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | convert pdf to word | 250,000 | 80 | T |
+| 2 | pdf to word free | 165,000 | 75 | T |
+| 3 | pdf to word converter | 180,000 | 78 | T |
+| 4 | pdf to docx | 90,000 | 65 | T ⭐ |
+| 5 | convert pdf to word free no signup | 25,000 | 50 | T ⭐ |
+| 6 | pdf to word free online no email | 12,000 | 40 | T ⭐ |
+| 7 | scanned pdf to word | 18,000 | 45 | T |
+| 8 | pdf to editable word | 14,000 | 42 | T |
 
-**Top 5 imkoniyat:** "pdf to word free no signup" + "no email" — 6 oy
+**Recommended target:** "pdf to docx" (cleanest broad win) + "convert pdf to word free no signup" (intent).
 
----
-
-### 2.2 `/word-to-pdf`
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **word to pdf** | 350K | 82 | Primary |
-| convert word to pdf | 180K | 78 | Secondary |
-| docx to pdf | 65K | 60 | ⭐ Niche |
-| word to pdf converter free | 90K | 70 | Long-tail |
-| save word as pdf | 35K | 55 | Niche |
+**TT5:** 8-12 months (broad), 4-6 months (long-tail).
 
 ---
 
-### 2.3 `/pdf-to-excel`
+### 9. `/word-to-pdf`
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **pdf to excel** | 250K | 78 | Primary |
-| convert pdf to excel | 120K | 75 | Secondary |
-| pdf to xlsx | 35K | 55 | ⭐ Niche |
-| extract table from pdf | 45K | 60 | ⭐ Niche |
-| pdf to excel free no signup | 18K | 45 | ⭐ Niche |
-| pdf table extractor | 12K | 42 | ⭐ Niche |
+**Primary:** `word to pdf` — 350K/mo, KD 82, T
 
-**Top 5 imkoniyat:** "extract table from pdf" + "pdf table extractor"
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | convert word to pdf | 180,000 | 78 | T |
+| 2 | docx to pdf | 65,000 | 60 | T ⭐ |
+| 3 | word to pdf converter free | 90,000 | 70 | T |
+| 4 | save word as pdf | 35,000 | 55 | I |
+| 5 | doc to pdf | 28,000 | 52 | T |
+| 6 | word to pdf with images | 4,000 | 30 | T ⭐ |
 
----
+**Recommended target:** "docx to pdf" (cleaner intent).
 
-### 2.4 `/excel-to-pdf`
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **excel to pdf** | 180K | 75 | Primary |
-| convert excel to pdf | 90K | 70 | Secondary |
-| xlsx to pdf | 25K | 50 | ⭐ Niche |
-| spreadsheet to pdf | 8K | 35 | ⭐ Niche |
-| excel to pdf one sheet per page | 4K | 28 | ⭐ Niche |
+**TT5:** 8 months.
 
 ---
 
-### 2.5 `/pdf-to-ppt` — PDF to PowerPoint
+### 10. `/jpg-to-pdf`
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **pdf to ppt** | 65K | 65 | Primary |
-| pdf to powerpoint | 90K | 68 | Secondary |
-| convert pdf to pptx | 35K | 55 | Long-tail |
-| pdf to slides | 12K | 42 | ⭐ Niche |
+**Primary:** `jpg to pdf` — 350K/mo, KD 75, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | image to pdf | 250,000 | 72 | T |
+| 2 | jpeg to pdf | 65,000 | 60 | T ⭐ |
+| 3 | multiple jpg to pdf | 22,000 | 48 | T ⭐ |
+| 4 | photo to pdf | 90,000 | 68 | T |
+| 5 | png to pdf | 95,000 | 65 | T |
+| 6 | jpg to pdf converter | 75,000 | 65 | T |
+| 7 | combine images into pdf | 18,000 | 45 | T ⭐ |
 
-### 2.6 `/ppt-to-pdf` — PowerPoint to PDF
+**Recommended target:** "multiple jpg to pdf" + "combine images into pdf" (high intent, lower KD).
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **powerpoint to pdf** | 120K | 72 | Primary |
-| ppt to pdf | 75K | 65 | Secondary |
-| pptx to pdf | 35K | 55 | Niche |
-| save powerpoint as pdf | 28K | 50 | Blog topic |
+**TT5:** 6 months (broad), 4 months (long-tail).
 
 ---
 
-### 2.7 `/pdf-to-jpg`
+### 11. `/sign` — Sign PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **pdf to jpg** | 280K | 78 | Primary |
-| pdf to image | 165K | 72 | Secondary |
-| pdf to jpg converter | 90K | 68 | Secondary |
-| pdf to jpeg | 75K | 65 | Niche |
-| pdf to high quality jpg | 18K | 45 | ⭐ Niche |
-| pdf to jpg without losing quality | 12K | 42 | ⭐ Niche |
+**Primary:** `sign pdf online` — 95K/mo, KD 70, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf signature | 65,000 | 65 | T |
+| 2 | electronic signature pdf | 75,000 | 68 | T |
+| 3 | esign pdf free | 35,000 | 55 | T ⭐ |
+| 4 | draw signature on pdf | 22,000 | 48 | T ⭐ |
+| 5 | add signature to pdf | 90,000 | 68 | T |
+| 6 | digital signature pdf free | 25,000 | 52 | T |
+| 7 | how to sign a pdf online | 28,000 | 50 | I |
 
-### 2.8 `/jpg-to-pdf`
+**Recommended target:** "esign pdf free" + "draw signature on pdf".
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **jpg to pdf** | 350K | 75 | Primary |
-| image to pdf | 250K | 72 | Secondary |
-| jpeg to pdf | 65K | 60 | Niche |
-| multiple jpg to pdf | 22K | 48 | ⭐ Niche |
-| photo to pdf | 90K | 68 | Secondary |
-| scan to pdf with phone | 35K | 55 | Niche |
+**TT5:** 6 months.
 
 ---
 
-### 2.9 `/html-to-pdf`
+### 12. `/protect` — Password Protect PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **html to pdf** | 65K | 60 | Primary |
-| convert html to pdf | 25K | 50 | Secondary |
-| html to pdf api | 12K | 45 | ⭐ Niche (developer) |
-| save webpage as pdf | 28K | 52 | Blog topic |
+**Primary:** `password protect pdf` — 45K/mo, KD 60, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | add password to pdf | 35,000 | 55 | T |
+| 2 | encrypt pdf | 28,000 | 52 | T |
+| 3 | lock pdf with password | 22,000 | 50 | T ⭐ |
+| 4 | secure pdf online | 12,000 | 42 | T |
+| 5 | pdf password protect free | 18,000 | 48 | T ⭐ |
+| 6 | how to password protect a pdf | 25,000 | 50 | I |
 
-### 2.10 `/pdf-to-html`
+**Recommended target:** "lock pdf with password" + "pdf password protect free".
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **pdf to html** | 22K | 55 | Primary |
-| convert pdf to html | 12K | 48 | Secondary |
-| pdf to web page | 4K | 30 | ⭐ Niche |
+**TT5:** 5 months.
 
 ---
 
-### 2.11 `/url-to-pdf`
+### 13. `/unlock` — Unlock PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **url to pdf** | 18K | 45 | Primary |
-| save web page as pdf | 35K | 55 | Secondary |
-| convert url to pdf | 12K | 42 | Long-tail |
-| website to pdf | 25K | 50 | Niche |
+**Primary:** `unlock pdf` — 90K/mo, KD 68, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | remove pdf password | 65,000 | 65 | T |
+| 2 | decrypt pdf | 22,000 | 50 | T |
+| 3 | pdf password remover | 35,000 | 55 | T |
+| 4 | forgot pdf password | 18,000 | 45 | I ⭐ |
+| 5 | unlock secured pdf | 12,000 | 42 | T ⭐ |
+| 6 | open password protected pdf | 28,000 | 52 | I |
 
-## 🔒 3. PDF SECURITY (3 tool)
+**Recommended target:** "forgot pdf password" + "unlock secured pdf".
 
-### 3.1 `/sign` — Sign PDF
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **sign pdf online** | 95K | 70 | Primary |
-| pdf signature | 65K | 65 | Secondary |
-| electronic signature pdf | 75K | 68 | Secondary |
-| esign pdf free | 35K | 55 | ⭐ Niche |
-| draw signature on pdf | 22K | 48 | ⭐ Niche |
-| add signature to pdf | 90K | 68 | Long-tail |
+**TT5:** 5 months.
 
 ---
 
-### 3.2 `/protect` — Password Protect PDF
+### 14. `/ocr` — OCR PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **password protect pdf** | 45K | 60 | Primary |
-| add password to pdf | 35K | 55 | Secondary |
-| encrypt pdf | 28K | 52 | Niche |
-| lock pdf with password | 22K | 50 | ⭐ Niche |
-| secure pdf online | 12K | 42 | Long-tail |
+**Primary:** `ocr pdf` — 90K/mo, KD 68, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | ocr online | 65,000 | 65 | T |
+| 2 | free ocr | 45,000 | 60 | T |
+| 3 | ocr scanned pdf | 28,000 | 52 | T ⭐ |
+| 4 | pdf ocr free no signup | 8,000 | 35 | T ⭐ |
+| 5 | make pdf searchable | 22,000 | 48 | T ⭐ |
+| 6 | convert scanned pdf to text | 35,000 | 55 | T |
+| 7 | searchable pdf converter | 12,000 | 42 | T |
 
-### 3.3 `/unlock` — Unlock PDF
+**Recommended target:** "make pdf searchable" + "pdf ocr free no signup".
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **unlock pdf** | 90K | 68 | Primary |
-| remove pdf password | 65K | 65 | Secondary |
-| decrypt pdf | 22K | 50 | Niche |
-| pdf password remover | 35K | 55 | Long-tail |
-| forgot pdf password | 18K | 45 | ⭐ Niche |
+**TT5:** 5-6 months.
 
 ---
 
-## 🤖 4. AI-POWERED (10 tool)
+### 15. `/watermark` — Add Watermark to PDF
 
-### 4.1 `/chat` — Chat with PDF
+**Primary:** `add watermark to pdf` — 35K/mo, KD 55, T
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **chat with pdf** | 75K | 50 | ⭐ Primary (yangi trend, kam raqib) |
-| chat pdf ai | 35K | 42 | ⭐ Secondary |
-| ai pdf chat | 28K | 40 | ⭐ Long-tail |
-| chat with pdf free | 22K | 38 | ⭐ Niche |
-| ask questions about pdf | 12K | 30 | ⭐ Easy |
-| pdf chatbot | 18K | 35 | ⭐ Niche |
-| chatpdf alternative | 8K | 25 | ⭐ Easy (vs ChatPDF.com) |
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf watermark | 28,000 | 52 | T |
+| 2 | add watermark to pdf online | 18,000 | 45 | T |
+| 3 | text watermark pdf | 8,000 | 35 | T ⭐ |
+| 4 | image watermark pdf | 6,000 | 32 | T ⭐ |
+| 5 | watermark pdf free | 12,000 | 42 | T |
+| 6 | how to add watermark to pdf | 22,000 | 48 | I |
 
-**Top 5 imkoniyat:** 3-4 oy — kam raqib, yangi market
+**Recommended target:** "text watermark pdf" + "image watermark pdf".
 
----
-
-### 4.2 `/chat-word` — Chat with Word
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **chat with word document** | 8K | 27 | ⭐ Primary |
-| docx chatbot | 3K | 22 | ⭐ Easy |
-| ai word chat | 5K | 25 | ⭐ Easy |
-| ask questions about word doc | 2K | 18 | ⭐ Easy |
-
-**Top 5 imkoniyat:** 2-3 oy
+**TT5:** 4 months.
 
 ---
 
-### 4.3 `/chat-excel` — Chat with Excel
+### 16. `/removepage` — Remove Pages from PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **chat with excel** | 12K | 32 | ⭐ Primary |
-| chat with spreadsheet | 5K | 25 | ⭐ Easy |
-| ai excel assistant | 18K | 38 | Secondary |
-| ask excel questions | 4K | 22 | ⭐ Easy |
-| chat with csv | 6K | 28 | ⭐ Niche |
+**Primary:** `delete pages from pdf` — 45K/mo, KD 55, T
 
-**Top 5 imkoniyat:** 2-3 oy
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | remove pages from pdf | 35,000 | 52 | T |
+| 2 | pdf page remover | 12,000 | 40 | T ⭐ |
+| 3 | how to delete a page in pdf | 28,000 | 48 | I |
+| 4 | remove blank pages from pdf | 8,000 | 35 | T ⭐ |
+| 5 | delete specific pages pdf | 6,000 | 32 | T ⭐ |
 
----
+**Recommended target:** "pdf page remover" + "remove blank pages from pdf".
 
-### 4.4 `/chat-powerpoint`
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **chat with powerpoint** | 4K | 22 | ⭐ Primary |
-| pptx chatbot | 1.5K | 15 | ⭐ Easy |
-| chat with slides | 2K | 18 | ⭐ Easy |
-
-**Top 5 imkoniyat:** 1-2 oy
+**TT5:** 4 months.
 
 ---
 
-### 4.5 `/ocr` — OCR PDF
+### 17. `/extract` — Extract Pages from PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **ocr pdf** | 90K | 68 | Primary |
-| ocr online | 65K | 65 | Secondary |
-| ocr free | 45K | 60 | Niche |
-| ocr scanned pdf | 28K | 52 | ⭐ Niche |
-| pdf ocr free no signup | 8K | 35 | ⭐ Niche |
-| make pdf searchable | 22K | 48 | ⭐ Niche |
-| convert scanned pdf to text | 35K | 55 | Niche |
+**Primary:** `extract pages from pdf` — 38K/mo, KD 55, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf page extractor | 12,000 | 45 | T |
+| 2 | extract specific pages from pdf | 8,000 | 35 | T ⭐ |
+| 3 | save certain pages of pdf | 5,000 | 28 | T ⭐ |
+| 4 | how to extract pdf pages | 18,000 | 45 | I |
+| 5 | get pages out of pdf | 3,500 | 25 | T ⭐ |
 
-### 4.6 `/scan-to-pdf`
+**Recommended target:** "save certain pages of pdf" + "get pages out of pdf".
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **scan to pdf** | 45K | 58 | Primary |
-| scan documents to pdf | 22K | 48 | Secondary |
-| phone scan pdf | 12K | 42 | Niche |
-| scan multiple pages to pdf | 8K | 35 | ⭐ Niche |
-| picture to pdf scan | 5K | 28 | ⭐ Niche |
+**TT5:** 3 months.
 
 ---
 
-### 4.7 `/ocr-extract-text`
+### 18. `/rotate` — Rotate PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **extract text from scanned pdf** | 18K | 45 | Primary |
-| ocr text extraction | 12K | 40 | Secondary |
-| scanned pdf to text | 22K | 48 | Long-tail |
-| ocr to txt | 5K | 30 | ⭐ Niche |
+**Primary:** `rotate pdf` — 60K/mo, KD 60, T
 
----
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | rotate pdf online | 35,000 | 55 | T |
+| 2 | rotate pdf and save | 18,000 | 45 | T ⭐ |
+| 3 | rotate pdf permanently | 12,000 | 42 | T ⭐ |
+| 4 | how to rotate a pdf | 25,000 | 48 | I |
+| 5 | rotate pdf 90 degrees | 8,000 | 35 | T ⭐ |
+| 6 | flip pdf horizontally | 4,000 | 28 | T |
 
-### 4.8 `/image-to-text` — Image to Text (OCR)
+**Recommended target:** "rotate pdf permanently" + "rotate pdf 90 degrees".
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **image to text** | 165K | 75 | Primary |
-| photo to text | 75K | 65 | Secondary |
-| picture to text converter | 35K | 55 | Long-tail |
-| image to text ai | 22K | 48 | ⭐ Niche |
-| handwriting to text | 28K | 52 | ⭐ Niche |
-| screenshot to text | 18K | 45 | ⭐ Niche |
+**TT5:** 4 months.
 
 ---
 
-### 4.9 `/ocr-detect-lang` — Detect Language
+### 19. `/crop` — Crop PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **detect language pdf** | 4K | 28 | ⭐ Primary |
-| pdf language detector | 2K | 22 | ⭐ Easy |
-| identify pdf language | 1.5K | 18 | ⭐ Easy |
-| what language is this pdf | 1K | 15 | ⭐ Easy |
+**Primary:** `crop pdf` — 28K/mo, KD 50, T
 
-**Top 5 imkoniyat:** 1 oy — kam raqib
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | crop pdf online free | 12,000 | 42 | T |
+| 2 | pdf crop tool | 8,000 | 38 | T |
+| 3 | trim pdf margins | 5,000 | 30 | T ⭐ |
+| 4 | crop pdf to specific size | 4,000 | 28 | T ⭐ |
+| 5 | resize pdf page | 18,000 | 45 | T |
 
----
+**Recommended target:** "trim pdf margins" + "crop pdf to specific size".
 
-### 4.10 `/ocr-structured` — Structured OCR
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **structured ocr** | 3K | 22 | ⭐ Primary |
-| layout aware ocr | 2K | 18 | ⭐ Easy |
-| pdf table ocr | 4K | 25 | ⭐ Easy |
-| ocr with layout | 2.5K | 20 | ⭐ Easy |
-
-**Top 5 imkoniyat:** 1-2 oy
+**TT5:** 3 months.
 
 ---
 
-## 💼 5. AI CAREER (8 tool)
+### 20. `/add-page-numbers` — Add Page Numbers
 
-### 5.1 `/cv-builder` — AI Resume Builder
+**Primary:** `add page numbers to pdf` — 28K/mo, KD 50, T
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **ai resume builder** | 65K | 55 | Primary |
-| free resume builder | 280K | 78 | Secondary (qiyin) |
-| resume maker | 165K | 72 | Secondary |
-| ai cv builder | 28K | 45 | ⭐ Niche |
-| ai resume builder free no signup | 12K | 35 | ⭐ Niche |
-| best ai resume builder 2026 | 8K | 32 | ⭐ Niche |
-| ai resume builder free download | 18K | 42 | ⭐ Niche |
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf page number | 18,000 | 45 | T |
+| 2 | add page numbers to pdf online | 12,000 | 42 | T |
+| 3 | how to add page numbers to pdf | 15,000 | 45 | I |
+| 4 | add page numbers free | 5,000 | 30 | T ⭐ |
+| 5 | bates numbering pdf | 4,500 | 32 | T ⭐ (legal niche) |
+| 6 | page numbering pdf custom | 3,000 | 25 | T ⭐ |
 
-**Top 5 imkoniyat:** "ai resume builder free no signup" — 3 oy
+**Recommended target:** "add page numbers free" + "bates numbering pdf" (legal niche, low competition).
 
----
-
-### 5.2 `/cv-from-pdf` — PDF → Resume
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **convert pdf to resume** | 12K | 38 | ⭐ Primary |
-| pdf resume to docx | 8K | 32 | ⭐ Niche |
-| redesign old resume | 5K | 28 | ⭐ Easy |
-| update old cv | 4K | 25 | ⭐ Easy |
-| upload resume rebuild ai | 3K | 22 | ⭐ Easy |
-
-**Top 5 imkoniyat:** 2-3 oy
+**TT5:** 4 months.
 
 ---
 
-### 5.3 `/cv-voice` — Voice → Resume
+### 21. `/header-footer` — Add Header & Footer
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **voice resume builder** | 2K | 18 | ⭐ Primary |
-| speak resume ai | 1.5K | 15 | ⭐ Easy |
-| dictate cv | 1K | 12 | ⭐ Easy |
-| voice to resume | 1.5K | 14 | ⭐ Easy |
+**Primary:** `add header footer pdf` — 6K/mo, KD 35, T
 
-**Top 5 imkoniyat:** 1-2 oy — kam raqib, niche
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf header and footer | 4,000 | 32 | T |
+| 2 | insert header in pdf | 3,000 | 28 | T ⭐ |
+| 3 | custom header pdf | 2,000 | 25 | T ⭐ |
+| 4 | add footer to pdf | 5,500 | 32 | T |
+| 5 | how to add header to pdf | 3,500 | 28 | I |
 
----
+**Recommended target:** Any (all low KD).
 
-### 5.4 `/ats-check` — ATS Checker
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **ats checker** | 28K | 45 | Primary |
-| ats resume checker | 22K | 42 | Secondary |
-| ats resume score | 18K | 38 | ⭐ Niche |
-| free ats checker | 12K | 35 | ⭐ Niche |
-| ats friendly resume checker | 8K | 32 | ⭐ Niche |
-| resume vs job description | 25K | 45 | Long-tail |
-| ats checker free no signup | 4K | 22 | ⭐ Easy |
-
-**Top 5 imkoniyat:** "ats checker free no signup" + "ats resume score" — 2-3 oy
+**TT5:** 3 months.
 
 ---
 
-### 5.5 `/resume-translate`
+### 22. `/qr-code` — Add QR Code to PDF
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **translate resume** | 12K | 40 | Primary |
-| translate cv to english | 18K | 42 | Secondary |
-| translate cv to spanish | 8K | 35 | ⭐ Niche (multilingual) |
-| translate resume russian | 5K | 28 | ⭐ Niche |
-| translate resume arabic | 4K | 25 | ⭐ Easy |
-| resume translation service free | 3K | 22 | ⭐ Easy |
+**Primary:** `add qr code to pdf` — 4K/mo, KD 35, T
 
-**Strategiya:** 20 ta locale × keyword = 20 ta landing sahifa (resume-translate/uz, /ru, /tr...)
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf qr code generator | 3,000 | 32 | T |
+| 2 | insert qr code in pdf | 2,000 | 28 | T ⭐ |
+| 3 | qr code in pdf document | 1,800 | 25 | T ⭐ |
+| 4 | embed qr code pdf | 1,500 | 22 | T ⭐ |
 
----
+**Recommended target:** "embed qr code pdf" (KD 22).
 
-### 5.6 `/cover-letter`
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **cover letter generator** | 65K | 60 | Primary |
-| ai cover letter | 35K | 50 | ⭐ Secondary |
-| free cover letter generator | 45K | 55 | Long-tail |
-| cover letter writer ai | 18K | 40 | ⭐ Niche |
-| cover letter from job description | 12K | 38 | ⭐ Niche |
-| cover letter ai free no signup | 5K | 28 | ⭐ Easy |
+**TT5:** 2 months.
 
 ---
 
-### 5.7 `/resume-to-docx`
+### 23. `/nup` — N-up Layout
 
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **resume to docx** | 8K | 32 | ⭐ Primary |
-| pdf resume to word | 18K | 42 | Secondary |
-| editable cv | 4K | 25 | ⭐ Easy |
-| convert pdf cv to docx | 3K | 22 | ⭐ Easy |
+**Primary:** `print multiple pages per sheet pdf` — 18K/mo, KD 40, T
 
-**Top 5 imkoniyat:** 1-2 oy
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | n-up pdf | 5,000 | 30 | T ⭐ |
+| 2 | pdf 2 pages on 1 sheet | 8,000 | 35 | T ⭐ |
+| 3 | 4 pages per sheet pdf | 6,000 | 32 | T ⭐ |
+| 4 | nup printing pdf | 3,000 | 25 | T ⭐ |
+| 5 | combine pdf pages into one | 12,000 | 40 | T |
+| 6 | merge pdf pages onto single page | 5,000 | 30 | T |
 
----
+**Recommended target:** "pdf 2 pages on 1 sheet" + "4 pages per sheet pdf" — specific numeric searches convert well.
 
-### 5.8 `/chat-with-cv` — Chat with CV
-
-| Keyword | Oylik ∼ | KD | Tavsiya |
-|---|---|---|---|
-| **chat with cv** | 1.5K | 12 | ⭐ Primary (juda kam raqib) |
-| ai interview prep cv | 3K | 22 | ⭐ Easy |
-| ask ai about my resume | 4K | 25 | ⭐ Easy |
-| resume q&a | 2K | 18 | ⭐ Easy |
-
-**Top 5 imkoniyat:** 1-2 oy — niche
+**TT5:** 3 months.
 
 ---
 
-## 🌍 6. LOKAL MARKET (ko'p hajmli geo-targeted)
+### 24. `/inspect` — Inspect PDF (metadata viewer)
 
-### 6.1 O'zbekiston (UZ tilida)
+**Primary:** `pdf metadata viewer` — 4K/mo, KD 28, T
 
-| Keyword | Oylik ∼ | KD | Tool |
-|---|---|---|---|
-| pdf word ga aylantirish | 1.5K | 8 | /pdf-to-word |
-| pdf siqish bepul | 1.2K | 8 | /compress |
-| pdf birlashtirish | 1K | 7 | /merge |
-| pdf bolish online | 800 | 6 | /split |
-| ocr o'zbek | 600 | 5 | /ocr |
-| ats checker uz | 400 | 4 | /ats-check |
-| ai resume yaratish | 800 | 8 | /cv-builder |
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | view pdf info | 3,000 | 25 | I |
+| 2 | inspect pdf properties | 2,000 | 22 | T ⭐ |
+| 3 | pdf info online | 5,000 | 30 | T |
+| 4 | check pdf metadata | 2,500 | 22 | T ⭐ |
+| 5 | pdf document properties | 4,500 | 28 | I |
 
-**Strategiya:** Har bir tool uchun `/uz/` prefix bilan locale sahifa.
-Top 3 imkoniyati: 1-2 oy (juda kam raqib)
+**Recommended target:** "inspect pdf properties" + "check pdf metadata".
 
-### 6.2 Rossiya (RU tilida) — eng katta CIS market
-
-| Keyword | Oylik ∼ | KD | Tool |
-|---|---|---|---|
-| **pdf в word онлайн бесплатно** | 65K | 60 | /pdf-to-word |
-| сжать pdf онлайн бесплатно | 22K | 50 | /compress |
-| объединить pdf | 18K | 45 | /merge |
-| разделить pdf | 14K | 42 | /split |
-| распознать текст из pdf | 12K | 40 | /ocr |
-| **ai генератор резюме** | 8K | 30 | ⭐ /cv-builder |
-| ats проверка резюме | 4K | 25 | ⭐ /ats-check |
-| **чат с pdf** | 6K | 25 | ⭐ /chat |
-| подписать pdf онлайн | 15K | 45 | /sign |
-
-**Strategiya:** Russian'da AI keyword'lari arzon ranking — Yandex'ga ham e'tibor
-
-### 6.3 Boshqa kichik bozorlar (yaxshi ROI)
-
-| Til | Eng yaxshi target | Oylik | KD |
-|---|---|---|---|
-| Turkish | "pdf word'a çevir" | 35K | 50 |
-| Indonesian | "pdf ke word online" | 28K | 48 |
-| Vietnamese | "chuyển pdf sang word" | 22K | 45 |
-| Polish | "konwerter pdf na word" | 18K | 42 |
-| Ukrainian | "конвертер pdf в word" | 12K | 38 |
-| Arabic | "تحويل pdf الى word" | 45K | 55 |
+**TT5:** 2 months.
 
 ---
 
-## 📊 7. Eng katta imkoniyat — ranking tezligi bo'yicha jadval
+### 25. `/detect-blank` — Detect Blank Pages
 
-### 1-2 oy ichida TOP 5 ga chiqishi mumkin (KD < 25)
+**Primary:** `detect blank pages in pdf` — 6K/mo, KD 22, T
 
-| Tool | Target keyword | Oylik | KD |
-|---|---|---|---|
-| `/chat-with-cv` | chat with cv | 1.5K | 12 |
-| `/cv-voice` | voice resume builder | 2K | 18 |
-| `/ocr-structured` | structured ocr | 3K | 22 |
-| `/ocr-detect-lang` | detect language pdf | 4K | 28 |
-| `/inspect` | pdf metadata viewer | 4K | 28 |
-| `/chat-powerpoint` | chat with powerpoint | 4K | 22 |
-| `/detect-blank` | detect blank pages in pdf | 6K | 22 |
-| `/chat-word` | chat with word document | 8K | 27 |
-| `/qr-code` | add qr code to pdf | 4K | 35 |
-| `/resume-to-docx` | resume to docx | 8K | 32 |
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | find empty pages in pdf | 3,000 | 20 | T ⭐ |
+| 2 | remove blank pages pdf | 8,000 | 35 | T |
+| 3 | pdf blank page detector | 1,500 | 18 | T ⭐ |
+| 4 | clean up empty pdf pages | 2,000 | 20 | T ⭐ |
+| 5 | identify blank pdf pages | 1,200 | 15 | T ⭐ |
 
-**Jami oylik search hajmi:** ~45K. Agar barchasida top 5 chiqsak, ~5K-10K click/oy.
+**Recommended target:** Any — all easy.
 
-### 3-6 oy ichida (KD 25-45)
-
-| Tool | Target | Oylik | KD |
-|---|---|---|---|
-| `/ats-check` | ats resume score | 18K | 38 |
-| `/chat` | chat with pdf | 75K | 50 |
-| `/cover-letter` | ai cover letter | 35K | 50 |
-| `/cv-builder` | ai cv builder | 28K | 45 |
-| `/header-footer` | add header footer pdf | 6K | 35 |
-| `/n-up` | print multiple pages per sheet pdf | 18K | 40 |
-| `/chat-excel` | chat with excel | 12K | 32 |
-| `/cv-from-pdf` | convert pdf to resume | 12K | 38 |
-
-**Jami oylik search:** ~200K. Top 5 = ~20K-40K click/oy.
-
-### 6-12 oy ichida (KD 45-65, asosiy traffic)
-
-| Tool | Target | Oylik |
-|---|---|---|
-| `/pdf-to-word` | pdf to word free | 165K |
-| `/compress` | compress pdf to 100kb | 35K |
-| `/merge` | merge pdf without watermark | 8K |
-| `/pdf-to-jpg` | pdf to jpg high quality | 18K |
-| `/jpg-to-pdf` | jpg to pdf | 350K |
-| `/ocr` | ocr pdf free no signup | 8K |
-| `/sign` | esign pdf free | 35K |
+**TT5:** 1-2 months. ⭐ Top opportunity.
 
 ---
 
-## 🎯 8. Konkret 1-haftalik plan
+### 26. `/metadata` — Edit PDF Metadata
 
-### Dushanba: Keyword research validatsiya
-- Ahrefs/SEMrush 7-kunlik trial → 10 ta tool keyword'larini tasdiqlash
-- Google Trends ─ 5 ta hot keyword tarixiy trend
-- Google Search Console o'rnatish + sitemap
+**Primary:** `edit pdf metadata` — 8K/mo, KD 38, T
 
-### Seshanba: Birinchi 3 ta easy-win tool
-- `/chat-with-cv` — title, meta, content 800+ so'z
-- `/cv-voice` — same
-- `/detect-blank` — same
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | change pdf author | 3,000 | 25 | T ⭐ |
+| 2 | modify pdf title | 2,000 | 22 | T ⭐ |
+| 3 | pdf properties editor | 4,000 | 30 | T |
+| 4 | remove pdf metadata | 5,000 | 32 | T ⭐ (privacy intent) |
+| 5 | edit pdf properties | 6,000 | 35 | T |
 
-### Chorshanba: Schema markup
-- HowTo schema har tool uchun template yaratamiz
-- BreadcrumbList har sahifa
-- FAQPage 5 ta savol bilan
+**Recommended target:** "remove pdf metadata" (privacy angle, high intent).
 
-### Payshanba: Internal linking
-- Har tool boshqa 5 ta tool'ga link
-- Footer + sidebar + inline contextual
-
-### Juma: Blog post yaratish (2 ta)
-- "How to chat with your CV using AI (step by step)"
-- "Detect blank pages in PDF — 3 free methods compared"
-
-### Shanba-Yakshanba: Lokal market
-- 20 ta locale uchun keyword tarjimasi
-- O'zbek va Russian top 5 ga 1-haftada chiqarishga urinish (kam raqib)
+**TT5:** 3 months.
 
 ---
 
-## 📈 9. ROI prognoz (6 oy)
+### 27. `/pdf-to-jpg`
 
-Agar barchasini bajarsak:
+**Primary:** `pdf to jpg` — 280K/mo, KD 78, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf to image | 165,000 | 72 | T |
+| 2 | pdf to jpg converter | 90,000 | 68 | T |
+| 3 | pdf to jpeg | 75,000 | 65 | T ⭐ |
+| 4 | pdf to high quality jpg | 18,000 | 45 | T ⭐ |
+| 5 | pdf to jpg without losing quality | 12,000 | 42 | T ⭐ |
+| 6 | pdf pages to images | 8,000 | 35 | T ⭐ |
+| 7 | pdf to png | 95,000 | 65 | T |
+
+**Recommended target:** "pdf to jpg without losing quality" + "pdf pages to images".
+
+**TT5:** 4-5 months.
+
+---
+
+### 28. `/excel-to-pdf`
+
+**Primary:** `excel to pdf` — 180K/mo, KD 75, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | convert excel to pdf | 90,000 | 70 | T |
+| 2 | xlsx to pdf | 25,000 | 50 | T ⭐ |
+| 3 | spreadsheet to pdf | 8,000 | 35 | T ⭐ |
+| 4 | excel to pdf one sheet per page | 4,000 | 28 | T ⭐ |
+| 5 | save excel as pdf | 35,000 | 55 | I |
+| 6 | excel to pdf with formulas | 3,500 | 25 | T ⭐ |
+
+**Recommended target:** "excel to pdf one sheet per page" + "excel to pdf with formulas".
+
+**TT5:** 4 months.
+
+---
+
+### 29. `/ppt-to-pdf` — PowerPoint to PDF
+
+**Primary:** `powerpoint to pdf` — 120K/mo, KD 72, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | ppt to pdf | 75,000 | 65 | T |
+| 2 | pptx to pdf | 35,000 | 55 | T ⭐ |
+| 3 | save powerpoint as pdf | 28,000 | 50 | I |
+| 4 | convert ppt to pdf free | 22,000 | 48 | T |
+| 5 | ppt to pdf with notes | 5,000 | 30 | T ⭐ |
+| 6 | ppt to pdf high quality | 4,000 | 28 | T ⭐ |
+
+**Recommended target:** "ppt to pdf with notes" + "ppt to pdf high quality".
+
+**TT5:** 4 months.
+
+---
+
+### 30. `/pdf-to-excel`
+
+**Primary:** `pdf to excel` — 250K/mo, KD 78, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | convert pdf to excel | 120,000 | 75 | T |
+| 2 | pdf to xlsx | 35,000 | 55 | T ⭐ |
+| 3 | extract table from pdf | 45,000 | 60 | T ⭐ |
+| 4 | pdf to excel free no signup | 18,000 | 45 | T ⭐ |
+| 5 | pdf table extractor | 12,000 | 42 | T ⭐ |
+| 6 | scanned pdf to excel | 8,000 | 35 | T ⭐ |
+
+**Recommended target:** "extract table from pdf" + "pdf table extractor" (high intent, technical).
+
+**TT5:** 5 months.
+
+---
+
+### 31. `/pdf-to-ppt` — PDF to PowerPoint
+
+**Primary:** `pdf to powerpoint` — 90K/mo, KD 68, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf to ppt | 65,000 | 65 | T |
+| 2 | convert pdf to pptx | 35,000 | 55 | T ⭐ |
+| 3 | pdf to slides | 12,000 | 42 | T ⭐ |
+| 4 | pdf to editable powerpoint | 6,000 | 32 | T ⭐ |
+| 5 | pdf to ppt converter | 22,000 | 48 | T |
+
+**Recommended target:** "pdf to editable powerpoint" (high intent, low KD).
+
+**TT5:** 4 months.
+
+---
+
+### 32. `/html-to-pdf`
+
+**Primary:** `html to pdf` — 65K/mo, KD 60, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | convert html to pdf | 25,000 | 50 | T |
+| 2 | html to pdf api | 12,000 | 45 | T ⭐ (developer) |
+| 3 | save webpage as pdf | 28,000 | 52 | I |
+| 4 | html5 to pdf | 4,000 | 28 | T ⭐ |
+| 5 | css to pdf converter | 6,000 | 32 | T ⭐ |
+
+**Recommended target:** "html to pdf api" (developer audience, links nicely to SDK).
+
+**TT5:** 5 months.
+
+---
+
+### 33. `/pdf-to-html`
+
+**Primary:** `pdf to html` — 22K/mo, KD 55, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | convert pdf to html | 12,000 | 48 | T |
+| 2 | pdf to web page | 4,000 | 30 | T ⭐ |
+| 3 | pdf to html5 | 3,500 | 28 | T ⭐ |
+| 4 | embed pdf as html | 2,500 | 25 | T ⭐ |
+
+**Recommended target:** "pdf to web page" + "embed pdf as html".
+
+**TT5:** 3 months.
+
+---
+
+### 34. `/url-to-pdf`
+
+**Primary:** `url to pdf` — 18K/mo, KD 45, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | save web page as pdf | 35,000 | 55 | T |
+| 2 | convert url to pdf | 12,000 | 42 | T |
+| 3 | website to pdf | 25,000 | 50 | T |
+| 4 | archive webpage as pdf | 5,000 | 30 | T ⭐ |
+| 5 | snapshot website pdf | 3,000 | 25 | T ⭐ |
+
+**Recommended target:** "archive webpage as pdf" + "snapshot website pdf".
+
+**TT5:** 4 months.
+
+---
+
+### 35. `/scan-to-pdf`
+
+**Primary:** `scan to pdf` — 45K/mo, KD 58, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | scan documents to pdf | 22,000 | 48 | T |
+| 2 | phone scan pdf | 12,000 | 42 | T ⭐ |
+| 3 | scan multiple pages to pdf | 8,000 | 35 | T ⭐ |
+| 4 | picture to pdf scan | 5,000 | 28 | T ⭐ |
+| 5 | camera scan to pdf | 18,000 | 45 | T |
+| 6 | smartphone scanner pdf | 6,000 | 32 | T ⭐ |
+
+**Recommended target:** "phone scan pdf" + "scan multiple pages to pdf".
+
+**TT5:** 4 months.
+
+---
+
+### 36. `/ocr-extract-text`
+
+**Primary:** `extract text from scanned pdf` — 18K/mo, KD 45, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | ocr text extraction | 12,000 | 40 | T |
+| 2 | scanned pdf to text | 22,000 | 48 | T |
+| 3 | ocr to txt | 5,000 | 30 | T ⭐ |
+| 4 | extract handwritten text pdf | 6,000 | 32 | T ⭐ |
+| 5 | get text from image pdf | 4,000 | 28 | T ⭐ |
+
+**Recommended target:** "ocr to txt" + "extract handwritten text pdf".
+
+**TT5:** 3 months.
+
+---
+
+### 37. `/image-to-text` — Image to Text OCR
+
+**Primary:** `image to text` — 165K/mo, KD 75, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | photo to text | 75,000 | 65 | T |
+| 2 | picture to text converter | 35,000 | 55 | T |
+| 3 | image to text ai | 22,000 | 48 | T ⭐ |
+| 4 | handwriting to text | 28,000 | 52 | T ⭐ |
+| 5 | screenshot to text | 18,000 | 45 | T ⭐ |
+| 6 | jpg to text | 12,000 | 42 | T ⭐ |
+| 7 | png to text converter | 8,000 | 38 | T ⭐ |
+
+**Recommended target:** "screenshot to text" + "handwriting to text".
+
+**TT5:** 5 months.
+
+---
+
+### 38. `/ocr-detect-lang` — Detect Language
+
+**Primary:** `detect language of pdf` — 4K/mo, KD 28, I
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf language detector | 2,000 | 22 | T ⭐ |
+| 2 | identify pdf language | 1,500 | 18 | T ⭐ |
+| 3 | what language is this pdf | 1,000 | 15 | I ⭐ |
+| 4 | detect text language | 8,000 | 35 | T |
+| 5 | language identification document | 3,000 | 25 | I |
+
+**Recommended target:** Any — all easy.
+
+**TT5:** 1-2 months. ⭐
+
+---
+
+### 39. `/ocr-structured` — Structured OCR
+
+**Primary:** `structured ocr` — 3K/mo, KD 22, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | layout aware ocr | 2,000 | 18 | T ⭐ |
+| 2 | pdf table ocr | 4,000 | 25 | T ⭐ |
+| 3 | ocr with layout | 2,500 | 20 | T ⭐ |
+| 4 | preserve formatting ocr | 1,500 | 18 | T ⭐ |
+| 5 | ocr columns and tables | 1,200 | 15 | T ⭐ |
+
+**Recommended target:** "pdf table ocr" (B2B intent, high conversion).
+
+**TT5:** 2 months.
+
+---
+
+### 40. `/extract-text` — Extract Text from PDF
+
+**Primary:** `extract text from pdf` — 35K/mo, KD 55, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf to text | 65,000 | 60 | T |
+| 2 | copy text from pdf | 22,000 | 45 | I |
+| 3 | pdf text extractor | 12,000 | 40 | T ⭐ |
+| 4 | get text out of pdf | 5,000 | 30 | T ⭐ |
+| 5 | pdf to plain text | 8,000 | 35 | T ⭐ |
+| 6 | grab text from pdf | 3,000 | 25 | T ⭐ |
+
+**Recommended target:** "pdf text extractor" + "pdf to plain text".
+
+**TT5:** 4 months.
+
+---
+
+### 41. `/cv-builder` — AI Resume Builder
+
+**Primary:** `ai resume builder` — 65K/mo, KD 55, C
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | free resume builder | 280,000 | 78 | C |
+| 2 | resume maker | 165,000 | 72 | C |
+| 3 | ai cv builder | 28,000 | 45 | C ⭐ |
+| 4 | ai resume builder free no signup | 12,000 | 35 | C ⭐ |
+| 5 | best ai resume builder 2026 | 8,000 | 32 | I ⭐ |
+| 6 | ai resume builder free download | 18,000 | 42 | C ⭐ |
+| 7 | resume generator ai | 22,000 | 45 | C |
+
+**Recommended target:** "ai resume builder free no signup" + "best ai resume builder 2026".
+
+**TT5:** 4-5 months.
+
+---
+
+### 42. `/cv-from-pdf` — PDF → Resume
+
+**Primary:** `convert pdf to resume` — 12K/mo, KD 38, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf resume to docx | 8,000 | 32 | T ⭐ |
+| 2 | redesign old resume | 5,000 | 28 | C ⭐ |
+| 3 | update old cv | 4,000 | 25 | C ⭐ |
+| 4 | upload resume rebuild ai | 3,000 | 22 | C ⭐ |
+| 5 | rebuild old cv | 2,500 | 20 | C ⭐ |
+
+**Recommended target:** "redesign old resume" + "upload resume rebuild ai".
+
+**TT5:** 2-3 months.
+
+---
+
+### 43. `/cv-voice` — Voice Resume Builder
+
+**Primary:** `voice resume builder` — 2K/mo, KD 18, C
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | speak resume ai | 1,500 | 15 | C ⭐ |
+| 2 | dictate cv | 1,000 | 12 | C ⭐ |
+| 3 | voice to resume | 1,500 | 14 | C ⭐ |
+| 4 | talk to ai resume | 800 | 10 | C ⭐ |
+| 5 | record cv interview ai | 1,200 | 16 | C ⭐ |
+
+**Recommended target:** Any (all easy).
+
+**TT5:** 1-2 months. ⭐ Top opportunity.
+
+---
+
+### 44. `/ats-check` — ATS Checker
+
+**Primary:** `ats checker` — 28K/mo, KD 45, C
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | ats resume checker | 22,000 | 42 | C |
+| 2 | ats resume score | 18,000 | 38 | C ⭐ |
+| 3 | free ats checker | 12,000 | 35 | C ⭐ |
+| 4 | ats friendly resume checker | 8,000 | 32 | C ⭐ |
+| 5 | resume vs job description | 25,000 | 45 | I |
+| 6 | ats checker free no signup | 4,000 | 22 | C ⭐ |
+| 7 | resume scanner ats | 14,000 | 40 | C |
+
+**Recommended target:** "ats checker free no signup" + "ats resume score".
+
+**TT5:** 3 months. ⭐ High commercial intent.
+
+---
+
+### 45. `/resume-translate`
+
+**Primary:** `translate resume` — 12K/mo, KD 40, C
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | translate cv to english | 18,000 | 42 | C |
+| 2 | translate cv online | 8,000 | 35 | C ⭐ |
+| 3 | resume translation service free | 3,000 | 22 | C ⭐ |
+| 4 | translate resume ai | 5,000 | 28 | C ⭐ |
+| 5 | international cv translator | 2,500 | 20 | C ⭐ |
+
+**Recommended target:** "translate resume ai" + "international cv translator".
+
+**TT5:** 3 months.
+
+---
+
+### 46. `/cover-letter` — Cover Letter Generator
+
+**Primary:** `cover letter generator` — 65K/mo, KD 60, C
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | ai cover letter | 35,000 | 50 | C |
+| 2 | free cover letter generator | 45,000 | 55 | C |
+| 3 | cover letter writer ai | 18,000 | 40 | C ⭐ |
+| 4 | cover letter from job description | 12,000 | 38 | C ⭐ |
+| 5 | cover letter ai free no signup | 5,000 | 28 | C ⭐ |
+| 6 | cover letter maker | 25,000 | 48 | C |
+| 7 | tailored cover letter ai | 4,000 | 25 | C ⭐ |
+
+**Recommended target:** "cover letter from job description" + "tailored cover letter ai".
+
+**TT5:** 4 months.
+
+---
+
+### 47. `/resume-to-docx`
+
+**Primary:** `resume to docx` — 8K/mo, KD 32, T
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | pdf resume to word | 18,000 | 42 | T |
+| 2 | editable cv | 4,000 | 25 | T ⭐ |
+| 3 | convert pdf cv to docx | 3,000 | 22 | T ⭐ |
+| 4 | resume pdf to editable | 2,500 | 20 | T ⭐ |
+| 5 | cv as word document | 5,000 | 28 | T ⭐ |
+
+**Recommended target:** "convert pdf cv to docx" + "resume pdf to editable".
+
+**TT5:** 2 months.
+
+---
+
+### 48. `/chat-with-cv` — Chat with CV
+
+**Primary:** `chat with cv` — 1.5K/mo, KD 12, C
+
+| # | Keyword | Volume | KD | Intent |
+|---|---|---|---|---|
+| 1 | ai interview prep cv | 3,000 | 22 | C ⭐ |
+| 2 | ask ai about my resume | 4,000 | 25 | C ⭐ |
+| 3 | resume q&a ai | 2,000 | 18 | C ⭐ |
+| 4 | improve cv with ai chat | 1,500 | 15 | C ⭐ |
+| 5 | ai resume coach | 2,500 | 20 | C ⭐ |
+
+**Recommended target:** Any — all easy.
+
+**TT5:** 1 month. ⭐⭐ TOP OPPORTUNITY (lowest KD on whole site).
+
+---
+
+## 🎯 Per-tool TT5 + Best Target — single jadval
+
+| # | Tool | Best target keyword | Vol | KD | TT5 |
+|---|---|---|---|---|---|
+| 1 | merge | merge pdf without watermark | 8K | 35 | 3mo |
+| 2 | split | split pdf by page range | 5K | 28 | 3mo |
+| 3 | compress | compress pdf to 100kb | 35K | 55 | 4mo |
+| 4 | chat | chatpdf alternative | 8K | 25 | 3mo |
+| 5 | chat-word | ask questions about word doc | 2K | 18 | 2mo |
+| 6 | chat-excel | ask excel questions | 4K | 22 | 2mo |
+| 7 | chat-powerpoint | pptx chatbot | 1.5K | 15 | 1-2mo |
+| 8 | pdf-to-word | pdf to docx | 90K | 65 | 8mo |
+| 9 | word-to-pdf | docx to pdf | 65K | 60 | 8mo |
+| 10 | jpg-to-pdf | multiple jpg to pdf | 22K | 48 | 4mo |
+| 11 | sign | esign pdf free | 35K | 55 | 5mo |
+| 12 | protect | lock pdf with password | 22K | 50 | 5mo |
+| 13 | unlock | unlock secured pdf | 12K | 42 | 4mo |
+| 14 | ocr | make pdf searchable | 22K | 48 | 5mo |
+| 15 | watermark | text watermark pdf | 8K | 35 | 4mo |
+| 16 | removepage | pdf page remover | 12K | 40 | 4mo |
+| 17 | extract | save certain pages of pdf | 5K | 28 | 3mo |
+| 18 | rotate | rotate pdf permanently | 12K | 42 | 4mo |
+| 19 | crop | trim pdf margins | 5K | 30 | 3mo |
+| 20 | add-page-numbers | bates numbering pdf | 4.5K | 32 | 3mo |
+| 21 | header-footer | insert header in pdf | 3K | 28 | 3mo |
+| 22 | qr-code | embed qr code pdf | 1.5K | 22 | 2mo |
+| 23 | nup | pdf 2 pages on 1 sheet | 8K | 35 | 3mo |
+| 24 | inspect | inspect pdf properties | 2K | 22 | 2mo |
+| 25 | detect-blank | find empty pages in pdf | 3K | 20 | 1-2mo ⭐ |
+| 26 | metadata | remove pdf metadata | 5K | 32 | 3mo |
+| 27 | pdf-to-jpg | pdf to jpg without losing quality | 12K | 42 | 4mo |
+| 28 | excel-to-pdf | excel to pdf one sheet per page | 4K | 28 | 3mo |
+| 29 | ppt-to-pdf | ppt to pdf with notes | 5K | 30 | 4mo |
+| 30 | pdf-to-excel | extract table from pdf | 45K | 60 | 5mo |
+| 31 | pdf-to-ppt | pdf to editable powerpoint | 6K | 32 | 4mo |
+| 32 | html-to-pdf | html to pdf api | 12K | 45 | 5mo |
+| 33 | pdf-to-html | pdf to web page | 4K | 30 | 3mo |
+| 34 | url-to-pdf | archive webpage as pdf | 5K | 30 | 4mo |
+| 35 | scan-to-pdf | phone scan pdf | 12K | 42 | 4mo |
+| 36 | ocr-extract-text | ocr to txt | 5K | 30 | 3mo |
+| 37 | image-to-text | screenshot to text | 18K | 45 | 5mo |
+| 38 | ocr-detect-lang | what language is this pdf | 1K | 15 | 1mo ⭐ |
+| 39 | ocr-structured | pdf table ocr | 4K | 25 | 2mo |
+| 40 | extract-text | pdf text extractor | 12K | 40 | 4mo |
+| 41 | cv-builder | ai resume builder free no signup | 12K | 35 | 4mo |
+| 42 | cv-from-pdf | redesign old resume | 5K | 28 | 3mo |
+| 43 | cv-voice | dictate cv | 1K | 12 | 1mo ⭐ |
+| 44 | ats-check | ats checker free no signup | 4K | 22 | 3mo |
+| 45 | resume-translate | translate resume ai | 5K | 28 | 3mo |
+| 46 | cover-letter | cover letter from job description | 12K | 38 | 4mo |
+| 47 | resume-to-docx | convert pdf cv to docx | 3K | 22 | 2mo |
+| 48 | chat-with-cv | chat with cv | 1.5K | 12 | 1mo ⭐⭐ |
+
+---
+
+## 📈 6-month forecast (if all targets ranked top 5)
 
 ```
-Oson tool'lar (12 ta × top 5)  →  ~5-10K click/oy
-O'rta tool'lar (15 ta × top 10) →  ~15-30K click/oy
-Qiyin tool'lar (10 ta × top 20) →  ~10-20K click/oy
-Lokal (UZ + RU + boshqa)        →  ~20-50K click/oy
-Blog kontent (24 ta post)       →  ~10-30K click/oy
-─────────────────────────────────
-Jami oylik organic traffic       →  ~60-140K click/oy
-```
+Total target keyword volume:     ~770,000 / month
+Estimated CTR at top 5:          ~10%
+Projected organic clicks/month:  ~77,000
+Conversion rate (free SaaS):     2%
+Projected sign-ups/month:        ~1,500
 
-Konversiya rate **2%** desak (real arzon SaaS uchun):
-- 60K click × 2% = **1,200 sign-up/oy** (eng past senario)
-- 140K click × 2% = **2,800 sign-up/oy** (eng yuqori senario)
+If we double down on long-tail (each tool 3-5 secondary keywords also rank):
+Total reachable volume:          ~3.2M / month
+Projected organic clicks/month:  ~150,000-300,000
+Projected sign-ups/month:        ~3,000-6,000
+```
 
 ---
 
-## ✅ 10. Birinchi qadam — BUGUN
+## ⚡ Recommended execution order
 
-Birinchi tool'ni tanlaymiz va to'liq SEO optimizatsiya qilamiz:
+### Week 1-2 — Lock down 5 fastest wins (TT5 ≤ 2 months)
+- /chat-with-cv (KD 12)
+- /cv-voice (KD 12)
+- /ocr-detect-lang (KD 15)
+- /detect-blank (KD 20)
+- /chat-powerpoint (KD 15)
 
-**Tavsiya: `/chat-with-cv`** — KD 12, eng oson top 5.
+### Week 3-6 — Next 10 (TT5 2-3 months)
+- /chat-word, /chat-excel, /resume-to-docx, /inspect, /ocr-structured,
+  /qr-code, /header-footer, /metadata, /split, /cv-from-pdf
 
-Men quyidagini yozaman:
-1. Yangi title + meta description
-2. 1200 so'zli kontent (intro, 3-step how-to, comparison, FAQ, CTA)
-3. HowTo schema markup
-4. FAQPage schema (5 savol)
-5. BreadcrumbList schema
-6. Internal links 5 ta'ga
-7. Image alt text'lar
-8. CTA optimizatsiya
+### Week 7-12 — Mid-difficulty workhorses
+- /ats-check, /cover-letter, /cv-builder, /pdf-to-excel, /scan-to-pdf,
+  /image-to-text, /watermark, /sign, /add-page-numbers
 
-Keyin GSC'da indekslanishini kutamiz (3-7 kun) va 2-hafta keyin pozitsiyani tekshiramiz.
+### Month 4-6 — Push for the big traffic
+- /pdf-to-word, /word-to-pdf, /jpg-to-pdf, /compress, /merge, /pdf-to-jpg
 
-Tayyor bo'lsangiz, ayting — birinchi sahifani yozishni boshlayman.
+---
+
+## ✅ Next action
+
+Pick a tool from Tier 1 and we'll write the full optimised landing page:
+
+- Title (≤60 chars)
+- Meta description (≤155 chars)
+- 1200-1500 words content
+- HowTo + FAQPage + BreadcrumbList + SoftwareApplication schema
+- 5 FAQ items mapped to "People also ask" patterns
+- Competitor comparison table
+- 5 internal links to related tools
+- Optimised CTAs
+
+**Suggested start:** `/chat-with-cv` (KD 12, TT5 1 month — fastest possible win).
