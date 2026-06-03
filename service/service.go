@@ -63,6 +63,7 @@ type IServiceManager interface {
 
 	// Phase 1 features.
 	Watermark() WatermarkService
+	Sign() SignService
 	ExtractText() ExtractTextService
 	NUp() NUpService
 	URLToPDF() URLToPDFService
@@ -120,6 +121,7 @@ type service struct {
 	hTMLToPDF              HTMLToPDFService
 
 	watermarkService   WatermarkService
+	signService        SignService
 	extractTextService ExtractTextService
 	nupService         NUpService
 	urlToPDFService    URLToPDFService
@@ -181,6 +183,7 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 		hTMLToPDF:              NewHTMLToPDFService(storage, log, gotClient, resultCache),
 
 		watermarkService:   NewWatermarkService(storage, log),
+		signService:        NewSignService(storage, log),
 		extractTextService: NewExtractTextService(storage, log),
 		nupService:         NewNUpService(storage, log),
 		urlToPDFService:    NewURLToPDFService(storage, log, gotClient),
@@ -341,6 +344,7 @@ func (s *service) HTMLToPDF() HTMLToPDFService {
 }
 
 func (s *service) Watermark() WatermarkService     { return s.watermarkService }
+func (s *service) Sign() SignService                { return s.signService }
 func (s *service) ExtractText() ExtractTextService { return s.extractTextService }
 func (s *service) NUp() NUpService                 { return s.nupService }
 func (s *service) URLToPDF() URLToPDFService       { return s.urlToPDFService }

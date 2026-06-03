@@ -48,6 +48,7 @@ type IStorage interface {
 	// Phase 1 features (PDF_FEATURES.md): watermark, extract-text, n-up,
 	// url-to-pdf, metadata.
 	Watermark() IWatermarkStorage
+	Sign() ISignStorage
 	ExtractText() IExtractTextStorage
 	NUp() INUpStorage
 	URLToPDF() IURLToPDFStorage
@@ -516,6 +517,12 @@ type IWatermarkStorage interface {
 	Create(ctx context.Context, job *models.WatermarkJob) error
 	GetByID(ctx context.Context, id string) (*models.WatermarkJob, error)
 	Update(ctx context.Context, job *models.WatermarkJob) error
+}
+
+type ISignStorage interface {
+	Create(ctx context.Context, job *models.SignJob) error
+	GetByID(ctx context.Context, id string) (*models.SignJob, error)
+	Update(ctx context.Context, job *models.SignJob) error
 }
 
 type IExtractTextStorage interface {

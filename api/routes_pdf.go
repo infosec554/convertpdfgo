@@ -102,6 +102,8 @@ func registerPDFRoutes(r *gin.Engine, h handler.Handler) {
 	// watermark, extract-text, n-up, url-to-pdf, metadata edit.
 	pdf.POST("/watermark", h.CreateWatermarkJob)
 	pdf.GET("/watermark/:id", h.GetWatermarkJob)
+	pdf.POST("/sign", h.CreateSignJob)
+	pdf.GET("/sign/:id", h.GetSignJob)
 	pdf.POST("/extract-text", h.CreateExtractTextJob)
 	pdf.GET("/extract-text/:id", h.GetExtractTextJob)
 	pdf.POST("/nup", h.CreateNUpJob)
