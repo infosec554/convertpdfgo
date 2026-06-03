@@ -43,7 +43,13 @@ func (h Handler) PDFThumbnails(c *gin.Context) {
 	if req.MaxPages <= 0 || req.MaxPages > 500 {
 		req.MaxPages = 200
 	}
-	if req.MaxWidth <= 0 || req.MaxWidth > 400 {
+	// 1600px is enough for a Retina-sharp full-width preview on a 2x
+	// display, with headroom. The previous 400-px cap forced the
+	// Sign PDF preview to upscale a tiny thumbnail at the active-page
+	// position and looked blurry. JPEG quality is bumped to 85 in
+	// the pdftoppm call below so the headroom isn't undone by lossy
+	// compression.
+	if req.MaxWidth <= 0 || req.MaxWidth > 1600 {
 		req.MaxWidth = 180
 	}
 
@@ -84,7 +90,7 @@ func (h Handler) PDFThumbnails(c *gin.Context) {
 	cmd := exec.CommandContext(cmdCtx,
 		"pdftoppm",
 		"-jpeg",
-		"-jpegopt", "quality=70",
+		"-jpegopt", "quality=85",
 		"-scale-to-x", strconv.Itoa(req.MaxWidth),
 		"-scale-to-y", "-1",
 		"-l", strconv.Itoa(last),
