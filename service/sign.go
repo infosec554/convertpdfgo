@@ -8,7 +8,7 @@ import (
 	_ "image/png"
 	"os"
 	"path/filepath"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -35,12 +35,16 @@ func NewSignService(stg storage.IStorage, log logger.ILogger) SignService {
 }
 
 func (s *signService) Create(ctx context.Context, req models.SignRequest, userID *string) (string, error) {
+	pages := strings.TrimSpace(req.Pages)
+	if pages == "" {
+		pages = "all"
+	}
 	job := &models.SignJob{
 		ID:              uuid.NewString(),
 		UserID:          userID,
 		InputFileID:     req.InputFileID,
 		SignatureFileID: req.SignatureFileID,
-		Page:            req.Page,
+		Pages:           pages,
 		X:               req.X,
 		Y:               req.Y,
 		Width:           req.Width,
@@ -109,7 +113,7 @@ func (s *signService) Process(ctx context.Context, jobID string) error {
 		"pos:bl, off:%.1f %.1f, scalefactor:%.4f abs, rot:0, op:1.0",
 		job.X, job.Y, scaleFactor,
 	)
-	pages := []string{strconv.Itoa(job.Page)}
+	pages := pageSelection(job.Pages)
 	conf := relaxedPDFConf()
 
 	if err := api.AddImageWatermarksFile(in.FilePath, outPath, pages, true, sig.FilePath, desc, conf); err != nil {
