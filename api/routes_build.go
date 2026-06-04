@@ -14,5 +14,7 @@ func registerBuildRoutes(r *gin.Engine, h handler.Handler) {
 	{
 		build.POST("/pptx", h.CreatePPTXBuilderJob)
 		build.GET("/pptx/:id", h.GetPPTXBuilderJob)
+		build.POST("/xlsx", h.CreateXLSXBuilderJob)
+		build.GET("/xlsx/:id", h.GetXLSXBuilderJob)
 	}
 }

@@ -45,6 +45,7 @@ const (
 	TaskWatermark   = "pdf:watermark"
 	TaskSign        = "pdf:sign"
 	TaskPPTXBuilder = "build:pptx"
+	TaskXLSXBuilder = "build:xlsx"
 	TaskExtractText = "pdf:extract_text"
 	TaskNUp         = "pdf:nup"
 	TaskURLToPDF    = "pdf:url_to_pdf"

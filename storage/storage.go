@@ -50,6 +50,7 @@ type IStorage interface {
 	Watermark() IWatermarkStorage
 	Sign() ISignStorage
 	PPTXBuilder() IPPTXBuilderStorage
+	XLSXBuilder() IXLSXBuilderStorage
 	ExtractText() IExtractTextStorage
 	NUp() INUpStorage
 	URLToPDF() IURLToPDFStorage
@@ -530,6 +531,12 @@ type IPPTXBuilderStorage interface {
 	Create(ctx context.Context, job *models.PPTXBuilderJob) error
 	GetByID(ctx context.Context, id string) (*models.PPTXBuilderJob, error)
 	Update(ctx context.Context, job *models.PPTXBuilderJob) error
+}
+
+type IXLSXBuilderStorage interface {
+	Create(ctx context.Context, job *models.XLSXBuilderJob) error
+	GetByID(ctx context.Context, id string) (*models.XLSXBuilderJob, error)
+	Update(ctx context.Context, job *models.XLSXBuilderJob) error
 }
 
 type IExtractTextStorage interface {
