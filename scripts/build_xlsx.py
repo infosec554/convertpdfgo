@@ -63,6 +63,16 @@ def cell_to_rc(ref):
     return (row, col)
 
 
+def shift_formula_rows(formula, delta):
+    """Add `delta` to every cell-ref row in a formula string.
+    Used to auto-correct formulas where the LLM forgot the 3-row
+    offset from the title+blank+headers band: =B1*B2 → =B4*B5."""
+    def bump_cell(m):
+        col, row = m.group(1), int(m.group(2)) + delta
+        return f"{col}{row}"
+    return CELL_RE.sub(bump_cell, formula)
+
+
 def evaluate_formula(formula, grid):
     """Resolve =SUM(...), =AVERAGE(...), =MAX(...), =MIN(...), =COUNT(...)
     and arithmetic combos using cells that already have numeric values
@@ -230,10 +240,28 @@ def main():
         # ── pass 2: resolve formulas using the numeric grid.
         # We iterate up to 3 times so formulas that reference other
         # formulas (rare but possible) get resolved transitively.
-        for _ in range(3):
+        # Auto-correction: when a formula evaluates to a zero/None
+        # because its refs hit non-numeric cells in rows 1-3
+        # (title/blank/headers), try shifting every row reference by
+        # +3 — this catches the common LLM mistake of writing
+        # =B1*B2 when the actual data is in B4*B5.
+        title_band_rows = {0, 1, 2}  # 0-indexed rows 1-3 in Excel terms
+        for _ in range(4):
             unresolved = []
             for (rr, cc, formula, fmt) in pending_formulas:
                 v = evaluate_formula(formula, grid)
+                # If the formula evaluated to 0 / None AND it
+                # references the title-band rows, retry with a +3
+                # shift. We only auto-shift once per formula.
+                if (v is None or v == 0) and any(
+                    cell_to_rc(m.group(0))[0] in title_band_rows
+                    for m in CELL_RE.finditer(formula)
+                ):
+                    shifted = shift_formula_rows(formula, 3)
+                    v2 = evaluate_formula(shifted, grid)
+                    if isinstance(v2, (int, float)) and v2 != 0:
+                        formula = shifted
+                        v = v2
                 if isinstance(v, (int, float)):
                     sheet.write_formula(rr, cc, formula, fmt, v)
                     grid[(rr, cc)] = v

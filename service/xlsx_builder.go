@@ -256,6 +256,45 @@ THE SPEC SHAPE:
   ]
 }
 
+** EXCEL ROW INDEXING (READ THIS BEFORE WRITING ANY FORMULA) **
+
+The rendered sheet has this fixed layout:
+  Row 1  = merged title cell  (string — never reference in a formula)
+  Row 2  = blank
+  Row 3  = headers row        (strings — never reference in a formula)
+  Row 4  = FIRST data row
+  Row 5  = second data row
+  Row 6  = third data row
+  ...    = etc
+
+So if your headers list is ["Parameter", "Value"] and your rows[0] is ["Daily Users", 50000], then:
+  - "Daily Users" sits at A4
+  - 50000 sits at B4
+  - "Ops per User" sits at A5
+  - 3 sits at B5
+  - If rows[2] is ["Daily Operations", "=B4*B5"] → that's at row 6, formula references the actual data rows above
+
+WRONG (what amateurs do): "=B1*B2" — that references the title row and a blank cell, evaluates to 0.
+RIGHT: "=B4*B5" — references the actual numeric cells.
+
+When the topic asks for a CALCULATOR-style workbook with derived cells, count the rows MANUALLY:
+  rows[0] is at sheet row 4
+  rows[1] is at sheet row 5
+  rows[N] is at sheet row 4+N
+Every formula MUST use the resolved sheet rows, NOT the index inside rows[].
+
+WORKED EXAMPLE (calculator):
+  headers: ["Parameter", "Value"]
+  rows: [
+    ["Daily Users",      50000],            // sheet row 4
+    ["Ops per User",     3],                 // sheet row 5
+    ["Active Hours",     14],                // sheet row 6
+    ["Daily Operations", "=B4*B5"],          // sheet row 7 → 150000
+    ["Avg Req/Sec",      "=B7/(B6*3600)"],   // sheet row 8 → 2.976...
+  ]
+
+This produces the right numbers because every cell ref points at the actual sheet row.
+
 ** TOPIC-FIRST RULE (MOST IMPORTANT) **
 
 The user's topic is the source of truth. Before generating ANY data, extract:
