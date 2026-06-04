@@ -79,6 +79,7 @@ COPY --from=builder /out/app /app/app
 COPY scripts/pdf2docx_convert.py /app/scripts/pdf2docx_convert.py
 COPY scripts/build_pptx.py /app/scripts/build_pptx.py
 COPY scripts/build_xlsx.py /app/scripts/build_xlsx.py
+COPY scripts/sandbox_xlsx.py /app/scripts/sandbox_xlsx.py
 COPY migrations ./migrations
 
 EXPOSE 8080

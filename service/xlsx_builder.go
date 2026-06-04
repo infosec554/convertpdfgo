@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -83,10 +82,14 @@ func (s *xlsxBuilderService) Process(ctx context.Context, jobID string) error {
 	job.Status = "running"
 	_ = s.stg.XLSXBuilder().Update(ctx, job)
 
-	spec, err := s.generateSpec(ctx, job)
+	// Stage 1 — LLM writes Python code that computes the workbook
+	// spec. This is the Code-Interpreter pattern: the model handles
+	// the natural-language → structure mapping, Python handles the
+	// arithmetic. No Excel formulas means no cell-ref mistakes.
+	code, err := s.generateCode(ctx, job)
 	if err != nil {
 		s.markFailed(ctx, job, fmt.Sprintf("llm: %v", err))
-		return fmt.Errorf("llm spec: %w", err)
+		return fmt.Errorf("llm code: %w", err)
 	}
 
 	outputFileID := uuid.NewString()
@@ -97,17 +100,31 @@ func (s *xlsxBuilderService) Process(ctx context.Context, jobID string) error {
 	}
 	outPath := filepath.Join(outDir, outputFileID+".xlsx")
 
-	specPath := filepath.Join(outDir, outputFileID+".spec.json")
-	specBytes, _ := json.MarshalIndent(spec, "", "  ")
-	if err := os.WriteFile(specPath, specBytes, 0o644); err != nil {
-		s.markFailed(ctx, job, fmt.Sprintf("write spec: %v", err))
+	// Stage 2 — sandbox-execute the Python. The sandbox enforces a
+	// timeout + restricted builtins, and emits a result.json that the
+	// renderer consumes.
+	codePath   := filepath.Join(outDir, outputFileID+".code.py")
+	resultPath := filepath.Join(outDir, outputFileID+".spec.json")
+	if err := os.WriteFile(codePath, []byte(code), 0o644); err != nil {
+		s.markFailed(ctx, job, fmt.Sprintf("write code: %v", err))
 		return err
 	}
-	defer os.Remove(specPath)
+	defer os.Remove(codePath)
+	defer os.Remove(resultPath)
 
-	ctxCmd, cancel := context.WithTimeout(ctx, 60*time.Second)
+	ctxSandbox, cancelSandbox := context.WithTimeout(ctx, 15*time.Second)
+	defer cancelSandbox()
+	sandboxCmd := exec.CommandContext(ctxSandbox, "python3", "scripts/sandbox_xlsx.py", codePath, resultPath)
+	sandboxOut, err := sandboxCmd.CombinedOutput()
+	if err != nil {
+		s.markFailed(ctx, job, fmt.Sprintf("sandbox: %s: %v", strings.TrimSpace(string(sandboxOut)), err))
+		return fmt.Errorf("sandbox: %w (%s)", err, strings.TrimSpace(string(sandboxOut)))
+	}
+
+	// Stage 3 — render the resolved spec to a real .xlsx via xlsxwriter.
+	ctxCmd, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctxCmd, "python3", "scripts/build_xlsx.py", specPath, outPath)
+	cmd := exec.CommandContext(ctxCmd, "python3", "scripts/build_xlsx.py", resultPath, outPath)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		s.markFailed(ctx, job, fmt.Sprintf("xlsxwriter: %s: %v", strings.TrimSpace(string(out)), err))
@@ -151,17 +168,13 @@ func (s *xlsxBuilderService) GetByID(ctx context.Context, id string) (*models.XL
 	return s.stg.XLSXBuilder().GetByID(ctx, id)
 }
 
-// xlsxSpec mirrors the JSON the python script expects.
-type xlsxSpec struct {
-	Title    string                   `json:"title"`
-	Language string                   `json:"language"`
-	Palette  map[string]string        `json:"palette"`
-	Sheets   []map[string]any         `json:"sheets"`
-}
-
-func (s *xlsxBuilderService) generateSpec(ctx context.Context, job *models.XLSXBuilderJob) (*xlsxSpec, error) {
+// generateCode asks the LLM for Python source that, when run in the
+// sandbox, defines a top-level `result` dict matching the renderer's
+// expected shape. The Code-Interpreter pattern means the model owns
+// the structure + labels, Python owns the arithmetic.
+func (s *xlsxBuilderService) generateCode(ctx context.Context, job *models.XLSXBuilderJob) (string, error) {
 	if s.llm == nil {
-		return nil, ErrXLSXBuilderDisabled
+		return "", ErrXLSXBuilderDisabled
 	}
 	sys := buildXLSXSystemPrompt(job)
 	user := buildXLSXUserPrompt(job)
@@ -169,164 +182,169 @@ func (s *xlsxBuilderService) generateSpec(ctx context.Context, job *models.XLSXB
 	msgs := []llm.Message{{Role: llm.RoleUser, Content: user}}
 	stream, err := s.llm.Chat(ctx, msgs, llm.ChatOpts{
 		System:      sys,
-		Temperature: 0.55,
-		// Spreadsheets with realistic varied data + formulas + chart
-		// regularly cross 4k tokens for the JSON spec — bump the
-		// ceiling so we don't truncate mid-row.
-		MaxTokens:   8192,
+		Temperature: 0.4, // structure-heavy task — lower variance is fine
+		MaxTokens:   6144,
 	})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	var sb strings.Builder
 	for ev := range stream {
 		if ev.Err != nil {
-			return nil, ev.Err
+			return "", ev.Err
 		}
 		sb.WriteString(ev.Delta)
 	}
-	raw := stripCodeFence(strings.TrimSpace(sb.String()))
+	raw := stripPythonFence(strings.TrimSpace(sb.String()))
+	if !strings.Contains(raw, "result") {
+		return "", fmt.Errorf("llm output missing `result` assignment; got: %s", truncForLog(raw, 400))
+	}
+	return raw, nil
+}
 
-	var spec xlsxSpec
-	if err := json.Unmarshal([]byte(raw), &spec); err != nil {
-		return nil, fmt.Errorf("parse spec: %w; got: %s", err, truncForLog(raw, 400))
+// stripPythonFence drops ```python ... ``` if present.
+func stripPythonFence(s string) string {
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(s, "```") {
+		return s
 	}
-	if len(spec.Sheets) == 0 {
-		return nil, errors.New("empty sheets")
+	if i := strings.IndexByte(s, '\n'); i > 0 {
+		s = s[i+1:]
 	}
-	// Safety defaults for palette
-	if spec.Palette == nil {
-		spec.Palette = map[string]string{}
+	if j := strings.LastIndex(s, "```"); j > 0 {
+		s = s[:j]
 	}
-	for k, v := range map[string]string{
-		"header_bg":   "#1a365d",
-		"header_text": "#ffffff",
-		"accent":      "#ed8936",
-		"zebra":       "#f7fafc",
-	} {
-		if _, ok := spec.Palette[k]; !ok {
-			spec.Palette[k] = v
-		}
-	}
-	return &spec, nil
+	return strings.TrimSpace(s)
 }
 
 func buildXLSXSystemPrompt(j *models.XLSXBuilderJob) string {
-	chartHint := "INCLUDE one chart on the first sheet (column / line / bar / pie based on data shape)."
+	chartHint := `Set "chart" on the first sheet — pick "column" / "line" / "bar" / "pie" by data shape (column for cross-row comparisons, line for time series, bar for ranked rows, pie for share-of-whole). Use:
+    "chart": {
+      "type": "column",
+      "title": "...",
+      "categories_col": 1,                # 1-indexed
+      "value_cols": [2, 3],
+      "categories_first_row": 4,
+      "categories_last_row":  3 + len(rows),
+      "position": "G3"
+    }`
 	if !j.IncludeChart {
-		chartHint = "Do NOT include any chart."
+		chartHint = `Set "chart" to None.`
 	}
-	return `You are an expert spreadsheet designer producing a JSON spec for an Excel workbook. You NEVER write prose — output is a single JSON object, nothing else.
+	return `You write Python code that the server runs in a sandbox to produce a workbook spec. You NEVER output prose — output is one Python script, nothing else.
 
-THE SPEC SHAPE:
+THE ONE THING YOU MUST DO: define a top-level variable named ` + "`result`" + ` that is a dict matching the shape below. Every numeric cell is a real Python int/float computed in code — NEVER an Excel formula string. The renderer trusts the values you put in.
 
-{
-  "title": "...",
-  "language": "en|uz|ru|es|ar",
+THE SANDBOX:
+
+You may use these pre-imported modules (no import statement needed):
+  math, statistics, datetime, json, re
+
+You may NOT:
+  - import any other module
+  - open files
+  - access the network
+  - call eval / exec / compile / __import__
+
+Hard timeout: 8 seconds. Hard size cap: 64 KB of code.
+
+THE RESULT SHAPE (build this dict, name it ` + "`result`" + `):
+
+result = {
+  "title":    "Workbook title",
+  "language": "en | uz | ru | es | ar",
   "palette": {
-    "header_bg":   "#hex",   // header row bg (strong color)
+    "header_bg":   "#hex",
     "header_text": "#ffffff",
-    "accent":      "#hex",   // totals row + chart accent
-    "zebra":       "#hex"    // alternate row tint (very light)
+    "accent":      "#hex",
+    "zebra":       "#hex"
   },
   "sheets": [
     {
-      "name": "Sheet name (max 31 chars)",
+      "name":  "Sheet name (max 31 chars)",
       "title": "Visible title above the table",
-      "headers": ["Column A", "Column B", ...],
+      "headers": ["Col A", "Col B", ...],
       "rows": [
-        ["label-string", 100, 200, "=B4*0.9", 90],
+        ["label", 100, 200, 90],           # pure values — int / float / str only
         ...
       ],
-      "totals_row": ["TOTAL", "=SUM(B4:B6)", null, null, "=SUM(E4:E6)"],
-      "number_format": "$#,##0",
-      "freeze_panes": "B4",
-      "column_widths": [22, 12, 12, 12, 14],
-      "chart": {
-        "type": "column|line|bar|pie",
-        "title": "Chart title",
-        "categories_col": 1,
-        "value_cols": [2, 4],
-        "categories_first_row": 4,
-        "categories_last_row":  6,
-        "position": "H4"
-      }
+      "totals_row":    ["TOTAL", 1234, None, 5678],   # optional, same length as headers, None where no total fits
+      "number_format": "$#,##0" | "#,##0.00" | "0.00%%" | "#,##0",
+      "freeze_panes":  "B4",
+      "column_widths": [22, 12, 12, 14],
+      "chart":         {...} or None
     }
   ]
 }
 
-** EXCEL ROW INDEXING (READ THIS BEFORE WRITING ANY FORMULA) **
+HARD RULES:
 
-The rendered sheet has this fixed layout:
-  Row 1  = merged title cell  (string — never reference in a formula)
-  Row 2  = blank
-  Row 3  = headers row        (strings — never reference in a formula)
-  Row 4  = FIRST data row
-  Row 5  = second data row
-  Row 6  = third data row
-  ...    = etc
+1. EVERY numeric cell is a Python int / float you COMPUTE — never an Excel formula string like "=B4*B5". The sandbox does the math; the renderer just writes values.
 
-So if your headers list is ["Parameter", "Value"] and your rows[0] is ["Daily Users", 50000], then:
-  - "Daily Users" sits at A4
-  - 50000 sits at B4
-  - "Ops per User" sits at A5
-  - 3 sits at B5
-  - If rows[2] is ["Daily Operations", "=B4*B5"] → that's at row 6, formula references the actual data rows above
+2. TOPIC-FIRST. Extract numbers and counts from the user's topic and use them as inputs:
+   - "3 workers" → exactly 3 data rows
+   - "salary 10,000,000" → that number is a variable
+   - "reduce by 10%%" → reduction = 0.10, apply it
+   - "monthly budget" → 12 data rows (Jan-Dec)
 
-WRONG (what amateurs do): "=B1*B2" — that references the title row and a blank cell, evaluates to 0.
-RIGHT: "=B4*B5" — references the actual numeric cells.
+3. Build the workbook in code. Pattern:
+       # Inputs from the topic
+       daily_users  = 50000
+       ops_per_user = 3
+       active_hours = 14
+       peak_mult    = 15
 
-When the topic asks for a CALCULATOR-style workbook with derived cells, count the rows MANUALLY:
-  rows[0] is at sheet row 4
-  rows[1] is at sheet row 5
-  rows[N] is at sheet row 4+N
-Every formula MUST use the resolved sheet rows, NOT the index inside rows[].
+       # Derived (Python computes — NEVER a formula string)
+       daily_ops    = daily_users * ops_per_user
+       avg_req_sec  = daily_ops / (active_hours * 3600)
+       peak_req_sec = avg_req_sec * peak_mult
 
-WORKED EXAMPLE (calculator):
-  headers: ["Parameter", "Value"]
-  rows: [
-    ["Daily Users",      50000],            // sheet row 4
-    ["Ops per User",     3],                 // sheet row 5
-    ["Active Hours",     14],                // sheet row 6
-    ["Daily Operations", "=B4*B5"],          // sheet row 7 → 150000
-    ["Avg Req/Sec",      "=B7/(B6*3600)"],   // sheet row 8 → 2.976...
-  ]
+       # Assemble the spec
+       result = {
+         "title":    "Server Resource Calculator",
+         "language": "en",
+         "palette":  {"header_bg": "#0f766e", "header_text": "#ffffff", "accent": "#22d3ee", "zebra": "#f0fdfa"},
+         "sheets": [{
+           "name":  "Calculator",
+           "title": "Server Resource Calculator",
+           "headers": ["Parameter", "Value", "Unit"],
+           "rows": [
+             ["Daily Users",      daily_users,             "users"],
+             ["Ops per User",     ops_per_user,            "ops/user"],
+             ["Active Hours",     active_hours,            "hours"],
+             ["Peak Multiplier",  peak_mult,               "x"],
+             ["Daily Operations", daily_ops,               "ops/day"],
+             ["Avg Req/Sec",      round(avg_req_sec, 2),   "req/sec"],
+             ["Peak Req/Sec",     round(peak_req_sec, 2),  "req/sec"],
+           ],
+           "totals_row":    None,
+           "number_format": "#,##0.00",
+           "freeze_panes":  "B4",
+           "column_widths": [22, 16, 12],
+           "chart":         None
+         }]
+       }
 
-This produces the right numbers because every cell ref points at the actual sheet row.
+4. ` + chartHint + `
 
-** TOPIC-FIRST RULE (MOST IMPORTANT) **
+5. Tone → palette guidance (use as a starting point, you may adjust):
+     corporate → header_bg "#1a365d" or "#1e3a5f", accent "#ed8936"
+     modern    → header_bg "#0f766e" or "#1e293b", accent "#22d3ee"
+     playful   → header_bg "#c2410c" or "#be185d", accent "#fbbf24"
+     academic  → header_bg "#7c2d12" or "#831843", accent "#fbbf24"
 
-The user's topic is the source of truth. Before generating ANY data, extract:
-- Specific entity counts ("3 workers" → exactly 3 rows; "5 products" → exactly 5)
-- Specific numbers in the topic ("salary 10,000,000", "$50K each") → use those values verbatim
-- Specific operations ("reduce by 10%%", "tax 12%%", "discount 15%%") → APPLY THE MATH and put the resolved value in the cell. Don't put 0 in the operation column and don't write a formula that depends on a missing cell — actually do the calculation.
+6. Headers / labels / titles in the user's language. Numbers stay universal.
 
-Example: topic "3 ta ishchining maoshi 10,000,000, har birini 10%% tushurildi"
-  → Worker (Ishchi), Original Salary, % Reduction, New Salary
-  → Row 1: ["Ishchi 1", 10000000, -10, 9000000]
-  → Row 2: ["Ishchi 2", 10000000, -10, 9000000]
-  → Row 3: ["Ishchi 3", 10000000, -10, 9000000]
-  → totals_row: ["JAMI", 30000000, null, 27000000]
+7. number_format: pick ONE per sheet based on dominant column type:
+     - "#,##0"     → counts, ID numbers
+     - "$#,##0"    → currency
+     - "0.00%%"    → percentages (cell value 0.10 displays as "10.00%%")
+     - "#,##0.00"  → mixed math (calculator-style sheets)
 
-NEVER put 0 in a column that the topic specified. NEVER leave a computed column at 0 because you wrote a formula. If you DO use a formula, it MUST reference cells that have non-zero numeric values.
+8. Single sheet preferred unless the topic clearly asks for multiple. Do NOT invent a second sheet about a different topic.
 
-** OTHER HARD RULES **
-
-1. Row count matches the topic. "3 workers" → 3 data rows. "monthly budget" → 12 rows (Jan-Dec).
-2. Use actual JSON numbers (not strings) for numeric cells. Formulas as "=..." strings.
-3. Excel row indexing: row 1 = title, row 3 = headers, row 4 = first data row.
-4. totals_row: same length as headers; use null in cells that shouldn't have a total.
-5. number_format: pick ONE format per sheet that fits the dominant data type. Common formats:
-     - currency: "$#,##0"  or  "#,##0"  or "[$so'm] #,##0"
-     - percent:  "0.00%"   (note: cell value 0.10 displays as "10.00%")
-     - plain:    "#,##0"
-   If a sheet mixes currency and percent columns, use plain "#,##0" — Excel won't apply per-column formats here.
-6. Single sheet preferred unless the topic clearly asks for multiple. Don't invent a second sheet about a different topic.
-7. ` + chartHint + ` Chart range MUST cover the actual data rows (not totals). categories_first_row = 4, categories_last_row = 3 + len(rows).
-8. Tone→palette: corporate→navy header (#1a365d/#1e3a5f); modern→teal/slate (#0f766e/#1e293b); playful→coral/amber (#c2410c/#be185d); academic→burgundy (#7c2d12).
-9. All headers/labels/titles in the user's language. Don't translate proper nouns or units like "%%", "$", "kg".
-10. Output ONLY raw JSON. No markdown, no code fences, no commentary.`
+9. Output ONLY the Python script. No markdown fences, no commentary, no explanation. The first non-blank character of your output is either an assignment or a comment.`
 }
 
 func buildXLSXUserPrompt(j *models.XLSXBuilderJob) string {
