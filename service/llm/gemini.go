@@ -13,6 +13,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -36,20 +38,68 @@ const geminiEmbedDim = 768
 
 // geminiProvider talks to Google's Generative Language API for both chat
 // and embeddings. It implements Provider.
+//
+// Multi-key rotation: the free tier caps each key at 20 requests/day.
+// To get past that without a billing relationship, we round-robin
+// across a pool of keys and, when a key returns 429
+// RESOURCE_EXHAUSTED, automatically retry on the next key. The pool
+// is set up at construction; live key health (which one is currently
+// 429'd) is tracked in the cooldown map below.
 type geminiProvider struct {
-	apiKey     string
-	chatModel  string // e.g. "gemini-2.5-flash"
-	embedModel string // e.g. "text-embedding-004"
-	http       *http.Client
+	apiKeys     []string
+	cursor      atomic.Uint64 // monotonic — % len(apiKeys) on each pick
+	cooldown    sync.Map      // key (string) → time.Time when it's allowed again
+
+	// chatModels is the fallback pool — the first entry is the default
+	// model; later entries are tried in order when the earlier one
+	// returns 429 within the same request. parkedModels tracks which
+	// (key, model) pairs are still cooling down.
+	chatModels   []string
+	embedModel   string        // e.g. "text-embedding-004"
+	parkedModels sync.Map      // "<key>|<model>" → time.Time when allowed again
+	http         *http.Client
 }
 
-// NewGemini constructs a Gemini-backed Provider. apiKey is required;
-// chatModel and embedModel fall back to sensible free-tier defaults if
-// empty. We keep the http.Client local rather than sharing the package
-// default so individual instances can be configured for tests.
+// NewGemini constructs a Gemini-backed Provider with a single key —
+// kept for backwards compatibility with callers that pre-date multi-key.
 func NewGemini(apiKey, chatModel, embedModel string) Provider {
-	if chatModel == "" {
-		chatModel = "gemini-2.5-flash"
+	return NewGeminiMulti([]string{apiKey}, chatModel, embedModel)
+}
+
+// NewGeminiMulti is the multi-key constructor. Provide one or more keys;
+// the provider picks the next live key on each call and falls through
+// to the next one on 429.
+//
+// chatModel can be a comma-separated list — the provider treats each
+// entry as a fallback model. The PerDayPerProjectPerModel quota means
+// every (key, model) pair has its own 20/day ceiling, so listing
+// "gemini-2.5-flash-lite,gemini-2.5-flash,gemini-2.0-flash" turns 1 key
+// into 60 requests/day before adding more keys.
+func NewGeminiMulti(apiKeys []string, chatModel, embedModel string) Provider {
+	// Filter out empties so a stray comma in the env doesn't waste a slot.
+	keys := make([]string, 0, len(apiKeys))
+	for _, k := range apiKeys {
+		k = strings.TrimSpace(k)
+		if k != "" {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) == 0 {
+		// Shouldn't happen in practice (FromEnv validates) — leave as zero
+		// value so callers see clean nil-deref if they bypass FromEnv.
+		keys = nil
+	}
+	// chatModel may be a comma-separated fallback list, e.g.
+	// "gemini-2.5-flash-lite,gemini-2.5-flash,gemini-2.0-flash".
+	models := make([]string, 0, 4)
+	for _, m := range strings.Split(chatModel, ",") {
+		m = strings.TrimSpace(m)
+		if m != "" {
+			models = append(models, m)
+		}
+	}
+	if len(models) == 0 {
+		models = []string{"gemini-2.5-flash"}
 	}
 	if embedModel == "" {
 		// gemini-embedding-001 replaced text-embedding-004 on v1beta and
@@ -58,8 +108,8 @@ func NewGemini(apiKey, chatModel, embedModel string) Provider {
 		embedModel = "gemini-embedding-001"
 	}
 	return &geminiProvider{
-		apiKey:     apiKey,
-		chatModel:  chatModel,
+		apiKeys:    keys,
+		chatModels: models,
 		embedModel: embedModel,
 		http: &http.Client{
 			// 5 min per request matches Gemini's stream lifetime and
@@ -67,6 +117,39 @@ func NewGemini(apiKey, chatModel, embedModel string) Provider {
 			Timeout: 5 * time.Minute,
 		},
 	}
+}
+
+// pickKey returns the next live key plus the index it came from. It
+// skips keys that are still in the cooldown window we set after a 429.
+// Returns "" if every key is cooling down (caller surfaces the original
+// 429 in that case).
+func (g *geminiProvider) pickKey() (string, int) {
+	n := len(g.apiKeys)
+	if n == 0 {
+		return "", -1
+	}
+	now := time.Now()
+	for attempt := 0; attempt < n; attempt++ {
+		idx := int(g.cursor.Add(1)-1) % n
+		key := g.apiKeys[idx]
+		if v, ok := g.cooldown.Load(key); ok {
+			if until, _ := v.(time.Time); now.Before(until) {
+				continue // still 429'd — try the next
+			}
+			g.cooldown.Delete(key)
+		}
+		return key, idx
+	}
+	return "", -1
+}
+
+// parkKey marks a key as 429'd for the given duration. Subsequent
+// pickKey calls skip it until the cooldown elapses.
+func (g *geminiProvider) parkKey(key string, dur time.Duration) {
+	if dur <= 0 {
+		dur = 60 * time.Second
+	}
+	g.cooldown.Store(key, time.Now().Add(dur))
 }
 
 func (g *geminiProvider) Name() string { return "gemini" }
@@ -123,10 +206,20 @@ type geminiChatResp struct {
 // Chat fans the streamed JSON elements into a ChatChunk channel. On any
 // transport error we send a final chunk with Err set and close the
 // channel; on success the final chunk carries FinishReason + token counts.
+//
+// Rotation: we iterate over every (key, model) pair until one returns
+// 200. opts.Model overrides the model list entirely (e.g. tests pinning
+// to a specific model); otherwise we walk g.chatModels in order, and
+// for each model walk g.apiKeys via pickKey(). PerDayPerProjectPerModel
+// quota means each (key, model) pair has its own 20/day ceiling, so a
+// 2-key × 3-model setup gets you 120 requests/day before billing.
 func (g *geminiProvider) Chat(ctx context.Context, msgs []Message, opts ChatOpts) (<-chan ChatChunk, error) {
-	model := opts.Model
-	if model == "" {
-		model = g.chatModel
+	models := g.chatModels
+	if opts.Model != "" {
+		models = []string{opts.Model}
+	}
+	if len(models) == 0 {
+		return nil, errors.New("gemini: no chat model configured")
 	}
 
 	body, err := json.Marshal(g.buildChatReq(msgs, opts))
@@ -134,35 +227,64 @@ func (g *geminiProvider) Chat(ctx context.Context, msgs []Message, opts ChatOpts
 		return nil, fmt.Errorf("gemini: marshal request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/models/%s:streamGenerateContent?alt=sse&key=%s",
-		geminiBaseURL, model, g.apiKey)
+	var lastErr error
+	for _, model := range models {
+		for tries := 0; tries < max(1, len(g.apiKeys)); tries++ {
+			key, _ := g.pickKey()
+			if key == "" {
+				break // every key cooling — drop to next model
+			}
+			// Skip (key, model) pair we already saw 429 for this hour.
+			pairKey := key + "|" + model
+			if v, ok := g.parkedModels.Load(pairKey); ok {
+				if until, _ := v.(time.Time); time.Now().Before(until) {
+					continue
+				}
+				g.parkedModels.Delete(pairKey)
+			}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("gemini: build request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Accept", "text/event-stream")
+			url := fmt.Sprintf("%s/models/%s:streamGenerateContent?alt=sse&key=%s",
+				geminiBaseURL, model, key)
+			req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+			if err != nil {
+				return nil, fmt.Errorf("gemini: build request: %w", err)
+			}
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Accept", "text/event-stream")
 
-	resp, err := g.http.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("gemini: do request: %w", err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
-		errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
-		// 429 is the most user-actionable failure — surface it via a
-		// sentinel so handlers can render "please wait" rather than
-		// "Internal Server Error".
-		if resp.StatusCode == http.StatusTooManyRequests {
-			return nil, fmt.Errorf("%w: %s", ErrRateLimited, strings.TrimSpace(string(errBody)))
+			resp, err := g.http.Do(req)
+			if err != nil {
+				return nil, fmt.Errorf("gemini: do request: %w", err)
+			}
+			if resp.StatusCode == http.StatusOK {
+				out := make(chan ChatChunk, 8)
+				go g.consumeStream(resp, out)
+				return out, nil
+			}
+			errBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2048))
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusTooManyRequests {
+				// Park the (key, model) pair only — the SAME key with a
+				// DIFFERENT model still has its own daily quota.
+				parkFor := parseGeminiRetryDelay(string(errBody))
+				if parkFor <= 0 || parkFor > 60*time.Second {
+					// Honour Google's RPM hint where present, otherwise
+					// assume the daily quota is gone and park for an hour.
+					parkFor = 60 * time.Minute
+				}
+				g.parkedModels.Store(pairKey, time.Now().Add(parkFor))
+				lastErr = fmt.Errorf("%w: %s", ErrRateLimited, strings.TrimSpace(string(errBody)))
+				continue // try the next key with the same model
+			}
+			// Other errors are not retryable — return immediately.
+			return nil, fmt.Errorf("gemini: chat HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
 		}
-		return nil, fmt.Errorf("gemini: chat HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
+		// All keys exhausted for this model — fall through to next model.
 	}
-
-	out := make(chan ChatChunk, 8)
-	go g.consumeStream(resp, out)
-	return out, nil
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, fmt.Errorf("%w: every (key, model) pair is cooling down", ErrRateLimited)
 }
 
 func (g *geminiProvider) buildChatReq(msgs []Message, opts ChatOpts) geminiChatReq {
@@ -394,15 +516,20 @@ func (g *geminiProvider) embedOne(ctx context.Context, text string) ([]float32, 
 		return nil, fmt.Errorf("gemini: marshal embed: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/models/%s:embedContent?key=%s", geminiBaseURL, g.embedModel, g.apiKey)
-
 	// Retry on 429s using the server-suggested retryDelay where present,
 	// otherwise an exponential backoff capped at 30s. Free tier embedding
 	// is 100 req/min — even a small PDF can hit it during burst indexing.
+	// Each attempt also picks a fresh key from the rotation, so a key
+	// that's currently 429'd for chat doesn't drag embeds down.
 	const maxAttempts = 5
 	backoff := 2 * time.Second
 	var lastErr error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
+		key, _ := g.pickKey()
+		if key == "" {
+			return nil, fmt.Errorf("%w: every key in the pool is cooling down", ErrRateLimited)
+		}
+		url := fmt.Sprintf("%s/models/%s:embedContent?key=%s", geminiBaseURL, g.embedModel, key)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 		if err != nil {
 			return nil, fmt.Errorf("gemini: build embed: %w", err)
@@ -433,23 +560,37 @@ func (g *geminiProvider) embedOne(ctx context.Context, text string) ([]float32, 
 
 		if resp.StatusCode == http.StatusTooManyRequests {
 			lastErr = fmt.Errorf("%w: %s", ErrRateLimited, trimmed)
+			// Park the offending key so the rotation skips it. We
+			// honour the server-suggested retryDelay where present,
+			// since that's a more accurate reset window than our
+			// guess.
+			parkFor := parseGeminiRetryDelay(trimmed)
+			if parkFor <= 0 {
+				parkFor = 60 * time.Second
+			}
+			g.parkKey(key, parkFor)
+
 			if attempt == maxAttempts {
 				return nil, lastErr
 			}
-			wait := parseGeminiRetryDelay(trimmed)
-			if wait <= 0 || wait > 60*time.Second {
-				wait = backoff
-			}
-			// Always add a small jitter so multiple workers don'''t wake up
-			// in lockstep and immediately re-hit the limit.
-			wait += time.Duration(attempt*350) * time.Millisecond
-			select {
-			case <-ctx.Done():
-				return nil, ctx.Err()
-			case <-time.After(wait):
-			}
-			if backoff < 30*time.Second {
-				backoff *= 2
+			// With multiple keys in rotation, we can skip the sleep
+			// and try the next key immediately — pickKey will hand
+			// out a different one (or return "" if the whole pool is
+			// cold, which short-circuits the loop above).
+			if len(g.apiKeys) <= 1 {
+				wait := parseGeminiRetryDelay(trimmed)
+				if wait <= 0 || wait > 60*time.Second {
+					wait = backoff
+				}
+				wait += time.Duration(attempt*350) * time.Millisecond
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(wait):
+				}
+				if backoff < 30*time.Second {
+					backoff *= 2
+				}
 			}
 			continue
 		}

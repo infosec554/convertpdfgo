@@ -24,12 +24,37 @@ func FromEnv() (Provider, error) {
 
 	switch name {
 	case "gemini":
-		key := os.Getenv("GEMINI_API_KEY")
-		if key == "" {
-			return nil, fmt.Errorf("llm: GEMINI_API_KEY required for provider=gemini")
+		// Multi-key support: GEMINI_API_KEYS (comma-separated) wins; a
+		// single GEMINI_API_KEY is appended for backwards compatibility.
+		// Each free-tier key is capped at 20 requests/day per model, so
+		// rotating across N keys lifts the daily ceiling by Nx without
+		// any billing relationship.
+		var keys []string
+		if multi := strings.TrimSpace(os.Getenv("GEMINI_API_KEYS")); multi != "" {
+			for _, k := range strings.Split(multi, ",") {
+				if k = strings.TrimSpace(k); k != "" {
+					keys = append(keys, k)
+				}
+			}
 		}
-		return NewGemini(
-			key,
+		if k := strings.TrimSpace(os.Getenv("GEMINI_API_KEY")); k != "" {
+			// Avoid duplicating it if the operator put the same key in both.
+			seen := false
+			for _, existing := range keys {
+				if existing == k {
+					seen = true
+					break
+				}
+			}
+			if !seen {
+				keys = append(keys, k)
+			}
+		}
+		if len(keys) == 0 {
+			return nil, fmt.Errorf("llm: GEMINI_API_KEYS or GEMINI_API_KEY required for provider=gemini")
+		}
+		return NewGeminiMulti(
+			keys,
 			os.Getenv("GEMINI_CHAT_MODEL"),
 			os.Getenv("GEMINI_EMBED_MODEL"),
 		), nil
