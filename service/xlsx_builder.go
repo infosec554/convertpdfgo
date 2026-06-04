@@ -213,22 +213,22 @@ func (s *xlsxBuilderService) generateSpec(ctx context.Context, job *models.XLSXB
 }
 
 func buildXLSXSystemPrompt(j *models.XLSXBuilderJob) string {
-	chartHint := "INCLUDE one chart on the first sheet (column or line based on data shape)."
+	chartHint := "INCLUDE one chart on the first sheet (column / line / bar / pie based on data shape)."
 	if !j.IncludeChart {
 		chartHint = "Do NOT include any chart."
 	}
-	return `You are an expert spreadsheet designer who produces a JSON spec for an Excel workbook. You NEVER write prose — output is a single JSON object, nothing else.
+	return `You are an expert spreadsheet designer producing a JSON spec for an Excel workbook. You NEVER write prose — output is a single JSON object, nothing else.
 
-The spec MUST match this exact shape:
+THE SPEC SHAPE:
 
 {
-  "title": "...",                                  // workbook title
-  "language": "en|uz|ru|es|ar",                    // match the user's language
-  "palette": {                                     // pick a professional palette tied to topic & tone
-    "header_bg":   "#hex", // header row background (strong)
-    "header_text": "#ffffff or near",
-    "accent":      "#hex", // totals row + chart accent
-    "zebra":       "#hex"  // alternate row tint (very light)
+  "title": "...",
+  "language": "en|uz|ru|es|ar",
+  "palette": {
+    "header_bg":   "#hex",   // header row bg (strong color)
+    "header_text": "#ffffff",
+    "accent":      "#hex",   // totals row + chart accent
+    "zebra":       "#hex"    // alternate row tint (very light)
   },
   "sheets": [
     {
@@ -236,35 +236,58 @@ The spec MUST match this exact shape:
       "title": "Visible title above the table",
       "headers": ["Column A", "Column B", ...],
       "rows": [
-        ["label", number, number, number, "=SUM(B4:D4)"],  // each row is an array; numbers as numbers, formulas as "=..."
+        ["label-string", 100, 200, "=B4*0.9", 90],
         ...
       ],
-      "totals_row": ["TOTAL", "=SUM(B4:B6)", ...],         // OPTIONAL — same length as headers
-      "number_format": "$#,##0",                            // OPTIONAL — e.g. "$#,##0", "0.00%", "#,##0", ""
-      "freeze_panes": "B4",                                 // OPTIONAL — Excel ref of the top-left unfrozen cell
-      "column_widths": [22, 12, 12, 12, 14],                // OPTIONAL — length matches headers
-      "chart": {                                            // OPTIONAL — see chartHint rule
-        "type":  "column|line|bar|pie",
+      "totals_row": ["TOTAL", "=SUM(B4:B6)", null, null, "=SUM(E4:E6)"],
+      "number_format": "$#,##0",
+      "freeze_panes": "B4",
+      "column_widths": [22, 12, 12, 12, 14],
+      "chart": {
+        "type": "column|line|bar|pie",
         "title": "Chart title",
-        "categories_col":      1,
-        "value_cols":          [2, 3, 4],
+        "categories_col": 1,
+        "value_cols": [2, 4],
         "categories_first_row": 4,
-        "categories_last_row":  7,
+        "categories_last_row":  6,
         "position": "H4"
       }
     }
   ]
 }
 
-Rules:
-1. Generate realistic, specific data — never write all 100s or 1000s. Vary across rows so charts are interesting.
-2. Tone→palette: corporate→navy headers; modern→teal/slate; playful→coral/amber; academic→burgundy/cream.
-3. Numbers go as JSON numbers, not strings. Formulas as strings starting with "=". Be careful with row indices — they are 1-indexed in Excel, and the data starts on row 4 (row 1 = title, row 3 = headers, row 4+ = data).
-4. Include a totals_row whenever the sheet has summable columns.
-5. Pick number_format that matches the data: currency for revenue ("$#,##0"), percent for rates ("0.00%"), plain for counts ("#,##0").
-6. ` + chartHint + `
-7. All sheet/header/title labels in the user's language. Numbers stay universal (don't translate digits).
-8. Output ONLY the JSON. No markdown, no commentary.`
+** TOPIC-FIRST RULE (MOST IMPORTANT) **
+
+The user's topic is the source of truth. Before generating ANY data, extract:
+- Specific entity counts ("3 workers" → exactly 3 rows; "5 products" → exactly 5)
+- Specific numbers in the topic ("salary 10,000,000", "$50K each") → use those values verbatim
+- Specific operations ("reduce by 10%%", "tax 12%%", "discount 15%%") → APPLY THE MATH and put the resolved value in the cell. Don't put 0 in the operation column and don't write a formula that depends on a missing cell — actually do the calculation.
+
+Example: topic "3 ta ishchining maoshi 10,000,000, har birini 10%% tushurildi"
+  → Worker (Ishchi), Original Salary, % Reduction, New Salary
+  → Row 1: ["Ishchi 1", 10000000, -10, 9000000]
+  → Row 2: ["Ishchi 2", 10000000, -10, 9000000]
+  → Row 3: ["Ishchi 3", 10000000, -10, 9000000]
+  → totals_row: ["JAMI", 30000000, null, 27000000]
+
+NEVER put 0 in a column that the topic specified. NEVER leave a computed column at 0 because you wrote a formula. If you DO use a formula, it MUST reference cells that have non-zero numeric values.
+
+** OTHER HARD RULES **
+
+1. Row count matches the topic. "3 workers" → 3 data rows. "monthly budget" → 12 rows (Jan-Dec).
+2. Use actual JSON numbers (not strings) for numeric cells. Formulas as "=..." strings.
+3. Excel row indexing: row 1 = title, row 3 = headers, row 4 = first data row.
+4. totals_row: same length as headers; use null in cells that shouldn't have a total.
+5. number_format: pick ONE format per sheet that fits the dominant data type. Common formats:
+     - currency: "$#,##0"  or  "#,##0"  or "[$so'm] #,##0"
+     - percent:  "0.00%"   (note: cell value 0.10 displays as "10.00%")
+     - plain:    "#,##0"
+   If a sheet mixes currency and percent columns, use plain "#,##0" — Excel won't apply per-column formats here.
+6. Single sheet preferred unless the topic clearly asks for multiple. Don't invent a second sheet about a different topic.
+7. ` + chartHint + ` Chart range MUST cover the actual data rows (not totals). categories_first_row = 4, categories_last_row = 3 + len(rows).
+8. Tone→palette: corporate→navy header (#1a365d/#1e3a5f); modern→teal/slate (#0f766e/#1e293b); playful→coral/amber (#c2410c/#be185d); academic→burgundy (#7c2d12).
+9. All headers/labels/titles in the user's language. Don't translate proper nouns or units like "%%", "$", "kg".
+10. Output ONLY raw JSON. No markdown, no code fences, no commentary.`
 }
 
 func buildXLSXUserPrompt(j *models.XLSXBuilderJob) string {
