@@ -68,13 +68,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # --break-system-packages because debian's PEP-668 system-wide pip
     # refuses by default; using a venv would mean an extra binary in
     # PATH for one library, not worth the complexity.
-    pip3 install --no-cache-dir --break-system-packages pdf2docx && \
+    pip3 install --no-cache-dir --break-system-packages pdf2docx python-pptx lxml && \
     python3 -c "from pdf2docx import Converter; print('pdf2docx OK')" && \
+    python3 -c "from pptx import Presentation; print('python-pptx OK')" && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=builder /out/app /app/app
 COPY scripts/pdf2docx_convert.py /app/scripts/pdf2docx_convert.py
+COPY scripts/build_pptx.py /app/scripts/build_pptx.py
 COPY migrations ./migrations
 
 EXPOSE 8080

@@ -353,6 +353,10 @@ func (s *Store) Sign() storage.ISignStorage {
 	return NewSignRepo(s.pool, s.log)
 }
 
+func (s *Store) PPTXBuilder() storage.IPPTXBuilderStorage {
+	return NewPPTXBuilderRepo(s.pool, s.log)
+}
+
 func (s *Store) ExtractText() storage.IExtractTextStorage {
 	return NewExtractTextRepo(s.pool, s.log)
 }

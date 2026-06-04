@@ -64,6 +64,7 @@ type IServiceManager interface {
 	// Phase 1 features.
 	Watermark() WatermarkService
 	Sign() SignService
+	PPTXBuilder() PPTXBuilderService
 	ExtractText() ExtractTextService
 	NUp() NUpService
 	URLToPDF() URLToPDFService
@@ -122,6 +123,7 @@ type service struct {
 
 	watermarkService   WatermarkService
 	signService        SignService
+	pptxBuilderService PPTXBuilderService
 	extractTextService ExtractTextService
 	nupService         NUpService
 	urlToPDFService    URLToPDFService
@@ -184,6 +186,7 @@ func New(storage storage.IStorage, log logger.ILogger, mailerCore mailer.IMailer
 
 		watermarkService:   NewWatermarkService(storage, log),
 		signService:        NewSignService(storage, log),
+		pptxBuilderService: NewPPTXBuilderService(storage, log),
 		extractTextService: NewExtractTextService(storage, log),
 		nupService:         NewNUpService(storage, log),
 		urlToPDFService:    NewURLToPDFService(storage, log, gotClient),
@@ -345,6 +348,7 @@ func (s *service) HTMLToPDF() HTMLToPDFService {
 
 func (s *service) Watermark() WatermarkService     { return s.watermarkService }
 func (s *service) Sign() SignService                { return s.signService }
+func (s *service) PPTXBuilder() PPTXBuilderService  { return s.pptxBuilderService }
 func (s *service) ExtractText() ExtractTextService { return s.extractTextService }
 func (s *service) NUp() NUpService                 { return s.nupService }
 func (s *service) URLToPDF() URLToPDFService       { return s.urlToPDFService }

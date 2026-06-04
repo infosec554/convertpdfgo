@@ -71,6 +71,7 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	registerContactRoutes(r, h)
 	registerChatRoutes(r, h)
 	registerCVRoutes(r, h)
+	registerBuildRoutes(r, h)
 	registerAdminRoutes(r, h)
 
 	// WebSocket endpoints. Auth lives in the handler (token via query

@@ -49,6 +49,7 @@ type IStorage interface {
 	// url-to-pdf, metadata.
 	Watermark() IWatermarkStorage
 	Sign() ISignStorage
+	PPTXBuilder() IPPTXBuilderStorage
 	ExtractText() IExtractTextStorage
 	NUp() INUpStorage
 	URLToPDF() IURLToPDFStorage
@@ -523,6 +524,12 @@ type ISignStorage interface {
 	Create(ctx context.Context, job *models.SignJob) error
 	GetByID(ctx context.Context, id string) (*models.SignJob, error)
 	Update(ctx context.Context, job *models.SignJob) error
+}
+
+type IPPTXBuilderStorage interface {
+	Create(ctx context.Context, job *models.PPTXBuilderJob) error
+	GetByID(ctx context.Context, id string) (*models.PPTXBuilderJob, error)
+	Update(ctx context.Context, job *models.PPTXBuilderJob) error
 }
 
 type IExtractTextStorage interface {
