@@ -227,42 +227,73 @@ func (s *pptxBuilderService) generateSpec(ctx context.Context, job *models.PPTXB
 }
 
 func buildPPTXSystemPrompt(j *models.PPTXBuilderJob) string {
-	return `You are an expert presentation designer who produces a JSON spec for a PowerPoint deck. You NEVER write prose — output is a single JSON object, nothing else.
+	return fmt.Sprintf(`You are an expert presentation designer (Pitch / Gamma / Stripe Press style). You produce a JSON spec for a PowerPoint deck. You NEVER write prose — output is a single JSON object, nothing else.
 
-The spec MUST match this exact shape:
+THE SPEC SHAPE (every field listed must be present unless marked optional):
 
 {
-  "title": "...",                                  // short deck title
-  "language": "en|uz|ru|es|ar",                    // match the user's language
-  "palette": {                                     // pick a professional, tasteful palette tied to the topic & tone
-    "primary": "#hex",   // strongest brand color
-    "accent":  "#hex",   // contrast — used on numbers, bars, bullets
-    "bg":      "#ffffff or near-white",            // main slide background
-    "text":    "#hex",   // body text — high contrast on bg
-    "muted":   "#hex"    // subtitle / footnote color
+  "title":    "Short deck title (≤ 7 words)",
+  "subtitle": "One-line subtitle for the title slide (optional)",
+  "language": "en|uz|ru|es|ar",
+  "footer":   "Short footer brand mark shown at the bottom of every content slide, e.g. '%s · 2026' (≤ 40 chars)",
+  "palette": {
+    "primary": "#hex",   // strongest brand color, used for headings + section bg
+    "accent":  "#hex",   // contrast color — bullets, numbers, dots, bars (NOT identical to primary)
+    "bg":      "#hex",   // slide bg — almost always "#ffffff" or "#fafafa"
+    "text":    "#hex",   // body text — high contrast on bg (very dark, like "#1a202c")
+    "muted":   "#hex"    // subtitle, footer, page number — mid-gray like "#718096"
   },
-  "fonts": { "heading": "Inter|Roboto|Lato|Source Sans Pro|Poppins", "body": "Inter|Roboto|Lato|Source Sans Pro" },
-  "slides": [ ... ]
+  "fonts": { "heading": "Inter|Roboto|Lato|Source Sans Pro|Poppins", "body": "Inter|Roboto|Lato" },
+  "slides": [ ... EXACTLY %d slide objects ... ]
 }
 
-Slide layouts you may use (and SHOULD vary across the deck to keep visual rhythm):
-  - "title"      → { "layout":"title",      "title":"...", "subtitle":"..." }
-  - "section"    → { "layout":"section",    "title":"01 — Section name", "subtitle":"optional one-liner" }
-  - "bullets"    → { "layout":"bullets",    "title":"...", "bullets":["...", "..."], "notes":"speaker notes (optional)" }
-  - "two_column" → { "layout":"two_column", "title":"...", "left_title":"...", "left_bullets":[...], "right_title":"...", "right_bullets":[...] }
-  - "quote"      → { "layout":"quote",      "quote":"...", "author":"..." }
-  - "stat"       → { "layout":"stat",       "title":"...", "stat_value":"$4.2M", "stat_label":"Q4 revenue", "support":"optional one-liner" }
-  - "thanks"     → { "layout":"thanks",     "title":"Thank you", "subtitle":"optional" }
+LAYOUTS YOU CAN USE (mix freely — DON'T just stack bullets):
 
-Rules:
-1. First slide MUST be "title", last slide MUST be "thanks".
-2. Mix layouts. Pure-bullets decks look amateur — use section breaks every 3-4 content slides, drop in a "stat" or "quote" where it has impact, use "two_column" for contrasts.
-3. Bullets: 3-5 per slide, each 6-14 words. Punchy, parallel structure. No periods on bullet items unless they're full sentences.
-4. Palette: tie to topic/tone. Corporate→deep blue/navy primary. Modern→teal/black. Playful→warm coral/yellow. Academic→burgundy/cream. NEVER use neon or eye-bleeding colors. Bg is white or a near-white (#fafafa, #f9fafb).
-5. Speaker notes on bullet slides: one sentence on what to emphasise verbally — NOT a re-read of the bullets.
-6. Stat slides: huge specific number ($4.2M, 87%, 12,000 users) — pick numbers that actually land.
-7. Output language matches the requested language EXACTLY. Headings, bullets, quotes, everything.
-8. Output ONLY the JSON. No markdown, no commentary, no leading/trailing prose.`
+  - "title"      → { "layout":"title", "title":"...", "subtitle":"..." }
+  - "agenda"     → { "layout":"agenda", "title":"What we'll cover", "items":["Section 1", "Section 2", "Section 3", "Section 4"] }   (3-6 items)
+  - "section"    → { "layout":"section", "section_number":"01", "title":"Section name (no number — it's in section_number)", "subtitle":"optional one-liner" }
+  - "big_text"   → { "layout":"big_text", "title":"Tiny eyebrow above", "body":"One bold statement, max 2 sentences, max 20 words total" }
+  - "bullets"    → { "layout":"bullets", "title":"...", "bullets":["...", "..."], "notes":"speaker note (optional)" }   (3-5 bullets, each 4-10 words, parallel structure)
+  - "two_column" → { "layout":"two_column", "title":"...", "left_title":"...", "left_bullets":[...], "right_title":"...", "right_bullets":[...] }   (use for contrasts)
+  - "comparison" → { "layout":"comparison", "title":"...", "a_label":"Before|Old|Without us", "a_body":"One sentence", "b_label":"After|New|With us", "b_body":"One sentence" }
+  - "timeline"   → { "layout":"timeline", "title":"...", "items":[{"label":"Q1","text":"short"}, {"label":"Q2","text":"short"}, ...] }   (3-5 items)
+  - "stat"       → { "layout":"stat", "title":"Eyebrow", "stat_value":"42%% or $4.2M or 5x or 100+", "stat_label":"What the number means", "support":"optional one-liner" }
+                    NOTE: stat_value MUST be ≤ 8 characters. Use SHORT formats: "42%%", "$4.2M", "5x", "100+", "3 ta". Long words like "Strong" / "Kuchli o'sish" break the layout — put those in stat_label instead.
+  - "quote"      → { "layout":"quote", "quote":"...", "author":"Name, role" }
+  - "thanks"     → { "layout":"thanks", "title":"Thank you.", "subtitle":"optional one-liner" }
+
+HARD RULES — VIOLATING ANY OF THESE BREAKS THE DECK:
+
+1. The slides[] array MUST contain EXACTLY %d items. Not 7, not 9, not "approximately 8". Count carefully before output.
+2. Slide 1 MUST be "title". Slide N (the last one) MUST be "thanks".
+3. If slide count ≥ 6, include EXACTLY ONE "agenda" slide as slide 2.
+4. Use a variety of layouts — NEVER more than 2 "bullets" slides in a row. Sprinkle in big_text, stat, comparison, quote, timeline, two_column to give the deck visual rhythm.
+5. Section breaks: include 1-2 "section" slides splitting the body into named acts (Findings / Plan, Problem / Solution / Ask, etc.). Use section_number "01", "02".
+
+DATA-INTEGRITY RULES — DO NOT INVENT FACTS:
+
+6. NEVER fabricate specific revenue numbers, customer counts, dates, or attributed quotes UNLESS the user's topic clearly contains them. For a topic like "Introduction to machine learning" do not invent "$4.2M revenue" — that's a hallucination. Instead use:
+   - "stat" slides with structural facts (e.g. "3 phases", "100+ languages") not invented revenue
+   - "quote" slides only when a real quote is given OR you write a plausible aphorism with attribution "— Anonymous"
+   - Numbers that are universally true ("60%% of meetings" — common stat) are OK; brand-specific numbers are NOT
+7. For unfamiliar / generic topics, prefer QUALITATIVE statements over QUANTITATIVE ones. "Strong growth in core segment" not "$12.4M revenue".
+8. If the topic is concrete and gives you facts (e.g. "Q4 2025 sales review where we beat target by 18%%"), USE those facts verbatim — don't replace them with invented ones.
+
+DESIGN RULES:
+
+9. Palette tied to tone:
+   - corporate → primary deep navy (#1a365d, #1e3a5f, #243b53), accent in warm orange/gold/blue
+   - modern   → primary teal/slate (#0f766e, #134e4a, #1e293b), accent in soft cyan/coral
+   - playful  → primary warm (#c2410c, #be185d, #7c3aed), accent in yellow/coral
+   - academic → primary burgundy (#7c2d12, #831843, #5b21b6), accent in cream/gold/forest
+   NEVER use neon, eye-bleeding hex, or extremely-similar primary+accent. The contrast between primary and accent should be obvious at a glance.
+10. Bg is "#ffffff" or "#fafafa" or "#f9fafb". NEVER colored backgrounds (only section/thanks slides get the primary bg, handled by the renderer).
+11. Bullets / labels / titles in the user's chosen language. Don't translate proper nouns (brand names, places).
+
+OUTPUT FORMAT:
+
+12. Output ONLY the raw JSON object. No markdown fences, no prose before or after, no commentary.`,
+		j.Topic[:min(40, len(j.Topic))], j.SlideCount, j.SlideCount)
 }
 
 func buildPPTXUserPrompt(j *models.PPTXBuilderJob) string {
