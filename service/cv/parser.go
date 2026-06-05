@@ -69,6 +69,16 @@ func (p *parser) Run(ctx context.Context, cvID string) error {
 	// 2) Ask Gemini for a structured JSON view of the resume.
 	parsed, err := p.callGemini(ctx, rawText, sess.Locale)
 	if err != nil {
+		// Rate limit: do NOT mark the session failed. Return the
+		// error so asynq retries the task with backoff — the user
+		// keeps seeing the "parsing…" loader and the upload doesn't
+		// have to be redone. The MaxRetry(3) at task-enqueue time
+		// caps the total retry window at ~5 min.
+		if errors.Is(err, llm.ErrRateLimited) {
+			p.log.Warning("cv import: rate-limited, asynq will retry",
+				logger.String("cv_id", cvID))
+			return fmt.Errorf("ai parse: %w", err)
+		}
 		return p.markFailed(ctx, cvID, fmt.Errorf("ai parse: %w", err))
 	}
 
