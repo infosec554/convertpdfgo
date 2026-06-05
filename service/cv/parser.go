@@ -159,7 +159,7 @@ func (p *parser) callGemini(ctx context.Context, rawText, locale string) (map[st
 	}, llm.ChatOpts{
 		System:      system,
 		Temperature: 0.1, // structured output → low temp
-		MaxTokens:   3000,
+		MaxTokens:   8192,
 	})
 	if err != nil {
 		return nil, err
