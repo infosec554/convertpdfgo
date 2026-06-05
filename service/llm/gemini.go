@@ -276,6 +276,15 @@ func (g *geminiProvider) Chat(ctx context.Context, msgs []Message, opts ChatOpts
 				lastErr = fmt.Errorf("%w: %s", ErrRateLimited, strings.TrimSpace(string(errBody)))
 				continue // try the next key with the same model
 			}
+			if resp.StatusCode == http.StatusNotFound {
+				// Model retired / unavailable on this key (e.g. preview-only
+				// model on an account that hasn't enabled previews). Park
+				// the (key, model) pair for 24h and fall through — there's
+				// nothing time can fix in the same calendar day.
+				g.parkedModels.Store(pairKey, time.Now().Add(24*time.Hour))
+				lastErr = fmt.Errorf("gemini: chat HTTP 404: %s", strings.TrimSpace(string(errBody)))
+				continue
+			}
 			// Other errors are not retryable — return immediately.
 			return nil, fmt.Errorf("gemini: chat HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(errBody)))
 		}
