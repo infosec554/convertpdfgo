@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -13,7 +14,19 @@ import (
 	"convertpdfgo/pkg/timeouts"
 	"convertpdfgo/service"
 	"convertpdfgo/service/cv"
+	"convertpdfgo/service/llm"
 )
+
+// statusForLLMError maps an LLM-layer error to a user-facing HTTP status.
+// Returns 429 if the error chain contains llm.ErrRateLimited (so the
+// frontend can render "please wait" instead of "internal server");
+// 500 otherwise.
+func statusForLLMError(err error) (int, string) {
+	if errors.Is(err, llm.ErrRateLimited) {
+		return http.StatusTooManyRequests, "AI is rate-limited — please wait a minute and try again."
+	}
+	return http.StatusInternalServerError, err.Error()
+}
 
 // CV handlers — every endpoint requires a signed-in user (AuthGate on
 // the frontend + AuthorizerMiddleware on the route).
@@ -266,7 +279,8 @@ func (h Handler) RunCVATSCheck(c *gin.Context) {
 	defer cancel()
 	run, err := h.services.CV().RunATSCheck(ctx, cvID, uid, req)
 	if err != nil {
-		handleResponse(c, h.log, "ats failed", http.StatusInternalServerError, err.Error())
+		status, msg := statusForLLMError(err)
+		handleResponse(c, h.log, "ats failed", status, msg)
 		return
 	}
 	handleResponse(c, h.log, "ats ok", http.StatusOK, run)
@@ -367,8 +381,54 @@ func (h Handler) GenerateCVCoverLetter(c *gin.Context) {
 	defer cancel()
 	resp, err := h.services.CV().GenerateCoverLetter(ctx, cvID, req)
 	if err != nil {
-		handleResponse(c, h.log, "cover-letter failed", http.StatusInternalServerError, err.Error())
+		status, msg := statusForLLMError(err)
+		handleResponse(c, h.log, "cover-letter failed", status, msg)
 		return
 	}
 	handleResponse(c, h.log, "cover letter generated", http.StatusOK, resp)
+}
+
+func (h Handler) TranscribeCVAudio(c *gin.Context) {
+	cvID := c.Param("id")
+	_ = cvID // session ID is part of the URL for ownership audit; not used downstream yet.
+
+	uid := c.GetString("user_id")
+	if uid == "" {
+		handleResponse(c, h.log, "sign-in required", http.StatusUnauthorized, "")
+		return
+	}
+
+	fh, err := c.FormFile("audio")
+	if err != nil {
+		handleResponse(c, h.log, "audio file missing", http.StatusBadRequest, err.Error())
+		return
+	}
+	if fh.Size > 8*1024*1024 {
+		handleResponse(c, h.log, "audio too large (max 8 MB)", http.StatusRequestEntityTooLarge, "")
+		return
+	}
+	f, err := fh.Open()
+	if err != nil {
+		handleResponse(c, h.log, "read audio failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+	defer f.Close()
+
+	buf := make([]byte, fh.Size)
+	if _, err := io.ReadFull(f, buf); err != nil {
+		handleResponse(c, h.log, "read audio failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	mime := fh.Header.Get("Content-Type")
+	locale := c.PostForm("locale")
+
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	defer cancel()
+	text, err := h.services.CV().TranscribeAudio(ctx, buf, mime, locale)
+	if err != nil {
+		handleResponse(c, h.log, "transcription failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+	handleResponse(c, h.log, "transcribed", http.StatusOK, gin.H{"text": text})
 }

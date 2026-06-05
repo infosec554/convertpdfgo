@@ -266,11 +266,22 @@ func (g *geminiProvider) Chat(ctx context.Context, msgs []Message, opts ChatOpts
 			if resp.StatusCode == http.StatusTooManyRequests {
 				// Park the (key, model) pair only — the SAME key with a
 				// DIFFERENT model still has its own daily quota.
+				//
+				// Park-duration heuristic: Google's retryDelay hint is
+				// the truth source. Short delays (< 5 min) mean we hit
+				// an RPM ceiling and the pair recovers naturally — park
+				// for exactly that long with a small jitter. Long
+				// delays (or no delay at all) mean the daily quota is
+				// gone — park for an hour to leave other (key, model)
+				// pairs handling traffic without bouncing off this one.
 				parkFor := parseGeminiRetryDelay(string(errBody))
-				if parkFor <= 0 || parkFor > 60*time.Second {
-					// Honour Google's RPM hint where present, otherwise
-					// assume the daily quota is gone and park for an hour.
+				switch {
+				case parkFor <= 0:
 					parkFor = 60 * time.Minute
+				case parkFor < 5*time.Minute:
+					parkFor = parkFor + 2*time.Second // RPM hint + jitter
+				default:
+					// 5-60+ min delay — leave it; that's the server's call.
 				}
 				g.parkedModels.Store(pairKey, time.Now().Add(parkFor))
 				lastErr = fmt.Errorf("%w: %s", ErrRateLimited, strings.TrimSpace(string(errBody)))
