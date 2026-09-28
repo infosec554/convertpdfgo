@@ -82,6 +82,53 @@ convertpdfgo.com {
 	}
 }
 
+# Admin console — its own hostname, not a path under the apex. Sharing
+# the apex would put admin session cookies in the same scope as the
+# public site; a separate host keeps them apart and lets the whole
+# console sit behind one matcher.
+#
+# Needs a DNS A record for admin.convertpdfgo.com pointing here before
+# Caddy can complete the ACME challenge for it.
+admin.convertpdfgo.com {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security  "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options     "nosniff"
+		X-Frame-Options            "DENY"
+		Referrer-Policy            "strict-origin-when-cross-origin"
+		# Never let an operations console into a search index.
+		X-Robots-Tag               "noindex, nofollow"
+		-Server
+	}
+
+	# The console talks to the Go API the same way the public site does,
+	# so /api/* and the auth endpoints have to reach the backend here too.
+	@backend {
+		path /api/* /auth/* /me /me/* /file /file/* /healthz /readyz
+	}
+	handle @backend {
+		request_body {
+			max_size 200MB
+		}
+		reverse_proxy api:8080 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+		}
+	}
+
+	handle {
+		reverse_proxy admin:3001 {
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Forwarded-Host {host}
+		}
+	}
+}
+
 # www → apex redirect. OAuth providers register a single canonical
 # redirect_uri; serving both www and apex without a redirect risks
 # state-cookie mismatches when a user lands on the "wrong" hostname.
