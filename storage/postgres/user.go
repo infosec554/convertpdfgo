@@ -227,7 +227,7 @@ func (r *userRepo) List(ctx context.Context, f models.UserListFilter) ([]models.
 		FROM users
 		WHERE ($1 = '' OR email ILIKE '%' || $1 || '%' OR COALESCE(name,'') ILIKE '%' || $1 || '%')
 		  AND ($2 = '' OR role = $2)
-		  AND ($3 = '' OR status = $3)
+		  AND ($3 = '' OR status::text = $3)
 		ORDER BY created_at DESC
 		LIMIT $4 OFFSET $5
 	`

@@ -20,6 +20,8 @@
 package api
 
 import (
+	"context"
+
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/hibiken/asynq"
@@ -27,6 +29,7 @@ import (
 	_ "convertpdfgo/api/docs"
 	"convertpdfgo/api/handler"
 	"convertpdfgo/config"
+	"convertpdfgo/pkg/accesslog"
 	"convertpdfgo/pkg/logger"
 	"convertpdfgo/pkg/middleware"
 	"convertpdfgo/pkg/notify"
@@ -56,6 +59,11 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	r.Use(gzip.Gzip(gzip.DefaultCompression,         // compress JSON only
 		gzip.WithExcludedExtensions([]string{".pdf", ".docx", ".xlsx", ".pptx", ".jpg", ".jpeg", ".png", ".zip"})))
 	r.Use(middleware.PrometheusMetrics()) // latency histogram
+
+	// Traffic log: record every request (IP, action, account/guest) for the
+	// admin console. Self-contained pool + table; best-effort, non-blocking.
+	accesslog.Init(context.Background(), cfg, log)
+	r.Use(accesslog.Middleware())
 
 	// --- Above the rate limiter — monitoring + landing ------------------
 	registerInfraRoutes(r, h)

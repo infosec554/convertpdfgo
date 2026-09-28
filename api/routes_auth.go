@@ -18,6 +18,10 @@ func registerAuthRoutes(r *gin.Engine, h handler.Handler) {
 		auth.POST("/refresh", h.Refresh)
 		auth.POST("/logout", h.AuthorizerMiddleware, h.Logout)
 
+		// Email + password login — admin console operators only. Regular
+		// users have no password (OAuth-only), so this rejects them.
+		auth.POST("/login", h.Login)
+
 		// Admin invite acceptance — the token in the URL proves the
 		// link is legitimate, so these are public. Preview lets the
 		// accept screen show "Invited as admin (you@example.com)"

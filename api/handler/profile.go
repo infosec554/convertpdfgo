@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/timeouts"
@@ -93,4 +94,59 @@ func (h *Handler) UpdateMyProfile(c *gin.Context) {
 		return
 	}
 	handleResponse(c, h.log, "profile updated", http.StatusOK, gin.H{"id": userID, "name": req.Name})
+}
+
+// ChangeMyPassword godoc
+// @Router       /me/password [put]
+// @Security     ApiKeyAuth
+// @Summary      Change the authenticated user's password
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Param        request body models.ChangePasswordRequest true "passwords"
+// @Success      200 {object} models.Response
+// @Failure      401 {object} models.Response
+func (h *Handler) ChangeMyPassword(c *gin.Context) {
+	userID := c.GetString("user_id")
+	if userID == "" {
+		handleResponse(c, h.log, "unauthorized", http.StatusUnauthorized, nil)
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
+	defer cancel()
+
+	// Resolve the caller's email, then fetch the record that carries the
+	// password hash (GetByID does not select it).
+	me, err := h.services.User().GetByID(ctx, userID)
+	if err != nil {
+		handleResponse(c, h.log, "failed to load user", http.StatusInternalServerError, err.Error())
+		return
+	}
+	full, err := h.services.User().GetForLoginByEmail(ctx, me.Email)
+	if err != nil || full.Password == "" {
+		handleResponse(c, h.log, "no password is set for this account", http.StatusBadRequest, nil)
+		return
+	}
+	if bcrypt.CompareHashAndPassword([]byte(full.Password), []byte(req.CurrentPassword)) != nil {
+		handleResponse(c, h.log, "current password is incorrect", http.StatusUnauthorized, nil)
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		handleResponse(c, h.log, "could not hash password", http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := h.services.User().UpdatePassword(ctx, userID, string(hash)); err != nil {
+		handleResponse(c, h.log, "update failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+	handleResponse(c, h.log, "password changed", http.StatusOK, gin.H{"id": userID})
 }

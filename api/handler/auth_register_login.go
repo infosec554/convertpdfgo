@@ -1,14 +1,77 @@
 package handler
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 
 	"convertpdfgo/api/models"
 	"convertpdfgo/pkg/jwt"
+	"convertpdfgo/pkg/timeouts"
 )
+
+// Login godoc
+// @Router       /auth/login [post]
+// @Summary      Email + password login (admin console)
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        request body models.LoginRequest true "credentials"
+// @Success      200 {object} models.AuthTokens
+// @Failure      401 {object} models.Response
+//
+// Operators of the admin console authenticate with a local bcrypt password
+// instead of an OAuth provider. Regular site users sign in via Google/GitHub
+// and have no password set, so this route rejects them.
+func (h Handler) Login(c *gin.Context) {
+	var req models.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		handleResponse(c, h.log, "invalid request", http.StatusBadRequest, err.Error())
+		return
+	}
+	email := strings.ToLower(strings.TrimSpace(req.Email))
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
+	defer cancel()
+
+	user, err := h.services.User().GetForLoginByEmail(ctx, email)
+	if errors.Is(err, pgx.ErrNoRows) || user.ID == "" {
+		// Generic message + a throwaway bcrypt to keep timing uniform and
+		// blunt account enumeration.
+		_ = bcrypt.CompareHashAndPassword([]byte("$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinv"), []byte(req.Password))
+		h.audit(c, models.AuthEventLoginFailed, "", email, "password")
+		handleResponse(c, h.log, "invalid email or password", http.StatusUnauthorized, nil)
+		return
+	} else if err != nil {
+		handleResponse(c, h.log, "lookup failed", http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if user.Status != "" && user.Status != "active" {
+		handleResponse(c, h.log, "account not active", http.StatusForbidden, nil)
+		return
+	}
+
+	if user.Password == "" || bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)) != nil {
+		h.audit(c, models.AuthEventLoginFailed, user.ID, email, "password")
+		handleResponse(c, h.log, "invalid email or password", http.StatusUnauthorized, nil)
+		return
+	}
+
+	tokens, err := issueTokens(user.ID, user.Role)
+	if err != nil {
+		handleResponse(c, h.log, "token error", http.StatusInternalServerError, err.Error())
+		return
+	}
+	h.audit(c, models.AuthEventLogin, user.ID, email, "password")
+	handleResponse(c, h.log, "ok", http.StatusOK, tokens)
+}
 
 // Refresh godoc
 // @Router       /auth/refresh [post]

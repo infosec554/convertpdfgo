@@ -92,6 +92,13 @@ func registerAdminRoutes(r *gin.Engine, h handler.Handler) {
 		stats.GET("/cache", h.StatsCacheAdmin)
 	}
 
+	// --- Traffic log (every request: IP, action, account/guest) ---------
+	traffic := admin.Group("/traffic", h.RequirePermission("audit:read"))
+	{
+		traffic.GET("", h.ListTrafficAdmin)
+		traffic.GET("/summary", h.TrafficSummaryAdmin)
+	}
+
 	// --- Contact inbox (user-submitted, admin-replies) ------------------
 	contacts := admin.Group("/contacts")
 	{

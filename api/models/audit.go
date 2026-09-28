@@ -3,8 +3,10 @@ package models
 import "time"
 
 const (
-	AuthEventLogout     = "logout"
-	AuthEventOAuthLogin = "oauth_login"
+	AuthEventLogout       = "logout"
+	AuthEventOAuthLogin   = "oauth_login"
+	AuthEventLogin        = "login"        // email+password (admin console)
+	AuthEventLoginFailed  = "login_failed" // bad email or password
 )
 
 type AuthAudit struct {

@@ -94,3 +94,7 @@ prometheus_data/
 grafana_data/
 frontend-snapshot/
 .claude/
+
+# Python bytecode from scripts/
+__pycache__/
+*.pyc
