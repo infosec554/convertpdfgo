@@ -199,7 +199,9 @@ services:
     # push to main and asks docker-compose to rebuild this service.
     # `output: "standalone"` in next.config.mjs means the runtime image
     # is ~150 MB instead of an 800 MB pnpm-managed monorepo.
-    image: converto-web
+    # Overridable so CI can point at a registry tag; the bare name is the
+    # local fallback for building on a workstation.
+    image: ${WEB_IMAGE:-converto-web}
     container_name: convertpdfgo_web
     restart: unless-stopped
     build:
@@ -230,7 +232,7 @@ services:
     # runtime as `web`, served on 3001 and routed by Caddy under its own
     # hostname rather than a path, so admin cookies never share a scope
     # with the public site.
-    image: converto-admin
+    image: ${ADMIN_IMAGE:-converto-admin}
     container_name: convertpdfgo_admin
     restart: unless-stopped
     build:
