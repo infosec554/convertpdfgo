@@ -338,7 +338,8 @@ type IFileStorage interface {
 	Save(ctx context.Context, file models.File) (string, error)
 	GetByID(ctx context.Context, id string) (models.File, error)
 	Delete(ctx context.Context, id string) error
-	ListByUser(ctx context.Context, userID string) ([]models.File, error)
+	// q filters by file name, case-insensitively; empty q lists everything.
+	ListByUser(ctx context.Context, userID, q string) ([]models.File, error)
 
 	GetOldFiles(ctx context.Context, olderThanDays int) ([]models.OldFile, error)
 	DeleteByID(ctx context.Context, id string) error

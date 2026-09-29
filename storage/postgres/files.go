@@ -67,12 +67,18 @@ func (f *fileRepo) Delete(ctx context.Context, id string) error {
 	return err
 }
 
-func (f *fileRepo) ListByUser(ctx context.Context, userID string) ([]models.File, error) {
+func (f *fileRepo) ListByUser(ctx context.Context, userID, q string) ([]models.File, error) {
+	// $2 is matched with ILIKE against the file name. An empty q makes the
+	// pattern '%%', which every name matches — so one query serves both the
+	// plain listing and the search, and the planner still uses the user_id
+	// index either way.
 	query := `
 		SELECT id, user_id, file_name, file_path, file_type, file_size, sha256, uploaded_at
-		FROM files WHERE user_id = $1 ORDER BY uploaded_at DESC
+		FROM files
+		WHERE user_id = $1 AND file_name ILIKE $2
+		ORDER BY uploaded_at DESC
 	`
-	rows, err := f.db.Query(ctx, query, userID)
+	rows, err := f.db.Query(ctx, query, userID, "%"+q+"%")
 	if err != nil {
 		f.log.Error("failed to fetch user files", logger.Error(err))
 		return nil, err

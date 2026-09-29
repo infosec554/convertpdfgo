@@ -17,7 +17,7 @@ type FileService interface {
 	Upload(ctx context.Context, req models.File) (string, error)
 	Get(ctx context.Context, id string) (models.File, error)
 	Delete(ctx context.Context, id string) error
-	List(ctx context.Context, userID string) ([]models.File, error)
+	List(ctx context.Context, userID, q string) ([]models.File, error)
 	CleanupOldFiles(ctx context.Context, olderThanDays int) (int, error)
 	CleanupGuestFiles(ctx context.Context, minutes int) (int, error)
 
@@ -67,9 +67,9 @@ func (s *fileService) Delete(ctx context.Context, id string) error {
 	return s.stg.Delete(ctx, id)
 }
 
-// List - user fayllari ro‘yxati
-func (s *fileService) List(ctx context.Context, userID string) ([]models.File, error) {
-	return s.stg.ListByUser(ctx, userID)
+// List - user fayllari ro‘yxati. q bo‘sh bo‘lsa — hammasi.
+func (s *fileService) List(ctx context.Context, userID, q string) ([]models.File, error) {
+	return s.stg.ListByUser(ctx, userID, q)
 }
 
 // FindBySHA256 returns the most recent existing file with the given hash

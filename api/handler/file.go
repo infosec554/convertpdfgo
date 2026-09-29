@@ -534,17 +534,21 @@ func canAccessFile(c *gin.Context, ownerID *string) bool {
 // @Router       /file/list [GET]
 // @Security     ApiKeyAuth
 // @Summary      List all user's files
+// @Description  Pass ?q= to filter by file name (case-insensitive substring).
 // @Tags         file
 // @Produce      json
+// @Param        q  query  string  false  "Filter by file name"
 // @Success      200  {array}  models.File
 // @Failure      500  {object}  models.Response
 func (h Handler) ListUserFiles(c *gin.Context) {
 	userID := c.GetString("user_id")
+	// Trimmed so a query of spaces lists everything rather than nothing.
+	q := strings.TrimSpace(c.Query("q"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeouts.DB)
 	defer cancel()
 
-	files, err := h.services.File().List(ctx, userID)
+	files, err := h.services.File().List(ctx, userID, q)
 	if err != nil {
 		handleResponse(c, h.log, "list failed", http.StatusInternalServerError, err.Error())
 		return
