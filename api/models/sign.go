@@ -24,15 +24,15 @@ type SignRequest struct {
 // the signature image's aspect ratio at render time. Pages is stored
 // as the original pdfcpu selector string ("all" / "1,3,5" / "1-3").
 type SignJob struct {
-	ID              string    `db:"id"`
-	UserID          *string   `db:"user_id"`
-	InputFileID     string    `db:"input_file_id"`
-	SignatureFileID string    `db:"signature_file_id"`
-	Pages           string    `db:"pages"`
-	X               float64   `db:"x"`
-	Y               float64   `db:"y"`
-	Width           float64   `db:"width"`
-	OutputFileID    *string   `db:"output_file_id"`
-	Status          JobStatus `db:"status"`
-	CreatedAt       time.Time `db:"created_at"`
+	ID              string    `db:"id" json:"id"`
+	UserID          *string   `db:"user_id" json:"user_id"`
+	InputFileID     string    `db:"input_file_id" json:"input_file_id"`
+	SignatureFileID string    `db:"signature_file_id" json:"signature_file_id"`
+	Pages           string    `db:"pages" json:"pages"`
+	X               float64   `db:"x" json:"x"`
+	Y               float64   `db:"y" json:"y"`
+	Width           float64   `db:"width" json:"width"`
+	OutputFileID    *string   `db:"output_file_id" json:"output_file_id"`
+	Status          JobStatus `db:"status" json:"status"`
+	CreatedAt       time.Time `db:"created_at" json:"created_at"`
 }
