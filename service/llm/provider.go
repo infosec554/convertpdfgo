@@ -55,6 +55,11 @@ type ChatOpts struct {
 	// dedicated `systemInstruction` slot, so plumbing it through the
 	// interface keeps the call sites tidy.
 	System string
+
+	// JSONMode asks the provider to return parseable JSON rather than
+	// prose. Providers without the capability may ignore it, so callers
+	// still have to handle a reply that is not valid JSON.
+	JSONMode bool
 }
 
 // ChatChunk is one piece of a streaming Chat response. Delta is the

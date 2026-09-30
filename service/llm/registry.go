@@ -12,6 +12,11 @@ import (
 // Required env per provider:
 //   - gemini: GEMINI_API_KEY (plus optional GEMINI_CHAT_MODEL,
 //     GEMINI_EMBED_MODEL)
+//   - groq:   GROQ_API_KEY (plus optional GROQ_CHAT_MODEL)
+//
+// Gemini stays the default because it embeds; Groq has no embedding
+// endpoint, and pdf_chunks is built on vectors. Callers that only need
+// chat can ask for Groq explicitly with Chatter().
 //
 // Adding a new provider here is the *only* place that needs to learn its
 // name; everything downstream (handlers, services, indexer) speaks to the
@@ -58,7 +63,28 @@ func FromEnv() (Provider, error) {
 			os.Getenv("GEMINI_CHAT_MODEL"),
 			os.Getenv("GEMINI_EMBED_MODEL"),
 		), nil
+	case "groq":
+		key := strings.TrimSpace(os.Getenv("GROQ_API_KEY"))
+		if key == "" {
+			return nil, fmt.Errorf("llm: GROQ_API_KEY required for provider=groq")
+		}
+		return NewGroq(key, os.Getenv("GROQ_CHAT_MODEL")), nil
 	default:
 		return nil, fmt.Errorf("llm: unknown provider %q", name)
 	}
+}
+
+// Chatter returns the provider best suited to short, interactive
+// completions — routing a sentence to a tool, say.
+//
+// Groq when its key is set: the answer comes back in well under a
+// second, and its limits are per-minute. Gemini's free tier allows 20
+// requests per key per day, which is fine for a document chat and not
+// for anything a visitor types into a box. Falls back to FromEnv when
+// GROQ_API_KEY is absent, so nothing needs Groq to work.
+func Chatter() (Provider, error) {
+	if key := strings.TrimSpace(os.Getenv("GROQ_API_KEY")); key != "" {
+		return NewGroq(key, os.Getenv("GROQ_CHAT_MODEL")), nil
+	}
+	return FromEnv()
 }

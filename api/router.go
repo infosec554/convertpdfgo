@@ -78,6 +78,7 @@ func New(services service.IServiceManager, log logger.ILogger, cfg config.Config
 	registerPDFRoutes(r, h)
 	registerContactRoutes(r, h)
 	registerChatRoutes(r, h)
+	registerAIRoutes(r, h)
 	registerCVRoutes(r, h)
 	registerBuildRoutes(r, h)
 	registerAdminRoutes(r, h)
